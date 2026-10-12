@@ -1,0 +1,45 @@
+name: Feature Request
+description: Suggest an improvement or new feature
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What problem would this feature solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the feature you would like.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe any alternative approaches.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Related component
+      options:
+        - Frontend
+        - Backend
+        - Server Management
+        - Node Agent
+        - Plugins
+        - Installation
+        - Documentation
+        - Other
+    validations:
+      required: true

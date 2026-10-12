@@ -1,0 +1,69 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+coverage/
+.vite/
+.next/
+*.tsbuildinfo
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.secret
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+.cache/
+
+# Operating systems
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+
+# Testing
+test-results/
+playwright-report/
+
+# Local database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Docker overrides and local data
+docker-compose.override.yml
+compose.override.yml
+docker-data/
+local-data/
+
+# Archives
+*.zip
+*.tar.gz
+
+# Keep the package manager lockfile tracked
+!pnpm-lock.yaml

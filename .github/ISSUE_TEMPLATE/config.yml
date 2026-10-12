@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/Tyravex/panel/tree/main/docs
+    about: Read the project documentation before opening an issue.
+
+  - name: Security Policy
+    url: https://github.com/Tyravex/panel/security/policy
+    about: Review the security reporting instructions.
