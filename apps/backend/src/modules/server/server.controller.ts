@@ -6,24 +6,26 @@ import {
   Request,
   Body,
 } from '@nestjs/common';
-// Guards
-import { JwtAuthGuard } from '../auth/guards/jwt.guard';
+// Authentication
+// Shared Passport JWT guard supports cookies and Bearer tokens.
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 // Services
 import { ServerService } from './server.service';
 
 @Controller('servers')
+@UseGuards(JwtAuthGuard)
 export class ServerController {
   constructor(private readonly serverService: ServerService) {}
 
-  @UseGuards(JwtAuthGuard)
   @Get()
   getUserServers(@Request() req: any) {
-    return this.serverService.getUserServers(req.user.sub);
+    // JwtStrategy attaches the authenticated user to req.user.
+    return this.serverService.getUserServers(req.user.id);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post()
   createServer(@Request() req: any, @Body() body: any) {
-    return this.serverService.createServer(req.user.sub, body);
+    // Always use the authenticated user's ID, not an ID from the request body.
+    return this.serverService.createServer(req.user.id, body);
   }
 }
