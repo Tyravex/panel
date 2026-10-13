@@ -16,11 +16,25 @@ export class RedisService implements OnModuleDestroy {
     // Features that require Redis can check whether it is configured.
     this.client = redisUrl
       ? new Redis(redisUrl, {
-          // Prevent Redis connection failures from producing
-          // unhandled error events.
-          lazyConnect: true,
-          maxRetriesPerRequest: 1,
-        })
+        // Connect only when Redis is first used.
+        lazyConnect: true,
+
+        // Limit the time spent establishing a TCP connection.
+        connectTimeout: 3000,
+
+        // Fail individual commands quickly when Redis is unavailable.
+        maxRetriesPerRequest: 1,
+
+        // Stop retrying after a few attempts.
+        // Future queue workers will use a separate Redis configuration.
+        retryStrategy: (times) => {
+          if (times > 3) {
+            return null;
+          }
+
+          return Math.min(times * 200, 1000);
+        },
+      })
       : null;
   }
 
