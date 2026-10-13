@@ -3,25 +3,45 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider     = "prisma-client-js"
   // output   = "../src/generated/prisma"
   moduleFormat = "cjs"
 }
 
+// Supported background operations in the Tyravex panel.
+enum JobType {
+  INSTALL
+  BACKUP
+  RESTART
+  REINSTALL
+}
+
+// Lifecycle states shared by API, workers, and the UI.
+enum JobStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+//
 model User {
-  id       Int @id @default(autoincrement())
+  id       Int    @id @default(autoincrement())
   username String @unique
   email    String @unique
   password String
 
-  avatar   String?
-  language String  @default("en")
+  avatar        String?
+  language      String         @default("en")
   notifications Notification[]
 
   roleId String?
   role   Role?   @relation(fields: [roleId], references: [id])
 
-  servers   Server[]
+  servers Server[]
+  jobs    Job[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -50,16 +70,46 @@ model Notification {
 }
 
 model Server {
-  id     Int    @id @default(autoincrement())
-  name   String
+  id   Int    @id @default(autoincrement())
+  name String
 
-  status String @default("offline")
-  cpu    Int    @default(0)
-  ram    Int    @default(0)
-  players Int   @default(0)
+  status  String @default("offline")
+  cpu     Int    @default(0)
+  ram     Int    @default(0)
+  players Int    @default(0)
 
   userId Int
-  user   User   @relation(fields: [userId], references: [id])
+  user   User  @relation(fields: [userId], references: [id])
+  jobs   Job[]
 
   createdAt DateTime @default(now())
+}
+
+model Job {
+  id       String    @id @default(cuid())
+  type     JobType
+  status   JobStatus @default(PENDING)
+  progress Int       @default(0)
+
+  // The user who requested the operation.
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  // Some future jobs may not belong to a specific server.
+  serverId Int?
+  server   Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
+
+  // Reference to the corresponding BullMQ job, when enqueued.
+  queueJobId String? @unique
+
+  // Store a safe, user-facing error summary, never credentials or tokens.
+  errorMessage String? @db.Text
+
+  createdAt  DateTime  @default(now())
+  startedAt  DateTime?
+  finishedAt DateTime?
+
+  @@index([userId, createdAt])
+  @@index([serverId, createdAt])
+  @@index([status, createdAt])
 }

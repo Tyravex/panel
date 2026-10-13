@@ -9,6 +9,7 @@ import { AuthModule } from '@/modules/auth/auth.module';
 import { StatusModule } from '@/modules/status/status.module';
 import { ServerModule } from "@/modules/server/server.module";
 import { NotificationsModule } from '@/modules/notifications/notifications.module';
+import { JobsModule } from '@/modules/jobs/jobs.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -20,6 +21,7 @@ import { NotificationsModule } from '@/modules/notifications/notifications.modul
     ServerModule,
     AuthModule,
     NotificationsModule,
+    JobsModule,
   ],
   controllers: [],
   providers: [
