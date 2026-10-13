@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { JobsController } from './jobs.controller';
 import { JobsService } from './jobs.service';
+import { QueueModule } from '../../infrastructure/queue/queue.module';
 
 @Module({
   // Reuse the existing authentication module.

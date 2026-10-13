@@ -111,5 +111,5 @@ model Job {
 
   @@index([userId, createdAt])
   @@index([serverId, createdAt])
-  @@index([status, createdAt])
+  @@index([status, createdAt, id])
 }
