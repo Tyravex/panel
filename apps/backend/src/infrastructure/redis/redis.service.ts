@@ -27,12 +27,11 @@ export class RedisService implements OnModuleDestroy {
 
         // Stop retrying after a few attempts.
         // Future queue workers will use a separate Redis configuration.
+        // Keep reconnecting with a bounded delay.
+        // Temporary Redis outages must not require restarting the API.
+        // BullMQ workers will use a separate connection strategy.
         retryStrategy: (times) => {
-          if (times > 3) {
-            return null;
-          }
-
-          return Math.min(times * 200, 1000);
+          return Math.min(times * 200, 3000);
         },
       })
       : null;
