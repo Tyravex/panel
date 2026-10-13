@@ -25,8 +25,6 @@ export class RedisService implements OnModuleDestroy {
         // Fail individual commands quickly when Redis is unavailable.
         maxRetriesPerRequest: 1,
 
-        // Stop retrying after a few attempts.
-        // Future queue workers will use a separate Redis configuration.
         // Keep reconnecting with a bounded delay.
         // Temporary Redis outages must not require restarting the API.
         // BullMQ workers will use a separate connection strategy.
@@ -43,16 +41,33 @@ export class RedisService implements OnModuleDestroy {
     return this.client;
   }
 
-  async ping(): Promise<boolean> {
+    async ping(): Promise<boolean> {
     if (!this.client) {
       return false;
     }
 
+    // A health check must not block the API indefinitely.
+    const timeoutMs = 2000;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+
     try {
-      // ioredis connects automatically when the first command is sent.
-      return (await this.client.ping()) === 'PONG';
+      const pingPromise = this.client.ping();
+
+      const result = await Promise.race([
+        pingPromise,
+        new Promise<null>((resolve) => {
+          timeout = setTimeout(() => resolve(null), timeoutMs);
+        }),
+      ]);
+
+      return result === 'PONG';
     } catch {
       return false;
+    } finally {
+      // Clear the timer when Redis responds before the deadline.
+      if (timeout) {
+        clearTimeout(timeout);
+      }
     }
   }
 
