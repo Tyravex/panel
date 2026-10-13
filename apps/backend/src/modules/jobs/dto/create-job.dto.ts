@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import { IsEnum, IsInt, Min } from 'class-validator';
 import { JobType } from '@prisma/client';
 
 export class CreateJobDto {
@@ -8,8 +8,7 @@ export class CreateJobDto {
 
   // The server is optional for future account-level operations.
   // When provided, the service must verify that it belongs to the user.
-  @IsOptional()
   @IsInt()
   @Min(1)
-  serverId?: number;
+  serverId!: number;
 }
