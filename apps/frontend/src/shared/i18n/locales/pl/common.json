@@ -1,0 +1,15 @@
+{
+  "Navbar": {
+    "Navigation": {
+      "dashboard": "Panel"
+    },
+    "Notifications": {
+      "noNotifications": "Brak powiadomień"
+    },
+    "ProfileDropdown": {
+      "language": "Język",
+      "settings": "Ustawienia",
+      "logout": "Wyloguj"
+    }
+  }
+}

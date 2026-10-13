@@ -1,0 +1,65 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+model User {
+  id       Int @id @default(autoincrement())
+  username String @unique
+  email    String @unique
+  password String
+
+  avatar   String?
+  language String  @default("en")
+  notifications Notification[]
+
+  roleId String?
+  role   Role?   @relation(fields: [roleId], references: [id])
+
+  servers   Server[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  permissions Permission[]
+  users       User[]
+}
+
+model Permission {
+  id    String @id @default(cuid())
+  name  String @unique
+  roles Role[]
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  content   String
+  read      Boolean  @default(false)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Server {
+  id     Int    @id @default(autoincrement())
+  name   String
+
+  status String @default("offline")
+  cpu    Int    @default(0)
+  ram    Int    @default(0)
+  players Int   @default(0)
+
+  userId Int
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+}

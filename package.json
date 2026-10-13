@@ -1,0 +1,17 @@
+{
+  "name": "tyravex-panel",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev:backend": "pnpm --filter backend start:dev",
+    "dev:frontend": "pnpm --filter frontend dev"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "pnpm": "^8.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

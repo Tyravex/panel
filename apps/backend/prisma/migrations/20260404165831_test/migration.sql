@@ -1,0 +1,10 @@
+-- AlterTable
+ALTER TABLE "Server" ADD COLUMN     "cpu" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "players" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "ram" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "status" TEXT NOT NULL DEFAULT 'offline';
+
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "avatar" TEXT,
+ADD COLUMN     "language" TEXT NOT NULL DEFAULT 'pl',
+ADD COLUMN     "theme" TEXT NOT NULL DEFAULT 'system';
