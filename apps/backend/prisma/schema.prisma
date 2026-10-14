@@ -19,6 +19,7 @@ enum JobType {
 // Lifecycle states shared by API, workers, and the UI.
 enum JobStatus {
   PENDING
+  DISPATCHING
   QUEUED
   RUNNING
   COMPLETED
@@ -100,7 +101,9 @@ model Job {
   server   Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
 
   // Reference to the corresponding BullMQ job, when enqueued.
-  queueJobId String? @unique
+  queueJobId        String?   @unique
+  // Timestamp used to detect abandoned dispatcher claims.
+  dispatchClaimedAt DateTime?
 
   // Store a safe, user-facing error summary, never credentials or tokens.
   errorMessage String? @db.Text

@@ -32,4 +32,4 @@ import { JobsModule } from '@/modules/jobs/jobs.module';
   ],
 })
 
-export class AppModule {}
+export class AppModule { }
