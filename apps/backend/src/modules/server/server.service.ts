@@ -18,10 +18,10 @@ export class ServerService {
     });
   }
 
-  async createServer(userId: number, data: any) {
+  async createServer(userId: number, name: string) {
     return this.prisma.server.create({
       data: {
-        name: data.name,
+        name: name.trim(),
         userId,
       },
     });
@@ -33,6 +33,6 @@ export class ServerService {
       'Zostałeś zaproszony do serwera',
     );
 
-    this.notificationsGateway.sendToUser(userId, notification);
+    await this.notificationsGateway.sendToUser(userId, notification);
   }
 }

@@ -2,35 +2,43 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { UserDTO } from '@shared/types';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateJobDto } from './dto/create-job.dto';
 
 @Injectable()
 export class JobsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+  ) {}
 
-  async create(userId: number, data: CreateJobDto) {
-    // Verify server ownership before creating a server-related job.
-    if (data.serverId !== undefined) {
-      const server = await this.prisma.server.findFirst({
-        where: {
-          id: data.serverId,
-          userId,
-        },
-        select: { id: true },
-      });
+  async create(user: UserDTO, data: CreateJobDto) {
+    // Global permission to manage servers owned by other users.
+    const canManageAnyServer =
+      user.permissions.includes('server:manage:any');
 
-      if (!server) {
-        throw new NotFoundException('Server not found');
-      }
+    // Server owners can perform all supported job operations.
+    // Server member permissions will be handled separately.
+    const server = await this.prisma.server.findFirst({
+      where: {
+        id: data.serverId,
+        ...(canManageAnyServer ? {} : { userId: user.id }),
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!server) {
+      throw new NotFoundException('Server not found');
     }
 
-    // The backend controls the owner and initial lifecycle state.
+    // Job ownership always comes from the authenticated user.
     return this.prisma.job.create({
       data: {
         type: data.type,
-        userId,
-        serverId: data.serverId,
+        userId: user.id,
+        serverId: server.id,
         status: 'PENDING',
         progress: 0,
       },
@@ -38,7 +46,6 @@ export class JobsService {
   }
 
   async findAllForUser(userId: number) {
-    // Never return another user's job history.
     return this.prisma.job.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
@@ -46,7 +53,6 @@ export class JobsService {
   }
 
   async findOneForUser(userId: number, jobId: string) {
-    // Scope lookup to the authenticated user to prevent IDOR access.
     const job = await this.prisma.job.findFirst({
       where: {
         id: jobId,

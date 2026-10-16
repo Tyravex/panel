@@ -28,7 +28,7 @@ export class JobsController {
         @Body() data: CreateJobDto,
     ) {
         // The authenticated user ID must come from the validated JWT.
-        return this.jobsService.create(req.user.id, data);
+        return this.jobsService.create(req.user, data);
     }
 
     @Get()

@@ -4,15 +4,24 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async updatePreferences(
-    userId: Number,
+    userId: number,
     data: { language?: string },
   ) {
     return this.prisma.user.update({
-      where: { id: Number(userId) },
+      where: { id: userId },
       data: { language: data.language },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        language: true,
+        avatar: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
   }
 

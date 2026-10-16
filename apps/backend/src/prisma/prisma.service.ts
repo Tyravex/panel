@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-console.log(PrismaClient);
+//console.log(PrismaClient);
 @Injectable()
 export class PrismaService
   extends PrismaClient

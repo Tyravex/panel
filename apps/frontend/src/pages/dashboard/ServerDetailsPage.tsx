@@ -1,7 +1,7 @@
 
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/app/api/axios";
+import { api } from "@/shared/api/client";
 
 type ServerDetails = {
   name: string;

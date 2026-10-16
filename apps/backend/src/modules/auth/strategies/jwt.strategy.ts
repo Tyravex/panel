@@ -1,72 +1,97 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { PrismaService } from '@/prisma/prisma.service';
 import { Request } from 'express';
+import { PrismaService } from '@/prisma/prisma.service';
 import { JWTPayload, UserDTO } from '@shared/types';
 
-/**
- * Custom extractor to read JWT from cookies instead of Authorization header
- */
-const cookieExtractor = (req: Request): string | null => {
-  return req?.cookies?.access_token || null;
-};
-
-// console.log('JWT_SECRET STRATEGY:', process.env.JWT_SECRET);
+const cookieExtractor = (req: Request): string | null =>
+  req?.cookies?.access_token ?? null;
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private readonly prisma: PrismaService) {
-
     const secret = process.env.JWT_SECRET;
-    if (!secret) throw new Error('JWT_SECRET not defined');
+
+    if (!secret) {
+      throw new Error('JWT_SECRET not defined');
+    }
 
     super({
-      //
-     jwtFromRequest: ExtractJwt.fromExtractors([
+      jwtFromRequest: ExtractJwt.fromExtractors([
         cookieExtractor,
         ExtractJwt.fromAuthHeaderAsBearerToken(),
       ]),
-      //
       ignoreExpiration: false,
       secretOrKey: secret,
-      //passReqToCallback: true,
     });
   }
 
-  /**
-   * This method is called after JWT is verified
-   * Its return value is attached to req.user
-   */
   async validate(payload: JWTPayload): Promise<UserDTO> {
-    // Fetch full user with role + permissions
+    if (payload.tokenType !== 'access') {
+      throw new UnauthorizedException('Invalid access token type');
+    }
+
+    const userId = Number(payload.sub);
+
+    if (!Number.isSafeInteger(userId) || userId <= 0) {
+      throw new UnauthorizedException('Invalid user identity');
+    }
+
+    if (typeof payload.sid !== 'string' || !payload.sid) {
+      throw new UnauthorizedException('Missing session ID');
+    }
+
+    const session = await this.prisma.session.findUnique({
+      where: { id: payload.sid },
+    });
+
+    if (
+      !session ||
+      session.userId !== userId ||
+      session.revokedAt !== null ||
+      session.expiresAt.getTime() <= Date.now()
+    ) {
+      throw new UnauthorizedException('Invalid session');
+    }
+
     const user = await this.prisma.user.findUnique({
-      where: { id: Number(payload.sub) },
-      // include: {
-      //   role: {
-      //     include: {
-      //       permissions: true,
-      //     },
-      //   },
-      // },
+      where: { id: userId },
+      include: {
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    // Map to safe DTO (no password)
+    const roles = user.roles.map((membership) => membership.role.name);
+
+    const permissions = [
+      ...new Set(
+        user.roles.flatMap((membership) =>
+          membership.role.permissions.map((permission) => permission.name),
+        ),
+      ),
+    ];
+
     return {
-      id: Number(user.id),
+      id: user.id,
       email: user.email,
       username: user.username,
-
+      avatar: user.avatar,
       language: user.language,
-
-      //role: user.role?.name ?? null,
-      // permissions:
-      //   user.role?.permissions.map((p: { name: string }) => p.name) ?? [],
-
+      roles,
+      permissions,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

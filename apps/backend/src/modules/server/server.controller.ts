@@ -1,31 +1,50 @@
 import {
+  Body,
   Controller,
+  ForbiddenException,
   Get,
   Post,
-  UseGuards,
   Request,
-  Body,
+  UseGuards,
 } from '@nestjs/common';
-// Authentication
-// Shared Passport JWT guard supports cookies and Bearer tokens.
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-// Services
 import { ServerService } from './server.service';
+import { CreateServerDto } from './dto/create-server.dto';
+import { UserDTO } from '@shared/types';
+
+interface AuthenticatedRequest {
+  user: UserDTO;
+}
 
 @Controller('servers')
 @UseGuards(JwtAuthGuard)
 export class ServerController {
-  constructor(private readonly serverService: ServerService) {}
+  constructor(
+    private readonly serverService: ServerService,
+  ) { }
 
   @Get()
-  getUserServers(@Request() req: any) {
-    // JwtStrategy attaches the authenticated user to req.user.
+  getUserServers(@Request() req: AuthenticatedRequest) {
     return this.serverService.getUserServers(req.user.id);
   }
 
   @Post()
-  createServer(@Request() req: any, @Body() body: any) {
-    // Always use the authenticated user's ID, not an ID from the request body.
-    return this.serverService.createServer(req.user.id, body);
+  createServer(
+    @Request() req: AuthenticatedRequest,
+    @Body() body: CreateServerDto,
+  ) {
+    // Server provisioning requires an explicit global permission.
+    if (!req.user.permissions.includes('server:create')) {
+      throw new ForbiddenException(
+        'You do not have permission to create servers',
+      );
+    }
+
+    // Authorized staff selects the server's assigned owner.
+    return this.serverService.createServer(
+      body.userId,
+      body.name,
+    );
   }
 }

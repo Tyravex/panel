@@ -53,14 +53,14 @@ export class AuthController {
     res.cookie('access_token', access_token, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: false, // change to true in production (HTTPS)
+      secure: process.env.NODE_ENV === 'production',
     });
 
     // Optional: store refresh token
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: false, // change to true in production (HTTPS)
+      secure: process.env.NODE_ENV === 'production',
     });
 
     return { success: true };
@@ -91,18 +91,41 @@ export class AuthController {
     res.cookie('access_token', access_token, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: false, // change to true in production (HTTPS)
+      secure: process.env.NODE_ENV === 'production',
     });
 
     return { success: true };
   }
 
   @Post('logout')
-  async logout(@Res({ passthrough: true }) res: Response) {
-    // Clear cookies on logout
-    res.clearCookie('access_token');
-    res.clearCookie('refresh_token');
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.refresh_token;
+    const accessToken = req.cookies?.access_token;
 
-    return { message: 'Logged out successfully' };
+    try {
+      if (typeof refreshToken === 'string' && refreshToken) {
+        try {
+          await this.authService.logout(refreshToken);
+          return { message: 'Logged out successfully' };
+        } catch (error) {
+          if (!(error instanceof UnauthorizedException)) {
+            throw error;
+          }
+          // Try the access token if the refresh token is invalid.
+        }
+      }
+
+      if (typeof accessToken === 'string' && accessToken) {
+        await this.authService.logoutWithAccessToken(accessToken);
+      }
+
+      return { message: 'Logged out successfully' };
+    } finally {
+      res.clearCookie('access_token');
+      res.clearCookie('refresh_token');
+    }
   }
 }

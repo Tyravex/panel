@@ -6,8 +6,8 @@ export class CreateJobDto {
   @IsEnum(JobType)
   type!: JobType;
 
-  // The server is optional for future account-level operations.
-  // When provided, the service must verify that it belongs to the user.
+  // Every currently supported job must target an existing server.
+  // The service verifies access using the authenticated user's role.
   @IsInt()
   @Min(1)
   serverId!: number;

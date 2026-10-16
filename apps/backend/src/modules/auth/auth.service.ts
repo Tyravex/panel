@@ -1,14 +1,16 @@
 import * as bcrypt from 'bcryptjs';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { AuthTokenResponse, UserDTO } from '@shared/types';
+import { AuthTokenResponse, JWTPayload, UserDTO } from '@shared/types';
 import { PrismaService } from '@/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { NotificationsGateway } from '@/modules/notifications/notifications.gateway';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly notificationsGateway: NotificationsGateway,
   ) { }
 
   async validateUser(
@@ -23,9 +25,13 @@ export class AuthService {
         ],
       },
       include: {
-        role: {
+        roles: {
           include: {
-            permissions: true,
+            role: {
+              include: {
+                permissions: true,
+              },
+            },
           },
         },
       },
@@ -41,47 +47,92 @@ export class AuthService {
   }
 
   async login(user: UserDTO): Promise<AuthTokenResponse> {
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-      permissions: user.permissions,
-    };
-
-    // Short-lived access token
-    const access_token = this.jwtService.sign(payload, {
-      expiresIn: '1h',
-    });
-
-    // Long-lived refresh token (different secret!)
-    const refresh_token = this.jwtService.sign(payload, {
-      expiresIn: '7d',
-      secret: process.env.JWT_REFRESH_SECRET,
-    });
-
-    return {
-      access_token,
-      refresh_token,
-      user,
-    };
-  }
-
-  async refreshToken(refreshToken: string) {
-
     if (!process.env.JWT_REFRESH_SECRET) {
       throw new Error('JWT_REFRESH_SECRET missing');
     }
 
-    try {
-      // Verify refresh token
-      const payload = this.jwtService.verify(refreshToken, {
+    const session = await this.prisma.session.create({
+      data: {
+        userId: user.id,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      sid: session.id,
+    };
+
+    const access_token = this.jwtService.sign(
+      {
+        ...payload,
+        tokenType: 'access',
+      },
+      {
+        expiresIn: '1h',
+      },
+    );
+
+    const refresh_token = this.jwtService.sign(
+      {
+        ...payload,
+        tokenType: 'refresh',
+      },
+      {
+        expiresIn: '7d',
         secret: process.env.JWT_REFRESH_SECRET,
+      },
+    );
+
+    return { access_token, refresh_token, user };
+  }
+
+  async refreshToken(refreshToken: string) {
+    const refreshSecret = process.env.JWT_REFRESH_SECRET;
+
+    if (!refreshSecret) {
+      throw new Error('JWT_REFRESH_SECRET missing');
+    }
+
+    try {
+      const payload = this.jwtService.verify<JWTPayload>(refreshToken, {
+        secret: refreshSecret,
       });
 
-      // Issue new access token
+      if (payload.tokenType !== 'refresh') {
+        throw new UnauthorizedException('Invalid refresh token type');
+      }
+
+      const userId = Number(payload.sub);
+
+      if (
+        !Number.isSafeInteger(userId) ||
+        userId <= 0 ||
+        typeof payload.sid !== 'string' ||
+        !payload.sid
+      ) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const session = await this.prisma.session.findUnique({
+        where: { id: payload.sid },
+      });
+
+      if (
+        !session ||
+        session.userId !== userId ||
+        session.revokedAt !== null ||
+        session.expiresAt.getTime() <= Date.now()
+      ) {
+        throw new UnauthorizedException('Invalid session');
+      }
+
       const access_token = this.jwtService.sign({
-        sub: payload.sub,
+        sub: userId,
         email: payload.email,
+        sid: session.id,
+        tokenType: 'access',
       });
 
       return { access_token };
@@ -108,15 +159,115 @@ export class AuthService {
     return this.toUserDTO(user);
   }
 
-  // Maps Prisma user → clean DTO (no password leakage)
+
+  async logout(refreshToken: string): Promise<void> {
+    const refreshSecret = process.env.JWT_REFRESH_SECRET;
+
+    if (!refreshSecret) {
+      throw new Error('JWT_REFRESH_SECRET missing');
+    }
+
+    let payload: JWTPayload;
+
+    try {
+      payload = this.jwtService.verify<JWTPayload>(refreshToken, {
+        secret: refreshSecret,
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    if (payload.tokenType !== 'refresh') {
+      throw new UnauthorizedException('Invalid refresh token type');
+    }
+
+    await this.revokeSession(payload);
+  }
+
+  async logoutWithAccessToken(accessToken: string): Promise<void> {
+    const accessSecret = process.env.JWT_SECRET;
+
+    if (!accessSecret) {
+      throw new Error('JWT_SECRET missing');
+    }
+
+    let payload: JWTPayload;
+
+    try {
+      payload = this.jwtService.verify<JWTPayload>(accessToken, {
+        secret: accessSecret,
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid access token');
+    }
+
+    if (payload.tokenType !== 'access') {
+      throw new UnauthorizedException('Invalid access token type');
+    }
+
+    await this.revokeSession(payload);
+  }
+
+  private async revokeSession(payload: JWTPayload): Promise<void> {
+    const userId = Number(payload.sub);
+
+    if (
+      !Number.isSafeInteger(userId) ||
+      userId <= 0 ||
+      typeof payload.sid !== 'string' ||
+      !payload.sid
+    ) {
+      throw new UnauthorizedException('Invalid session identity');
+    }
+
+    const result = await this.prisma.session.updateMany({
+      where: {
+        id: payload.sid,
+        userId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+
+    if (result.count !== 1) {
+      throw new UnauthorizedException('Invalid session');
+    }
+
+    // Disconnect sockets only after successful database revocation.
+    this.notificationsGateway.disconnectSession(payload.sid);
+  }
+
+
+  // Map a database user to a public DTO without exposing credentials.
   private toUserDTO(user: any): UserDTO {
+    const memberships = Array.isArray(user.roles)
+      ? user.roles
+      : [];
+
+    const roles: string[] = memberships.map(
+      (membership: any) => membership.role.name,
+    );
+
+    const permissions: string[] = [
+      ...new Set<string>(
+        memberships.flatMap((membership: any) =>
+          membership.role.permissions.map(
+            (permission: any) => permission.name as string,
+          ),
+        ),
+      ),
+    ];
+
     return {
-      id: Number(user.id),
-      email: user.email,
+      id: user.id,
       username: user.username,
-      role: user.role?.name ?? null,
-      permissions:
-        user.role?.permissions.map((p: any) => p.name) ?? [],
+      email: user.email,
+      avatar: user.avatar,
+      language: user.language,
+      roles,
+      permissions,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

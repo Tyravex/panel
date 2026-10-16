@@ -67,3 +67,6 @@ local-data/
 
 # Keep the package manager lockfile tracked
 !pnpm-lock.yaml
+
+# Local database backups
+/backups/

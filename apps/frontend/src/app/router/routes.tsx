@@ -8,7 +8,6 @@ import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { ProfilePage } from "@/pages/profile";
 import { SettingsPage } from "@/pages/settings";
-import { AuthProvider } from "../providers/AuthProvider";
 
 export const AppRoutes = () => (
   <Routes>
@@ -22,9 +21,7 @@ export const AppRoutes = () => (
     <Route
       element={
         <ProtectedRoute>
-          <AuthProvider>
-            <MainLayout />
-          </AuthProvider>
+          <MainLayout />
         </ProtectedRoute>
       }
     >
@@ -33,6 +30,6 @@ export const AppRoutes = () => (
       <Route path="/profile" element={<ProfilePage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/servers/:id" element={<ServerDetailsPage />} />
-    </Route>
-  </Routes>
+    </Route >
+  </Routes >
 );

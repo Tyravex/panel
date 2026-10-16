@@ -1,4 +1,4 @@
-import { api } from '@/app/api/axios';
+import { api } from '@/shared/api/client';
 
 export const updatePreferences = async (data: any) => {
   // console.log("Sending language update:", data);

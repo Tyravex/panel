@@ -10,19 +10,28 @@ export interface AuthTokenResponse {
 }
 
 export interface UserDTO {
-  id: string;
+  id: number;
   username: string;
   email: string;
-  avatar?: String;
+  avatar?: string | null;
 
   language?: string;
-  role?: string;
+
+  // Global panel roles loaded from the database.
+  roles: string[];
+
+  // Combined permissions from all assigned global roles.
+  permissions: string[];
+
   createdAt: Date;
   updatedAt?: Date;
 }
 
 export interface JWTPayload {
-  sub: string;
-  email: string;
-  role?: string;
+  sub: string | number;
+  email?: string;
+  // Distinguishes access tokens from refresh tokens.
+  tokenType?: 'access' | 'refresh';
+  // Server-side session identifier.
+  sid?: string;
 }
