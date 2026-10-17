@@ -70,8 +70,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       },
     });
 
-    if (!user) {
-      throw new UnauthorizedException('User not found');
+    // Reject disabled users even when their access token is still valid.
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('User not found or account disabled');
     }
 
     const roles = user.roles.map((membership) => membership.role.name);

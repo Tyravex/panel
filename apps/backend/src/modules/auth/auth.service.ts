@@ -37,9 +37,9 @@ export class AuthService {
       },
     });
 
-    if (!user) return null;
+    // Disabled accounts cannot authenticate.
+    if (!user || !user.isActive) return null;
 
-    // Compare hashed password
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return null;
 
@@ -128,6 +128,15 @@ export class AuthService {
         throw new UnauthorizedException('Invalid session');
       }
 
+      // A valid session cannot restore access to a disabled account.
+      const account = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { isActive: true },
+      });
+      if (!account?.isActive) {
+        throw new UnauthorizedException('Account disabled');
+      }
+
       const access_token = this.jwtService.sign({
         sub: userId,
         email: payload.email,
@@ -158,7 +167,6 @@ export class AuthService {
 
     return this.toUserDTO(user);
   }
-
 
   async logout(refreshToken: string): Promise<void> {
     const refreshSecret = process.env.JWT_REFRESH_SECRET;
@@ -238,7 +246,6 @@ export class AuthService {
     // Disconnect sockets only after successful database revocation.
     this.notificationsGateway.disconnectSession(payload.sid);
   }
-
 
   // Map a database user to a public DTO without exposing credentials.
   private toUserDTO(user: any): UserDTO {

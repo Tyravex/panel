@@ -9,6 +9,7 @@ describe('JwtStrategy', () => {
     id: 1,
     username: 'test-user',
     email: 'test@example.com',
+    isActive: true,
     avatar: null,
     language: 'en',
     createdAt: new Date('2026-01-01'),
@@ -100,6 +101,19 @@ describe('JwtStrategy', () => {
       strategy.validate({
         sub: 1,
         email: 'missing@example.com',
+        sid: 'session-123',
+        tokenType: 'access',
+      }),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('rejects a disabled user with an otherwise valid access token', async () => {
+    findUnique.mockResolvedValue({ ...testUser, isActive: false });
+
+    await expect(
+      strategy.validate({
+        sub: 1,
+        email: 'test@example.com',
         sid: 'session-123',
         tokenType: 'access',
       }),

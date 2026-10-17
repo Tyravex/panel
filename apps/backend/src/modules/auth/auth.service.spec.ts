@@ -9,6 +9,7 @@ describe('AuthService sessions', () => {
   const sessionCreate = jest.fn();
   const sessionFindUnique = jest.fn();
   const sessionUpdateMany = jest.fn();
+  const userFindUnique = jest.fn();
 
   const jwtSign = jest.fn();
   const jwtVerify = jest.fn();
@@ -30,9 +31,11 @@ describe('AuthService sessions', () => {
 
     process.env.JWT_REFRESH_SECRET = 'test-only-refresh-secret';
     process.env.JWT_SECRET = 'test-only-access-secret';
+    userFindUnique.mockResolvedValue({ isActive: true });
 
     service = new AuthService(
       {
+        user: { findUnique: userFindUnique },
         session: {
           create: sessionCreate,
           findUnique: sessionFindUnique,
@@ -197,6 +200,27 @@ describe('AuthService sessions', () => {
     );
 
     expect(result.access_token).toBe('new-access-token');
+  });
+
+  it('rejects refresh tokens for disabled accounts', async () => {
+    jwtVerify.mockReturnValue({
+      sub: 1,
+      email: 'test@example.com',
+      sid: 'session-123',
+      tokenType: 'refresh',
+    });
+    sessionFindUnique.mockResolvedValue({
+      id: 'session-123',
+      userId: 1,
+      expiresAt: new Date(Date.now() + 60_000),
+      revokedAt: null,
+    });
+    userFindUnique.mockResolvedValue({ isActive: false });
+
+    await expect(service.refreshToken('refresh-token')).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(jwtSign).not.toHaveBeenCalled();
   });
 
   it('rejects refresh tokens using another user session', async () => {

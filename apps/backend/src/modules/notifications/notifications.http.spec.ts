@@ -68,6 +68,7 @@ describe('NotificationsController HTTP security', () => {
       id: 2,
       username: 'regular-user',
       email: 'regular@example.invalid',
+      isActive: true,
       avatar: null,
       language: 'en',
       createdAt: new Date(),

@@ -170,7 +170,7 @@ export class RbacService {
             if (!membership) throw new NotFoundException('Role assignment not found');
             if (role.name === 'Owner') {
                 const ownerCount = await tx.userRole.count({
-                    where: { role: { name: 'Owner' } },
+                    where: { role: { name: 'Owner' }, user: { isActive: true } },
                 });
                 if (ownerCount <= 1) {
                     throw new BadRequestException('Cannot revoke the last Owner role');
