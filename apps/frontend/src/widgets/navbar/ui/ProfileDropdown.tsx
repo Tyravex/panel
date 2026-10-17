@@ -1,105 +1,162 @@
-import { motion } from "framer-motion";
-import { useState, useEffect, useRef } from "react";
-import { ChevronDown } from "lucide-react";
-import { useUser } from "@/shared/store/user";
-import { useLogout } from "@/features/auth/model/useLogout";
+
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LanguageSwitcher } from './LanguageSwitcher';
+import { ChevronDown, LogOut, Settings, UserRound } from "lucide-react";
+
+import { useUser } from "@/shared/store/user";
+import { useLogout } from "@/features/auth/model/useLogout";
+
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export const ProfileDropdown = () => {
-    const [isOpen, setIsOpen] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
-    const { user} = useUser();
-    const { logout } = useLogout();
-    const { t } = useTranslation();
-    const navigate = useNavigate();
+  const user = useUser((state) => state.user);
+  const { logout } = useLogout();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (!ref.current) return;
+  useEffect(() => {
+    if (!isOpen) return;
 
-            if (ref.current.contains(e.target as Node)) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
 
-            setIsOpen(false);
-        };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
 
-        const handleEsc = (e: KeyboardEvent) => {
-            if (e.key === "Escape") setIsOpen(false);
-        };
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
 
-        document.addEventListener("click", handleClickOutside);
-        document.addEventListener("keydown", handleEsc);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
 
-        return () => {
-            document.removeEventListener("click", handleClickOutside);
-            document.removeEventListener("keydown", handleEsc);
-        };
-    }, []);
+  const closeAndNavigate = (path: string) => {
+    setIsOpen(false);
+    navigate(path);
+  };
 
-    return (
-        <div ref={ref} className="relative">
-            {/* Avatar + dropdown trigger */}
+  const initials = (user?.username || "U")
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => setIsOpen((previous) => !previous)}
+        aria-expanded={isOpen}
+        aria-haspopup="true"
+        aria-controls="profile-dropdown"
+        aria-label={t("profile.menu", {
+          defaultValue: "User menu",
+        })}
+        className="flex min-h-10 items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-white/5"
+      >
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-xs font-bold text-white">
+          {initials}
+        </span>
+
+        <span className="hidden max-w-32 truncate text-sm font-medium text-text-primary sm:block">
+          {user?.username || "User"}
+        </span>
+
+        <ChevronDown
+          size={16}
+          aria-hidden="true"
+          className={[
+            "hidden text-text-secondary transition-transform sm:block",
+            isOpen ? "rotate-180" : "",
+          ].join(" ")}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          id="profile-dropdown"
+          className="absolute right-0 z-50 mt-3 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border-subtle bg-surface-elevated p-2 shadow-2xl"
+        >
+          {/* Account information */}
+          <div className="flex items-center gap-3 border-b border-border-subtle px-3 py-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-sm font-bold text-primary">
+              {initials}
+            </span>
+
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-text-primary">
+                {user?.username || "User"}
+              </p>
+              <p className="truncate text-xs text-text-secondary">
+                {user?.email}
+              </p>
+            </div>
+          </div>
+
+          {/* Account navigation */}
+          <div className="space-y-1 py-2">
             <button
-                onClick={() => setIsOpen((prev) => !prev)}
-                className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-700"
+              type="button"
+              onClick={() => closeAndNavigate("/profile")}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-text-secondary transition-colors hover:bg-white/5 hover:text-text-primary"
             >
-                <img
-                    //src={user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.username || "User")}`}
-                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.username || "User")}`}
-                    alt="User Avatar"
-                    className="w-6 h-6 rounded-full"
-                />
-                <span>{user?.username}</span>
-                <ChevronDown
-                    className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                />
+              <UserRound size={17} aria-hidden="true" />
+              {t("sidebar.profile", {
+                defaultValue: "Profile",
+              })}
             </button>
 
-            {/* Dropdown menu */}
-            {isOpen && (
-                <motion.div
-                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-48 bg-gray-800 text-white rounded shadow-lg z-50 flex flex-col gap-2 p-2"
-                >
-                    {/* PROFILE */}
-                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-[#2a2f4a]">
-                        <img
-                            //src={user?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.username || "User")}`}
-                            src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.username || "User")}`}
-                            className="w-8 h-8 rounded-full"
-                        />
-                        <div>
-                            <div className="text-sm font-medium">{user?.username}</div>
-                            <div className="text-xs text-gray-400">{user?.email}</div>
-                        </div>
-                    </div>
-                    {/* LANGUAGE */}
-                    <LanguageSwitcher />
-                    {/* SETTINGS */}
-                    <div className="mb-3">
-                        <div className="text-xs text-gray-400 mb-1">{t("Navbar.ProfileDropdown.settings")}</div>
-                        <div
-                            onClick={() => navigate("/settings")}
-                            className="p-2 hover:bg-[#2a2f4a] rounded cursor-pointer"
-                        >
-                            {t("Navbar.ProfileDropdown.settings")}
-                        </div>
+            <button
+              type="button"
+              onClick={() => closeAndNavigate("/settings")}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-text-secondary transition-colors hover:bg-white/5 hover:text-text-primary"
+            >
+              <Settings size={17} aria-hidden="true" />
+              {t("sidebar.settings", {
+                defaultValue: "Settings",
+              })}
+            </button>
+          </div>
 
-                    </div>
+          {/* Language selection */}
+          <div className="border-t border-border-subtle px-2 py-3">
+            <LanguageSwitcher />
+          </div>
 
-                    <button
-                        onClick={logout}
-                        className="p-2 hover:bg-[#2a2f4a] rounded cursor-pointer text-red-400"
-                    >
-                        {t("Navbar.ProfileDropdown.logout")}
-                    </button>
-                </motion.div>
-            )}
+          {/* Logout */}
+          <div className="border-t border-border-subtle pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                void logout();
+              }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-red-400 transition-colors hover:bg-red-500/10"
+            >
+              <LogOut size={17} aria-hidden="true" />
+              {t("Navbar.ProfileDropdown.logout", {
+                defaultValue: "Logout",
+              })}
+            </button>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 };

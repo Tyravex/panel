@@ -7,6 +7,7 @@ import { UsersModule } from '@/modules/users/users.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { StatusModule } from '@/modules/status/status.module';
 import { ServerModule } from '@/modules/server/server.module';
+import { ServicesModule } from '@/modules/services/services.module';
 import { NotificationsModule } from '@/modules/notifications/notifications.module';
 import { JobsModule } from '@/modules/jobs/jobs.module';
 import { NodesModule } from '@/modules/nodes/nodes.module';
@@ -22,6 +23,7 @@ import { RbacModule } from '@/rbac/rbac.module';
     StatusModule,
     UsersModule,
     ServerModule,
+    ServicesModule,
     AuthModule,
     NotificationsModule,
     JobsModule,
@@ -30,4 +32,4 @@ import { RbacModule } from '@/rbac/rbac.module';
   controllers: [],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {}

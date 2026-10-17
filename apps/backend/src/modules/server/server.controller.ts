@@ -1,8 +1,11 @@
+
 import {
   Body,
   Controller,
   ForbiddenException,
   Get,
+  Param,
+  ParseIntPipe,
   Post,
   Request,
   UseGuards,
@@ -22,11 +25,22 @@ interface AuthenticatedRequest {
 export class ServerController {
   constructor(
     private readonly serverService: ServerService,
-  ) { }
+  ) {}
 
   @Get()
   getUserServers(@Request() req: AuthenticatedRequest) {
     return this.serverService.getUserServers(req.user.id);
+  }
+
+  @Get(':id')
+  getUserServer(
+    @Request() req: AuthenticatedRequest,
+    @Param('id', ParseIntPipe) serverId: number,
+  ) {
+    return this.serverService.getUserServer(
+      serverId,
+      req.user.id,
+    );
   }
 
   @Post()

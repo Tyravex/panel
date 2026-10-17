@@ -26,6 +26,30 @@ const permissionNames = [
   'billing:manage',
 ] as const;
 
+// Default service categories for the Tyravex service catalog.
+const serviceCategories = [
+  {
+    key: 'server',
+    name: 'Servers',
+    description: 'Game servers, virtual servers, and other hosted servers.',
+  },
+  {
+    key: 'discord_bot',
+    name: 'Discord Bots',
+    description: 'Bots and applications hosted for Discord.',
+  },
+  {
+    key: 'telegram_bot',
+    name: 'Telegram Bots',
+    description: 'Bots and applications hosted for Telegram.',
+  },
+  {
+    key: 'other',
+    name: 'Other Services',
+    description: 'Additional hosted services and applications.',
+  },
+] as const;
+
 async function main() {
   // Create missing permissions without modifying existing ones.
   for (const name of permissionNames) {
@@ -60,13 +84,30 @@ async function main() {
     create: { name: 'User' },
   });
 
+  // Create missing service categories without overwriting existing settings.
+  for (const category of serviceCategories) {
+    await prisma.serviceCategory.upsert({
+      where: { key: category.key },
+      update: {},
+      create: {
+        key: category.key,
+        name: category.name,
+        description: category.description,
+      },
+    });
+  }
+
   console.log(`RBAC seed completed. Owner role ID: ${owner.id}`);
   console.log('No user accounts were assigned roles.');
+  console.log(
+    `Service catalog seed completed. ${serviceCategories.length} default categories checked.`,
+  );
+  console.log('Existing service categories and services were preserved.');
 }
 
 main()
   .catch((error) => {
-    console.error('RBAC seed failed:', error);
+    console.error('Database seed failed:', error);
     process.exitCode = 1;
   })
   .finally(async () => {

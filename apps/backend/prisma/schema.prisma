@@ -1,233 +1,279 @@
-// =============================================================================
-// Prisma configuration
-// =============================================================================
+ // =============================================================================
+ // Prisma configuration
+ // =============================================================================
 
-generator client {
-  provider     = "prisma-client-js"
-  moduleFormat = "cjs"
-}
+ generator client {
+   provider     = "prisma-client-js"
+   moduleFormat = "cjs"
+ }
 
-datasource db {
-  provider = "postgresql"
-}
+ datasource db {
+   provider = "postgresql"
+ }
 
-// =============================================================================
-// Identity and access management
-// =============================================================================
+ // =============================================================================
+ // Identity and access management
+ // =============================================================================
 
-model User {
-  id       Int    @id @default(autoincrement())
-  username String @unique
-  email    String @unique
-  password String
+ model User {
+   id       Int    @id @default(autoincrement())
+   username String @unique
+   email    String @unique
+   password String
 
-  avatar   String?
-  language String  @default("en")
+   avatar   String?
+   language String  @default("en")
 
-  // Global panel roles assigned to this user.
-  roles    UserRole[]
-  sessions Session[]
+   // Global panel roles assigned to this user.
+   roles    UserRole[]
+   sessions Session[]
 
-  notifications     Notification[]
-  servers           Server[]
-  serverMemberships ServerMember[]
-  jobs              Job[]
+   notifications     Notification[]
+   servers           Server[]
+   serverMemberships ServerMember[]
+   services          Service[]
+   jobs              Job[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+   createdAt DateTime @default(now())
+   updatedAt DateTime @updatedAt
+ }
 
-model Role {
-  id   String @id @default(cuid())
-  name String @unique
+ model Role {
+   id   String @id @default(cuid())
+   name String @unique
 
-  permissions Permission[]
-  users       UserRole[]
-}
+   permissions Permission[]
+   users       UserRole[]
+ }
 
-// Explicit membership allows future metadata such as assignedBy and expiresAt.
-model UserRole {
-  userId Int
-  roleId String
+ // Explicit membership allows future metadata such as assignedBy and expiresAt.
+ model UserRole {
+   userId Int
+   roleId String
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+   role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
-  assignedAt DateTime @default(now())
+   assignedAt DateTime @default(now())
 
-  @@id([userId, roleId])
-  @@index([roleId])
-}
+   @@id([userId, roleId])
+   @@index([roleId])
+ }
 
-model Permission {
-  id   String @id @default(cuid())
-  name String @unique
+ model Permission {
+   id   String @id @default(cuid())
+   name String @unique
 
-  roles Role[]
-}
+   roles Role[]
+ }
 
-// =============================================================================
-// Authentication sessions
-// =============================================================================
+ // =============================================================================
+ // Authentication sessions
+ // =============================================================================
 
-// Server-side session used to revoke JWT access before token expiration.
-model Session {
-  id String @id @default(cuid())
+ // Server-side session used to revoke JWT access before token expiration.
+ model Session {
+   id String @id @default(cuid())
 
-  userId Int
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+   userId Int
+   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Session validity is checked independently of JWT expiration.
-  expiresAt DateTime
-  revokedAt DateTime?
+   // Session validity is checked independently of JWT expiration.
+   expiresAt DateTime
+   revokedAt DateTime?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+   createdAt DateTime @default(now())
+   updatedAt DateTime @updatedAt
 
-  @@index([userId])
-  @@index([expiresAt])
-}
+   @@index([userId])
+   @@index([expiresAt])
+ }
 
-// =============================================================================
-// Notifications
-// =============================================================================
+ // =============================================================================
+ // Notifications
+ // =============================================================================
 
-model Notification {
-  id      Int     @id @default(autoincrement())
-  content String
-  read    Boolean @default(false)
+ model Notification {
+   id      Int     @id @default(autoincrement())
+   content String
+   read    Boolean @default(false)
 
-  userId Int
-  user   User @relation(fields: [userId], references: [id])
+   userId Int
+   user   User @relation(fields: [userId], references: [id])
 
-  createdAt DateTime @default(now())
-}
+   createdAt DateTime @default(now())
+ }
 
-// =============================================================================
-// Infrastructure and nodes
-// =============================================================================
+ // =============================================================================
+ // Infrastructure and nodes
+ // =============================================================================
 
-// Current connectivity or administrative state of a node.
-enum NodeStatus {
-  OFFLINE
-  ONLINE
-  MAINTENANCE
-}
+ // Current connectivity or administrative state of a node.
+ enum NodeStatus {
+   OFFLINE
+   ONLINE
+   MAINTENANCE
+ }
 
-// A machine running a Tyravex Agent.
-// Each node authenticates independently using its own token.
-model Node {
-  id     String     @id @default(cuid())
-  name   String
-  status NodeStatus @default(OFFLINE)
+ // A machine running a Tyravex Agent.
+ // Each node authenticates independently using its own token.
+ model Node {
+   id     String     @id @default(cuid())
+   name   String
+   status NodeStatus @default(OFFLINE)
 
-  // Store a cryptographic token hash, never the plaintext token.
-  tokenHash String @unique
+   // Store a cryptographic token hash, never the plaintext token.
+   tokenHash String @unique
 
-  lastSeenAt DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+   lastSeenAt DateTime?
+   createdAt  DateTime  @default(now())
+   updatedAt  DateTime  @updatedAt
 
-  @@index([status])
-}
+   @@index([status])
+ }
 
-// =============================================================================
-// Hosted servers
-// =============================================================================
+ // =============================================================================
+ // Service catalog
+ // =============================================================================
 
-model Server {
-  id   Int    @id @default(autoincrement())
-  name String
+ // A configurable category of hosted services.
+ // Examples include game servers, Discord bots, and Telegram bots.
+ model ServiceCategory {
+   id          String  @id @default(cuid())
+   key         String  @unique
+   name        String
+   description String?
 
-  status  String @default("offline")
-  cpu     Int    @default(0)
-  ram     Int    @default(0)
-  players Int    @default(0)
+   services Service[]
 
-  userId  Int
-  user    User           @relation(fields: [userId], references: [id])
-  members ServerMember[]
+   createdAt DateTime @default(now())
+   updatedAt DateTime @updatedAt
+ }
 
-  jobs Job[]
+ // A hosted service assigned to a panel user.
+ // Existing servers can be linked without changing their original records.
+ model Service {
+   id   String @id @default(cuid())
+   name String
 
-  createdAt DateTime @default(now())
-}
+   userId Int
+   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-// =============================================================================
-// Server-specific access control
-// =============================================================================
+   categoryId String
+   category   ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
-// A user invited to manage a specific server.
-// The server owner remains defined by Server.userId.
-model ServerMember {
-  id String @id @default(cuid())
+   // Optional reference to an existing hosted server.
+   // A server can be linked to at most one service.
+   serverId Int?    @unique
+   server   Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
 
-  serverId Int
-  userId   Int
+   createdAt DateTime @default(now())
+   updatedAt DateTime @updatedAt
 
-  server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+   @@index([userId, categoryId])
+   @@index([categoryId])
+ }
 
-  // Server-scoped permissions, independent of global panel roles.
-  permissions String[]
+ // =============================================================================
+ // Hosted servers
+ // =============================================================================
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+ model Server {
+   id   Int    @id @default(autoincrement())
+   name String
 
-  // A user can be a member of a server only once.
-  @@unique([serverId, userId])
-  @@index([userId])
-}
+   status  String @default("offline")
+   cpu     Int    @default(0)
+   ram     Int    @default(0)
+   players Int    @default(0)
 
-// =============================================================================
-// Background jobs
-// =============================================================================
+   userId  Int
+   user    User           @relation(fields: [userId], references: [id])
+   members ServerMember[]
 
-// Supported background operations in the Tyravex panel.
-enum JobType {
-  INSTALL
-  BACKUP
-  RESTART
-  REINSTALL
-}
+   // Optional catalog entry for this existing server.
+   service Service?
 
-// Lifecycle states shared by the API, workers, and UI.
-enum JobStatus {
-  PENDING
-  DISPATCHING
-  QUEUED
-  RUNNING
-  COMPLETED
-  FAILED
-  CANCELLED
-}
+   jobs Job[]
 
-model Job {
-  id       String    @id @default(cuid())
-  type     JobType
-  status   JobStatus @default(PENDING)
-  progress Int       @default(0)
+   createdAt DateTime @default(now())
+ }
 
-  // User who requested the operation.
-  userId Int
-  user   User @relation(fields: [userId], references: [id], onDelete: Restrict)
+ // =============================================================================
+ // Server-specific access control
+ // =============================================================================
 
-  // Some operations may not belong to a specific server.
-  serverId Int?
-  server   Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
+ // A user invited to manage a specific server.
+ // The server owner remains defined by Server.userId.
+ model ServerMember {
+   id String @id @default(cuid())
 
-  // BullMQ job reference and dispatcher recovery metadata.
-  queueJobId        String?   @unique
-  dispatchClaimedAt DateTime?
+   serverId Int
+   userId   Int
 
-  // Safe error summary; never store credentials or tokens.
-  errorMessage String? @db.Text
+   server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt  DateTime  @default(now())
-  startedAt  DateTime?
-  finishedAt DateTime?
+   // Server-scoped permissions, independent of global panel roles.
+   permissions String[]
 
-  @@index([userId, createdAt])
-  @@index([serverId, createdAt])
-  @@index([status, createdAt, id])
-}
+   createdAt DateTime @default(now())
+   updatedAt DateTime @updatedAt
+
+   // A user can be a member of a server only once.
+   @@unique([serverId, userId])
+   @@index([userId])
+ }
+
+ // =============================================================================
+ // Background jobs
+ // =============================================================================
+
+ // Supported background operations in the Tyravex panel.
+ enum JobType {
+   INSTALL
+   BACKUP
+   RESTART
+   REINSTALL
+ }
+
+ // Lifecycle states shared by the API, workers, and UI.
+ enum JobStatus {
+   PENDING
+   DISPATCHING
+   QUEUED
+   RUNNING
+   COMPLETED
+   FAILED
+   CANCELLED
+ }
+
+ model Job {
+   id       String    @id @default(cuid())
+   type     JobType
+   status   JobStatus @default(PENDING)
+   progress Int       @default(0)
+
+   // User who requested the operation.
+   userId Int
+   user   User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+   // Some operations may not belong to a specific server.
+   serverId Int?
+   server   Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
+
+   // BullMQ job reference and dispatcher recovery metadata.
+   queueJobId        String?   @unique
+   dispatchClaimedAt DateTime?
+
+   // Safe error summary; never store credentials or tokens.
+   errorMessage String? @db.Text
+
+   createdAt  DateTime  @default(now())
+   startedAt  DateTime?
+   finishedAt DateTime?
+
+   @@index([userId, createdAt])
+   @@index([serverId, createdAt])
+   @@index([status, createdAt, id])
+ }
