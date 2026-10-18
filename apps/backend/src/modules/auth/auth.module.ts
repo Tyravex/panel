@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { RegistrationSettingsService } from './registration-settings.service';
 import { RegistrationSettingsController } from './registration-settings.controller';
+import { RegistrationRateLimitGuard } from './guards/registration-rate-limit.guard';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
@@ -20,7 +21,7 @@ import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
     }),
   ],
   controllers: [AuthController, RegistrationSettingsController],
-  providers: [AuthService, RegistrationSettingsService, JwtStrategy, JwtAuthGuard, PermissionsGuard],
+  providers: [AuthService, RegistrationSettingsService, RegistrationRateLimitGuard, JwtStrategy, JwtAuthGuard, PermissionsGuard],
   exports: [JwtModule, JwtAuthGuard, RegistrationSettingsService],
 })
 export class AuthModule { }

@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegistrationSettingsService } from './registration-settings.service';
+import { RegistrationRateLimitGuard } from './guards/registration-rate-limit.guard';
 import { Response, Request } from 'express';
 import { AuthLoginRequest } from '@shared/types';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -21,6 +22,7 @@ export class AuthController {
     return { enabled: await this.registrationSettings?.isRegistrationEnabled() };
   }
 
+  @UseGuards(RegistrationRateLimitGuard)
   @Post('register')
   async register(@Body() body: any) {
     // Check the stored setting before any user creation attempt.
