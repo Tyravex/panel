@@ -20,7 +20,7 @@ describe('Auth register and refresh HTTP input boundaries', () => {
                 { provide: RegistrationSettingsService, useValue: { isRegistrationEnabled } },
             ],
         }).compile();
-        app = moduleRef.createNestApplication();
+        app = moduleRef.createNestApplication({ logger: false });
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
         app.use(cookieParser());
         await app.init();
@@ -29,19 +29,30 @@ describe('Auth register and refresh HTTP input boundaries', () => {
     beforeEach(() => { jest.resetAllMocks(); isRegistrationEnabled.mockResolvedValue(true); });
 
     it.each([
-        ['empty body', {}, undefined, undefined, undefined],
-        ['missing password', { username: 'tester', email: 'tester@example.invalid' }, 'tester', 'tester@example.invalid', undefined],
-        ['invalid types', { username: 123, email: false, password: [] }, 123, false, []],
-        ['extra fields', { username: 'tester', email: 'tester@example.invalid', password: 'secret', isAdmin: true }, 'tester', 'tester@example.invalid', 'secret'],
-    ])('forwards %s to register without DTO validation when enabled', async (_label, body, username, email, password) => {
+        ['empty body', {}],
+        ['missing password', { username: 'tester', email: 'tester@example.invalid' }],
+        ['invalid types', { username: 123, email: false, password: [] }],
+        ['extra fields', { username: 'tester', email: 'tester@example.invalid', password: 'secret-password-123', isAdmin: true }],
+        ['short password', { username: 'tester', email: 'tester@example.invalid', password: 'secret' }],
+        ['malformed email', { username: 'tester', email: 'invalid', password: 'secret-password-123' }],
+    ])('rejects %s with HTTP 400 before calling register', async (_label, body) => {
+        await request(app.getHttpServer()).post('/auth/register').send(body).expect(400);
+        expect(register).not.toHaveBeenCalled();
+    });
+
+    it('passes validated fields to registration service', async () => {
         register.mockResolvedValue({ id: 7 });
-        await request(app.getHttpServer()).post('/auth/register').send(body).expect(201);
-        expect(register).toHaveBeenCalledWith(username, email, password);
+        await request(app.getHttpServer()).post('/auth/register')
+            .send({ username: 'tester', email: 'tester@example.invalid', password: 'secret-password-123' })
+            .expect(201);
+        expect(register).toHaveBeenCalledWith('tester', 'tester@example.invalid', 'secret-password-123');
     });
 
     it('returns registration service validation errors as HTTP 400', async () => {
         register.mockRejectedValue(new BadRequestException('Invalid registration'));
-        await request(app.getHttpServer()).post('/auth/register').send({}).expect(400);
+        await request(app.getHttpServer()).post('/auth/register')
+            .send({ username: 'tester', email: 'tester@example.invalid', password: 'secret-password-123' })
+            .expect(400);
         expect(register).toHaveBeenCalledTimes(1);
     });
 

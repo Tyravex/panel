@@ -7,6 +7,7 @@ import { RegistrationSettingsService } from './registration-settings.service';
 import { Response, Request } from 'express';
 import { AuthLoginRequest } from '@shared/types';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { validateRegistrationInput } from './registration-input.validator';
 
 @Controller('auth')
 export class AuthController {
@@ -26,7 +27,12 @@ export class AuthController {
     if (!(await this.registrationSettings?.isRegistrationEnabled())) {
       throw new ForbiddenException('Public registration is disabled');
     }
-    return this.authService.register(body?.username, body?.email, body?.password);
+    const validated = validateRegistrationInput(body);
+    return this.authService.register(
+      validated.username,
+      validated.email,
+      validated.password,
+    );
   }
 
   @Post('login')

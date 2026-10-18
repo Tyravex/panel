@@ -5,6 +5,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { NotificationsGateway } from '@/modules/notifications/notifications.gateway';
 import { RegistrationSettingsService } from './registration-settings.service';
+import { validateRegistrationInput } from './registration-input.validator';
 
 @Injectable()
 export class AuthService {
@@ -162,12 +163,13 @@ export class AuthService {
       throw new ForbiddenException('Public registration is disabled');
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    const validated = validateRegistrationInput({ username, email, password });
+    const hashed = await bcrypt.hash(validated.password, 10);
 
     const user = await this.prisma.user.create({
       data: {
-        username,
-        email,
+        username: validated.username,
+        email: validated.email,
         password: hashed,
       },
     });

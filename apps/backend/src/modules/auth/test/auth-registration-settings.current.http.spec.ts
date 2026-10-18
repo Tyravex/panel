@@ -39,8 +39,8 @@ describe('Registration settings - public HTTP boundary', () => {
     it('allows registration only when persisted setting is enabled', async () => {
         isRegistrationEnabled.mockResolvedValue(true);
         const response = await request(app.getHttpServer()).post('/auth/register')
-            .send({ username: 'new-user', email: 'new@example.test', password: 'secret' }).expect(201);
-        expect(register).toHaveBeenCalledWith('new-user', 'new@example.test', 'secret');
+            .send({ username: 'new-user', email: 'new@example.test', password: 'secret-password-123' }).expect(201);
+        expect(register).toHaveBeenCalledWith('new-user', 'new@example.test', 'secret-password-123');
         expect(response.body).toEqual({ id: 42, username: 'new-user' });
     });
 
