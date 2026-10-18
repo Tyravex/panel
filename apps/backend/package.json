@@ -14,7 +14,7 @@
     "start:prod": "node dist/src/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest --testPathIgnorePatterns=\\.integration\\.spec\\.ts$",
-    "test:integration": "jest --runInBand --runTestsByPath src/rbac/rbac.integration.spec.ts",
+    "test:integration": "jest --runInBand --runTestsByPath src/rbac/test/rbac.integration.spec.ts",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
