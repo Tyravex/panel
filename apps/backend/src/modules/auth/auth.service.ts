@@ -1,9 +1,10 @@
 import * as bcrypt from 'bcryptjs';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthTokenResponse, JWTPayload, UserDTO } from '@shared/types';
 import { PrismaService } from '@/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { NotificationsGateway } from '@/modules/notifications/notifications.gateway';
+import { RegistrationSettingsService } from './registration-settings.service';
 
 @Injectable()
 export class AuthService {
@@ -11,6 +12,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly notificationsGateway: NotificationsGateway,
+    private readonly registrationSettings?: RegistrationSettingsService,
   ) { }
 
   async validateUser(
@@ -155,6 +157,11 @@ export class AuthService {
     email: string,
     password: string,
   ): Promise<UserDTO> {
+    // Fail closed when the setting is missing, disabled, or cannot be read.
+    if (!(await this.registrationSettings?.isRegistrationEnabled())) {
+      throw new ForbiddenException('Public registration is disabled');
+    }
+
     const hashed = await bcrypt.hash(password, 10);
 
     const user = await this.prisma.user.create({

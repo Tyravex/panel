@@ -2,13 +2,16 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@/prisma/prisma.service';
 import { NotificationsGateway } from '@/modules/notifications/notifications.gateway';
 import { AuthService } from '../auth.service';
+import { RegistrationSettingsService } from '../registration-settings.service';
 
 describe('AuthService registration input boundary characterization', () => {
     const create = jest.fn();
+    const isRegistrationEnabled = jest.fn();
     let service: AuthService;
 
     beforeEach(() => {
         jest.resetAllMocks();
+        isRegistrationEnabled.mockResolvedValue(true);
         create.mockResolvedValue({
             id: 27,
             username: 'new-user',
@@ -20,6 +23,7 @@ describe('AuthService registration input boundary characterization', () => {
             { user: { create } } as unknown as PrismaService,
             {} as JwtService,
             {} as NotificationsGateway,
+            { isRegistrationEnabled } as unknown as RegistrationSettingsService,
         );
     });
 

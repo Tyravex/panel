@@ -3,9 +3,11 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@/prisma/prisma.service';
 import { NotificationsGateway } from '@/modules/notifications/notifications.gateway';
 import { AuthService } from '../auth.service';
+import { RegistrationSettingsService } from '../registration-settings.service';
 
 describe('AuthService registration persistence security', () => {
     const create = jest.fn();
+    const isRegistrationEnabled = jest.fn();
     let service: AuthService;
 
     const storedUser = () => ({
@@ -24,10 +26,12 @@ describe('AuthService registration persistence security', () => {
     beforeEach(() => {
         jest.resetAllMocks();
         create.mockResolvedValue(storedUser());
+        isRegistrationEnabled.mockResolvedValue(true);
         service = new AuthService(
             { user: { create } } as unknown as PrismaService,
             {} as JwtService,
             {} as NotificationsGateway,
+            { isRegistrationEnabled } as unknown as RegistrationSettingsService,
         );
     });
 
