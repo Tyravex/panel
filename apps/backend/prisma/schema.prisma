@@ -193,7 +193,7 @@ model Server {
   user    User           @relation(fields: [userId], references: [id])
   members ServerMember[]
 
-  // Optional catalog entry for this existing server.
+  // Optional catalog entry for this existing hosted server.
   service Service?
 
   jobs Job[]
@@ -278,6 +278,17 @@ model Job {
   @@index([userId, createdAt])
   @@index([serverId, createdAt])
   @@index([status, createdAt, id])
+}
+
+// =============================================================================
+// Panel settings
+// =============================================================================
+
+// Persisted panel-wide settings. Public registration is disabled by default.
+model PanelSetting {
+  key          String   @id
+  booleanValue Boolean
+  updatedAt    DateTime @updatedAt
 }
 
 // =============================================================================
