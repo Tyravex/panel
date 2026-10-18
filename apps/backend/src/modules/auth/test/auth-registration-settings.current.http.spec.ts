@@ -4,6 +4,7 @@ import request from 'supertest';
 import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
 import { RegistrationSettingsService } from '../registration-settings.service';
+import { RegistrationRateLimitGuard } from '../guards/registration-rate-limit.guard';
 
 describe('Registration settings - public HTTP boundary', () => {
     let app: INestApplication;
@@ -17,7 +18,10 @@ describe('Registration settings - public HTTP boundary', () => {
                 { provide: AuthService, useValue: { register } },
                 { provide: RegistrationSettingsService, useValue: { isRegistrationEnabled } },
             ],
-        }).compile();
+        })
+            .overrideGuard(RegistrationRateLimitGuard)
+            .useValue({ canActivate: () => true })
+            .compile();
         app = moduleRef.createNestApplication({ logger: false });
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
         await app.init();

@@ -5,6 +5,7 @@ import request from 'supertest';
 import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
 import { RegistrationSettingsService } from '../registration-settings.service';
+import { RegistrationRateLimitGuard } from '../guards/registration-rate-limit.guard';
 
 describe('Auth login HTTP input validation', () => {
     let app: INestApplication;
@@ -19,7 +20,10 @@ describe('Auth login HTTP input validation', () => {
                 // Login does not use registration settings, but the controller requires this dependency.
                 { provide: RegistrationSettingsService, useValue: { isRegistrationEnabled: jest.fn() } },
             ],
-        }).compile();
+        })
+            .overrideGuard(RegistrationRateLimitGuard)
+            .useValue({ canActivate: () => true })
+            .compile();
         app = moduleRef.createNestApplication();
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
         app.use(cookieParser());

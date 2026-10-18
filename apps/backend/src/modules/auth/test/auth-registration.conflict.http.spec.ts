@@ -7,6 +7,7 @@ import { NotificationsGateway } from '@/modules/notifications/notifications.gate
 import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
 import { RegistrationSettingsService } from '../registration-settings.service';
+import { RegistrationRateLimitGuard } from '../guards/registration-rate-limit.guard';
 
 describe('Registration unique conflict and HTTP sanitization', () => {
     const create = jest.fn();
@@ -30,7 +31,10 @@ describe('Registration unique conflict and HTTP sanitization', () => {
                 { provide: NotificationsGateway, useValue: {} },
                 { provide: RegistrationSettingsService, useValue: { isRegistrationEnabled } },
             ],
-        }).compile();
+        })
+            .overrideGuard(RegistrationRateLimitGuard)
+            .useValue({ canActivate: () => true })
+            .compile();
         app = moduleRef.createNestApplication({ logger: false });
         await app.init();
         service = app.get(AuthService);

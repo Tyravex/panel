@@ -10,6 +10,7 @@ import { RegistrationRateLimitGuard } from './guards/registration-rate-limit.gua
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
+import { RegistrationRateLimitStore } from './registration-rate-limit.store';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
     }),
   ],
   controllers: [AuthController, RegistrationSettingsController],
-  providers: [AuthService, RegistrationSettingsService, RegistrationRateLimitGuard, JwtStrategy, JwtAuthGuard, PermissionsGuard],
+  providers: [AuthService, RegistrationSettingsService, RegistrationRateLimitGuard, JwtStrategy, JwtAuthGuard, PermissionsGuard, RegistrationRateLimitStore ],
   exports: [JwtModule, JwtAuthGuard, RegistrationSettingsService],
 })
 export class AuthModule { }
