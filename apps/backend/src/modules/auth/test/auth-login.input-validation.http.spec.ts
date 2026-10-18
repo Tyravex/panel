@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
+import { RegistrationSettingsService } from '../registration-settings.service';
 
 describe('Auth login HTTP input validation', () => {
     let app: INestApplication;
@@ -13,7 +14,11 @@ describe('Auth login HTTP input validation', () => {
     beforeAll(async () => {
         const moduleRef = await Test.createTestingModule({
             controllers: [AuthController],
-            providers: [{ provide: AuthService, useValue: { validateUser, login } }],
+            providers: [
+                { provide: AuthService, useValue: { validateUser, login } },
+                // Login does not use registration settings, but the controller requires this dependency.
+                { provide: RegistrationSettingsService, useValue: { isRegistrationEnabled: jest.fn() } },
+            ],
         }).compile();
         app = moduleRef.createNestApplication();
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
