@@ -18,7 +18,7 @@ describe('Registration settings - public HTTP boundary', () => {
                 { provide: RegistrationSettingsService, useValue: { isRegistrationEnabled } },
             ],
         }).compile();
-        app = moduleRef.createNestApplication();
+        app = moduleRef.createNestApplication({ logger: false });
         app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
         await app.init();
     });
