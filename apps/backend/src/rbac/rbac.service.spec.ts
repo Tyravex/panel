@@ -36,7 +36,7 @@ describe('RbacService', () => {
         jest.resetAllMocks();
         transaction.mockImplementation(async (callback) => callback(tx));
         roleFindUnique.mockResolvedValue({ id: 'owner-role-id', name: 'Owner' });
-        userFindUnique.mockResolvedValue({ id: 1 });
+        userFindUnique.mockResolvedValue({ id: 1, isActive: true });
         membershipFindUnique.mockResolvedValue({ userId: 1, roleId: 'owner-role-id' });
         queryRaw.mockResolvedValue([]);
     });

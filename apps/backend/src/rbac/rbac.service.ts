@@ -9,7 +9,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 
 @Injectable()
 export class RbacService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) { }
 
     async listPermissions() {
         return this.prisma.permission.findMany({
@@ -168,7 +168,13 @@ export class RbacService {
                 where: { userId_roleId: { userId, roleId } },
             });
             if (!membership) throw new NotFoundException('Role assignment not found');
-            if (role.name === 'Owner') {
+            // Only removing an active Owner can reduce the active Owner count.
+            const targetUser = await tx.user.findUnique({
+                where: { id: userId },
+                select: { isActive: true },
+            });
+
+            if (role.name === 'Owner' && targetUser?.isActive) {
                 const ownerCount = await tx.userRole.count({
                     where: { role: { name: 'Owner' }, user: { isActive: true } },
                 });
