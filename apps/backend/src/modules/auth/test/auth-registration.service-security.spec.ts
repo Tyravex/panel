@@ -1,4 +1,5 @@
 import * as bcrypt from 'bcryptjs';
+import { ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@/prisma/prisma.service';
 import { NotificationsGateway } from '@/modules/notifications/notifications.gateway';
@@ -84,12 +85,29 @@ describe('AuthService registration persistence security', () => {
         expect(create).toHaveBeenCalledTimes(1);
     });
 
-    it('does not return a profile when a unique constraint rejects the insert', async () => {
-        const conflict = Object.assign(new Error('Unique constraint failed'), { code: 'P2002' });
-        create.mockRejectedValue(conflict);
+    it.each([
+        ['username', 'Ta nazwa użytkownika jest już zajęta. Wybierz inną.'],
+        ['email', 'Ten adres e-mail jest już używany.'],
+    ])('maps duplicate %s to a specific conflict message', async (field, message) => {
+        create.mockRejectedValue(Object.assign(new Error('Sensitive database detail'), {
+            code: 'P2002', meta: { target: [field] },
+        }));
 
         await expect(service.register('new-user', 'new-user@example.invalid', 'secret-password-123'))
-            .rejects.toMatchObject({ code: 'P2002' });
+            .rejects.toThrow(new ConflictException(message));
+        expect(create).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+        undefined,
+        { target: ['other_field'] },
+        { target: ['username', 'email'] },
+        { target: 'users_email_key' },
+    ])('uses a generic message for unknown unique constraints (%p)', async (meta) => {
+        create.mockRejectedValue({ code: 'P2002', meta, message: 'Sensitive database detail' });
+
+        await expect(service.register('new-user', 'new-user@example.invalid', 'secret-password-123'))
+            .rejects.toThrow(new ConflictException('Nie można utworzyć konta z podanymi danymi.'));
         expect(create).toHaveBeenCalledTimes(1);
     });
 });

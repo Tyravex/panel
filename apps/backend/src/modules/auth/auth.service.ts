@@ -1,5 +1,5 @@
 import * as bcrypt from 'bcryptjs';
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthTokenResponse, JWTPayload, UserDTO } from '@shared/types';
 import { PrismaService } from '@/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -166,13 +166,36 @@ export class AuthService {
     const validated = validateRegistrationInput({ username, email, password });
     const hashed = await bcrypt.hash(validated.password, 10);
 
-    const user = await this.prisma.user.create({
-      data: {
-        username: validated.username,
-        email: validated.email,
-        password: hashed,
-      },
-    });
+    let user;
+    try {
+      user = await this.prisma.user.create({
+        data: {
+          username: validated.username,
+          email: validated.email,
+          password: hashed,
+        },
+      });
+    } catch (error: unknown) {
+      // Map only recognized unique fields to user-friendly messages.
+      if (error !== null && typeof error === 'object' &&
+        'code' in error && error.code === 'P2002') {
+        const meta = 'meta' in error ? error.meta : undefined;
+        const target = meta !== null && typeof meta === 'object' &&
+          'target' in meta ? meta.target : undefined;
+        const fields = Array.isArray(target) &&
+          target.every((field) => typeof field === 'string')
+          ? target : typeof target === 'string' ? [target] : [];
+
+        if (fields.length === 1 && fields[0] === 'username') {
+          throw new ConflictException('Ta nazwa użytkownika jest już zajęta. Wybierz inną.');
+        }
+        if (fields.length === 1 && fields[0] === 'email') {
+          throw new ConflictException('Ten adres e-mail jest już używany.');
+        }
+        throw new ConflictException('Nie można utworzyć konta z podanymi danymi.');
+      }
+      throw error;
+    }
 
     return this.toUserDTO(user);
   }
