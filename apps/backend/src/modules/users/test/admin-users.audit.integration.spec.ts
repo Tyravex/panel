@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '@/prisma/prisma.service';
+import { requireIntegrationDatabase } from '../../../test/test-database.guard';
 import { AdminUsersService } from '../admin-users.service';
 
 describe('Admin users audit rollback (real PostgreSQL)', () => {
@@ -8,9 +9,7 @@ describe('Admin users audit rollback (real PostgreSQL)', () => {
     let service: AdminUsersService;
 
     beforeAll(async () => {
-        if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL is required for this integration test.');
-        }
+        requireIntegrationDatabase();
         prisma = new PrismaService();
         await prisma.$connect();
         service = new AdminUsersService(prisma);

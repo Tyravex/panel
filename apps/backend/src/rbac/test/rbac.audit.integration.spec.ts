@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '@/prisma/prisma.service';
+import { requireIntegrationDatabase } from '../../test/test-database.guard';
 import { RbacService } from '../rbac.service';
 
 describe('RBAC audit transaction rollback (real PostgreSQL)', () => {
@@ -8,9 +9,7 @@ describe('RBAC audit transaction rollback (real PostgreSQL)', () => {
     let service: RbacService;
 
     beforeAll(async () => {
-        if (!process.env.DATABASE_URL) {
-            throw new Error('DATABASE_URL is required for the PostgreSQL integration test.');
-        }
+        requireIntegrationDatabase();
         prisma = new PrismaService();
         await prisma.$connect();
         service = new RbacService(prisma);
@@ -39,8 +38,7 @@ describe('RBAC audit transaction rollback (real PostgreSQL)', () => {
                 service.createRole({ name, permissionIds: [] }, missingActorId),
             ).rejects.toThrow();
 
-            // If the audit insert fails inside the same transaction, the role
-            // created earlier in that transaction must not survive.
+            // The role insert must be rolled back when the audit insert fails.
             const persistedRole = await prisma.role.findUnique({
                 where: { name },
                 select: { id: true },
@@ -56,8 +54,7 @@ describe('RBAC audit transaction rollback (real PostgreSQL)', () => {
             });
             expect(auditEntries).toBe(0);
         } finally {
-            // Defensive cleanup in case a regression unexpectedly commits the role.
-            // Only touches the uniquely named test role, never existing data.
+            // Remove only our uniquely named role if a regression committed it.
             const leftover = await prisma.role.findUnique({
                 where: { name },
                 select: { id: true },
