@@ -26,8 +26,9 @@ model User {
   language String  @default("en")
 
   // Global panel roles assigned to this user.
-  roles    UserRole[]
-  sessions Session[]
+  roles     UserRole[]
+  sessions  Session[]
+  auditLogs AdminAuditLog[]
 
   notifications     Notification[]
   servers           Server[]
@@ -277,4 +278,33 @@ model Job {
   @@index([userId, createdAt])
   @@index([serverId, createdAt])
   @@index([status, createdAt, id])
+}
+
+// =============================================================================
+// Administrative audit trail
+// =============================================================================
+
+model AdminAuditLog {
+  id String @id @default(cuid())
+
+  // Administrator who performed the operation.
+  actorId Int?
+  actor   User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  // Examples: USER_CREATED, USER_DISABLED, ROLE_ASSIGNED.
+  action String
+
+  // Resource affected by the operation.
+  targetType String
+  targetId   String
+
+  // Only explicitly approved, non-sensitive metadata is stored.
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
 }

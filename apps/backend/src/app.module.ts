@@ -9,6 +9,7 @@ import { StatusModule } from '@/modules/status/status.module';
 import { ServerModule } from '@/modules/server/server.module';
 import { ServicesModule } from '@/modules/services/services.module';
 import { NotificationsModule } from '@/modules/notifications/notifications.module';
+import { AdminAuditModule } from './modules/audit/admin-audit.module';
 import { JobsModule } from '@/modules/jobs/jobs.module';
 import { NodesModule } from '@/modules/nodes/nodes.module';
 import { RbacModule } from '@/rbac/rbac.module';
@@ -28,8 +29,9 @@ import { RbacModule } from '@/rbac/rbac.module';
     NotificationsModule,
     JobsModule,
     NodesModule,
+    AdminAuditModule,
   ],
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule { }

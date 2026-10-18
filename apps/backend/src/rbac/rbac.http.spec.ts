@@ -176,7 +176,7 @@ describe('RbacController HTTP security', () => {
             .set('Authorization', `Bearer ${token}`)
             .expect(204);
 
-        expect(revokeRole).toHaveBeenCalledWith(2, 'test-role');
+        expect(revokeRole).toHaveBeenCalledWith(2, 'test-role', 3);
         expect(revokeRole).toHaveBeenCalledTimes(1);
     });
 });

@@ -21,11 +21,15 @@ export class AdminUsersController {
 
   @Post()
   @Permissions('user:manage')
-  create(@Body() body: { username?: string; email?: string; password?: string }) { return this.users.create(body); }
+  create(@Body() body: { username?: string; email?: string; password?: string }, @Req() req: { user: { id: number } }) {
+    return this.users.create(body, req.user.id);
+  }
 
   @Patch(':id')
   @Permissions('user:manage')
-  update(@Param('id', ParseIntPipe) id: number, @Body() body: { username?: string; email?: string }) { return this.users.update(id, body); }
+  update(@Param('id', ParseIntPipe) id: number, @Body() body: { username?: string; email?: string }, @Req() req: { user: { id: number } }) {
+    return this.users.update(id, body, req.user.id);
+  }
 
   @Patch(':id/status')
   @Permissions('user:manage')

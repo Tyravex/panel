@@ -58,19 +58,37 @@ export class AdminUsersService {
     }
   }
 
-  async create(input: { username?: string; email?: string; password?: string }) {
+  async create(input: { username?: string; email?: string; password?: string }, actorId?: number) {
     const identity = this.validateIdentity(input?.username, input?.email);
     if (typeof input?.password !== 'string' || input.password.length < 12 || input.password.length > 128) throw new BadRequestException('Password must be 12-128 characters');
     const password = await bcrypt.hash(input.password, 12);
-    return this.unique(() => this.prisma.user.create({ data: { ...identity, password }, select: safeUserSelect }));
+    return this.unique(() => this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({ data: { ...identity, password }, select: safeUserSelect });
+      if (actorId !== undefined) {
+        await tx.adminAuditLog.create({ data: {
+          actorId, action: 'USER_CREATED', targetType: 'USER', targetId: String(user.id),
+          metadata: { username: identity.username },
+        } });
+      }
+      return user;
+    }));
   }
 
-  async update(id: number, input: { username?: string; email?: string }) {
+  async update(id: number, input: { username?: string; email?: string }, actorId?: number) {
     if (!Number.isSafeInteger(id) || id <= 0) throw new BadRequestException('Invalid user ID');
     const identity = this.validateIdentity(input?.username, input?.email);
     const existing = await this.prisma.user.findUnique({ where: { id }, select: { id: true } });
     if (!existing) throw new NotFoundException('User not found');
-    return this.unique(() => this.prisma.user.update({ where: { id }, data: identity, select: safeUserSelect }));
+    return this.unique(() => this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({ where: { id }, data: identity, select: safeUserSelect });
+      if (actorId !== undefined) {
+        await tx.adminAuditLog.create({ data: {
+          actorId, action: 'USER_UPDATED', targetType: 'USER', targetId: String(id),
+          metadata: { username: identity.username },
+        } });
+      }
+      return user;
+    }));
   }
 
   async setActive(id: number, isActive: unknown, actorId: number) {
@@ -89,6 +107,12 @@ export class AdminUsersService {
       if (!isActive) {
         // Revocation is committed atomically with account deactivation.
         await tx.session.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });
+      }
+      if (target.isActive !== isActive) {
+        await tx.adminAuditLog.create({ data: {
+          actorId, action: isActive ? 'USER_ENABLED' : 'USER_DISABLED',
+          targetType: 'USER', targetId: String(id),
+        } });
       }
       return user;
     });

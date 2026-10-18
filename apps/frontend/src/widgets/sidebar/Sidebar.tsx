@@ -36,7 +36,7 @@ const adminSections: Section[] = [
   {
     id: "system", label: "System", icon: Settings,
     items: [
-      { label: "Audit Logs", icon: ClipboardList },
+      { path: "/admin/audit", label: "Audit Logs", icon: ClipboardList, permission: "role:manage", },
       { label: "Settings", icon: Settings },
       { label: "Maintenance", icon: Wrench },
       { label: "Security", icon: LockKeyhole },

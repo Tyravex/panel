@@ -39,9 +39,9 @@ describe('RbacController', () => {
     it('delegates role revocation to RbacService', async () => {
         revokeRole.mockResolvedValue(undefined);
 
-        await controller.revokeRole(1, 'role-id');
+        await controller.revokeRole(1, 'role-id', { user: { id: 7 } });
 
-        expect(revokeRole).toHaveBeenCalledWith(1, 'role-id');
+        expect(revokeRole).toHaveBeenCalledWith(1, 'role-id', 7);
         expect(revokeRole).toHaveBeenCalledTimes(1);
     });
 });
