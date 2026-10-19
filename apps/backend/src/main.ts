@@ -1,11 +1,17 @@
+
 import 'dotenv/config';
 import cookieParser from 'cookie-parser';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { AppModule } from './app.module';
+import { getCorsOrigins } from './cors-origins';
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
+  const corsOrigins = getCorsOrigins();
+  const port = Number(process.env.PORT || 3000);
+
   const app = await NestFactory.create(AppModule);
+
   // Reject unknown request fields and transform validated DTOs.
   app.useGlobalPipes(
     new ValidationPipe({
@@ -14,20 +20,19 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  // Enable cookie parsing middleware
+
+  // Enable cookie parsing middleware.
   app.use(cookieParser());
 
-  // Enable CORS with credentials (required for cookies)
+  // Restrict credentialed cross-origin requests to configured origins.
   app.enableCors({
-    origin: ['http://localhost:5173'],
+    origin: corsOrigins,
     credentials: true,
   });
 
-  await app.listen(process.env.PORT || 3000);
+  await app.listen(port);
 
-  console.log(
-    `Server running on port ${process.env.PORT || 3000}`,
-  );
+  console.log(`Server running on port ${port}`);
 }
 
-bootstrap();
+void bootstrap();
