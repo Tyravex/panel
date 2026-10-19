@@ -1,5 +1,6 @@
 import { Injectable, OnModuleDestroy, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHash } from 'node:crypto';
 import Redis from 'ioredis';
 
 const WINDOW_SECONDS = 15 * 60;
@@ -16,6 +17,7 @@ return {count, ttl}
 @Injectable()
 export class RegistrationRateLimitStore implements OnModuleDestroy {
     private readonly redis: Redis | null;
+    private connectionPromise: Promise<void> | null = null;
 
     constructor(config: ConfigService) {
         const url = config.get<string>('REDIS_URL');
@@ -29,12 +31,26 @@ export class RegistrationRateLimitStore implements OnModuleDestroy {
         this.redis?.on('error', () => { /* Requests fail closed on Redis errors. */ });
     }
 
+    private async ensureConnected(): Promise<void> {
+        const redis = this.redis;
+        if (!redis) throw new ServiceUnavailableException('Registration temporarily unavailable');
+        if (redis.status === 'ready') return;
+
+        // Share the initial connection attempt across concurrent requests.
+        if (!this.connectionPromise) {
+            if (redis.status !== 'wait') throw new Error('Redis connection is unavailable');
+            this.connectionPromise = redis.connect();
+        }
+        await this.connectionPromise;
+        // Read the current status after the asynchronous connection completes.
+        if (String(redis.status) !== 'ready') throw new Error('Redis is not ready');
+    }
+
     async consume(ip: string): Promise<{ allowed: boolean; retryAfter: number }> {
         if (!this.redis) throw new ServiceUnavailableException('Registration temporarily unavailable');
         try {
-            if (this.redis.status === 'wait') await this.redis.connect();
+            await this.ensureConnected();
             // Avoid storing raw client addresses as Redis keys.
-            const { createHash } = await import('node:crypto');
             const digest = createHash('sha256').update(ip).digest('hex');
             const result = await this.redis.eval(SCRIPT, 1, `registration:rate:${digest}`, WINDOW_SECONDS);
             if (!Array.isArray(result) || result.length !== 2) throw new Error('Unexpected Redis response');
@@ -48,6 +64,6 @@ export class RegistrationRateLimitStore implements OnModuleDestroy {
     }
 
     async onModuleDestroy(): Promise<void> {
-        if (this.redis) this.redis.disconnect();
+        this.redis?.disconnect();
     }
 }
