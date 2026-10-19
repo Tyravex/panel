@@ -5,13 +5,16 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { getCorsOrigins } from './cors-origins';
 import { validateJwtEnvironment } from './env-validation';
+import { getRuntimeConfig } from './runtime-config';
 
 async function bootstrap(): Promise<void> {
   // Validate critical secrets before initializing NestJS.
   validateJwtEnvironment();
 
+  // Validate database configuration and listening port.
+  const { port } = getRuntimeConfig();
+
   const corsOrigins = getCorsOrigins();
-  const port = Number(process.env.PORT || 3000);
 
   const app = await NestFactory.create(AppModule);
 
