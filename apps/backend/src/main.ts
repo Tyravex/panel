@@ -1,12 +1,15 @@
-
 import 'dotenv/config';
 import cookieParser from 'cookie-parser';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { getCorsOrigins } from './cors-origins';
+import { validateJwtEnvironment } from './env-validation';
 
 async function bootstrap(): Promise<void> {
+  // Validate critical secrets before initializing NestJS.
+  validateJwtEnvironment();
+
   const corsOrigins = getCorsOrigins();
   const port = Number(process.env.PORT || 3000);
 
