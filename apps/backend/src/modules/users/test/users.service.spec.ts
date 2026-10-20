@@ -4,16 +4,23 @@ import { PrismaService } from '../../../prisma/prisma.service';
 
 describe('UsersService', () => {
   const update = jest.fn();
+  const findFirst = jest.fn();
 
   const prisma = {
     user: { update },
+    language: { findFirst },
   };
 
   let service: UsersService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    service = new UsersService(prisma as unknown as PrismaService);
+    jest.resetAllMocks();
+
+    findFirst.mockResolvedValue({ code: 'pl' });
+
+    service = new UsersService(
+      prisma as unknown as PrismaService,
+    );
   });
 
   it('excludes password from updated user preferences', async () => {
@@ -31,6 +38,16 @@ describe('UsersService', () => {
       language: 'pl',
     });
 
+    expect(findFirst).toHaveBeenCalledWith({
+      where: {
+        code: 'pl',
+        isEnabled: true,
+      },
+      select: {
+        code: true,
+      },
+    });
+
     expect(update).toHaveBeenCalledWith({
       where: { id: 1 },
       data: { language: 'pl' },
@@ -46,6 +63,16 @@ describe('UsersService', () => {
     });
 
     expect(result).not.toHaveProperty('password');
+  });
+
+  it('rejects a language that is not enabled', async () => {
+    findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.updatePreferences(1, { language: 'pl' }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(update).not.toHaveBeenCalled();
   });
 
   describe('updateProfile', () => {
@@ -135,9 +162,9 @@ describe('UsersService', () => {
       ['name longer than 80 characters', { firstName: 'A'.repeat(81) }],
       ['invalid characters', { firstName: '<script>' }],
     ])('rejects %s without writing to the database', async (_label, body) => {
-      await expect(service.updateProfile(12, body)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.updateProfile(12, body),
+      ).rejects.toThrow(BadRequestException);
 
       expect(update).not.toHaveBeenCalled();
     });
