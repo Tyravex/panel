@@ -20,11 +20,19 @@ import { UserDTO } from '@shared/types';
 @Controller('user')
 @UseGuards(JwtAuthGuard)
 export class UserController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Get('me')
   getMe(@Request() req: any) {
     return req.user;
+  }
+
+  @Patch('profile')
+  async updateProfile(
+    @Req() req: ExpressRequest & { user: UserDTO },
+    @Body() data: unknown,
+  ) {
+    return this.usersService.updateProfile(req.user.id, data);
   }
 
   @Patch('preferences')

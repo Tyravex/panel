@@ -1,27 +1,58 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { AlertTriangle } from 'lucide-react';
 
-export const TyravexLogo = () => (
-  <div className="flex items-center gap-4">
-    <div className="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center text-2xl font-bold">
-      T
-    </div>
-    <h1 className="text-6xl font-bold tracking-tight">tyravex</h1>
-  </div>
-);
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { AuthCard } from '@/features/auth/components/AuthCard';
+import { AuthHeader } from '@/features/auth/components/AuthHeader';
+import { AuthInput } from '@/features/auth/components/AuthInput';
+import { AuthSubmitButton } from '@/features/auth/components/AuthSubmitButton';
+import { api } from '@/shared/api/client';
+
+type LoginNavigationState = {
+  logoutWarning?: boolean;
+};
 
 export const LoginPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registrationEnabled, setRegistrationEnabled] = useState(false);
 
-  const submit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const logoutWarning =
+    (location.state as LoginNavigationState | null)
+      ?.logoutWarning === true;
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    api
+      .get<{ enabled: boolean }>('/auth/registration-settings', {
+        signal: controller.signal,
+      })
+      .then(({ data }) => {
+        if (!controller.signal.aborted) {
+          setRegistrationEnabled(data.enabled === true);
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setRegistrationEnabled(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
     if (isSubmitting) return;
 
@@ -29,59 +60,102 @@ export const LoginPage = () => {
     setError(null);
 
     try {
-      const authenticated = await login({ usernameOrEmail, password });
+      const authenticated = await login({
+        usernameOrEmail,
+        password,
+      });
 
       if (authenticated) {
-        navigate('/dashboard', { replace: true });
+        navigate('/dashboard', {
+          replace: true,
+          state: null,
+        });
       }
-    } catch (err) {
-      console.error('Login failed:', err);
-      setError('Login failed. Check your credentials and try again.');
+    } catch {
+      setError(t('auth.login.error'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 backdrop-blur p-8 shadow-xl">
-      <h2 className="text-xl mb-4">Login</h2>
+    <AuthCard>
+      <AuthHeader
+        title={t('auth.login.title')}
+        description={t('auth.login.description')}
+      />
 
-      <form onSubmit={submit} className="text-2xl font-semibold mb-6">
-        <div className="space-y-4">
-          <input
-            placeholder="Username or email"
-            autoComplete="username"
-            required
-            value={usernameOrEmail}
-            onChange={(e) => setUsernameOrEmail(e.target.value)}
-            className="w-full rounded-lg bg-white/10 p-3 outline-none"
+      {logoutWarning && (
+        <div
+          role="alert"
+          className="mb-6 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200"
+        >
+          <AlertTriangle
+            size={20}
+            aria-hidden="true"
+            className="mt-0.5 shrink-0"
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg bg-white/10 p-3 outline-none"
-          />
-
-          {error && (
-            <p role="alert" className="text-sm font-normal text-red-400">
-              {error}
+          <div className="space-y-1">
+            <p className="font-semibold">
+              {t('auth.logout.warningTitle')}
             </p>
-          )}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full rounded-lg bg-white text-black p-3 font-semibold disabled:opacity-50"
-          >
-            {isSubmitting ? 'Logging in...' : 'Login'}
-          </button>
+            <p>
+              {t('auth.logout.warningDescription')}
+            </p>
+          </div>
         </div>
+      )}
+
+      <form onSubmit={submit} className="space-y-5">
+        <AuthInput
+          id="login-identity"
+          label={t('auth.login.identity')}
+          type="text"
+          placeholder={t('auth.login.identityPlaceholder')}
+          autoComplete="username"
+          required
+          value={usernameOrEmail}
+          onChange={(event) => setUsernameOrEmail(event.target.value)}
+        />
+
+        <AuthInput
+          id="login-password"
+          label={t('auth.login.password')}
+          type="password"
+          placeholder={t('auth.login.passwordPlaceholder')}
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+
+        {error && (
+          <p role="alert" className="text-sm text-red-400">
+            {error}
+          </p>
+        )}
+
+        <AuthSubmitButton
+          isSubmitting={isSubmitting}
+          label={t('auth.login.submit')}
+          submittingLabel={t('auth.login.submitting')}
+        />
       </form>
-    </div>
+
+      {registrationEnabled && (
+        <div className="mt-6 border-t border-border-subtle pt-6 text-center text-sm text-text-secondary">
+          {t('auth.login.noAccount')}{' '}
+
+          <Link
+            to="/register"
+            className="font-semibold text-primary hover:underline"
+          >
+            {t('auth.login.registerLink')}
+          </Link>
+        </div>
+      )}
+    </AuthCard>
   );
 };

@@ -1,4 +1,3 @@
-
 import { useNavigate } from 'react-router-dom';
 
 import { api } from '@/shared/api/client';
@@ -17,19 +16,23 @@ export const useLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('access_token');
 
+    let serverLogoutFailed = false;
+
     try {
       await api.post('/auth/logout');
     } catch (error) {
       console.error('Server logout failed:', error);
 
-      // Keep the user signed out locally, but report that the
-      // server-side session might still be active.
-      window.alert(
-        'Nie udało się potwierdzić wylogowania na serwerze. ' +
-        'Sesja może nadal być aktywna. Spróbuj ponownie później.',
-      );
+      // The local session is already cleared, but the server-side
+      // session may still be active.
+      serverLogoutFailed = true;
     } finally {
-      navigate('/login', { replace: true });
+      navigate('/login', {
+        replace: true,
+        state: serverLogoutFailed
+          ? { logoutWarning: true }
+          : null,
+      });
     }
   };
 

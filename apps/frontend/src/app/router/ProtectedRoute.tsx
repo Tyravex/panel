@@ -1,5 +1,6 @@
 import { useEffect, type JSX } from 'react';
 import { Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useAuthStore } from '@/app/store/auth.store';
 import { meApi } from '@/features/auth/api/auth.api';
@@ -30,6 +31,8 @@ const getSessionCheck = () => {
 };
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { t } = useTranslation();
+
   const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
 
@@ -73,7 +76,11 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }, []);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div role="status" aria-live="polite">
+        {t('auth.session.loading', { defaultValue: 'Loading...' })}
+      </div>
+    );
   }
 
   if (!user) {

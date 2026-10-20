@@ -1,5 +1,5 @@
-
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Outlet, useLocation } from "react-router-dom";
 import { X } from "lucide-react";
 
@@ -8,6 +8,7 @@ import { Navbar } from "@/widgets/navbar/ui/Navbar";
 import { Footer } from "@/widgets/footer/Footer";
 
 export const MainLayout = () => {
+  const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -116,7 +117,7 @@ export const MainLayout = () => {
         >
           <button
             type="button"
-            aria-label="Close navigation menu"
+            aria-label={t("layout.navigation.closeMenu")}
             onClick={() => setIsMobileMenuOpen(false)}
             className="absolute inset-0 h-full w-full bg-black/70"
           />
@@ -126,7 +127,7 @@ export const MainLayout = () => {
             id="mobile-sidebar"
             role="dialog"
             aria-modal="true"
-            aria-label="Navigation menu"
+            aria-label={t("layout.navigation.menu")}
             className="absolute inset-y-0 left-0 w-64 max-w-[85vw] shadow-2xl"
           >
             <Sidebar
@@ -136,7 +137,7 @@ export const MainLayout = () => {
 
             <button
               type="button"
-              aria-label="Close navigation menu"
+              aria-label={t("layout.navigation.closeMenu")}
               onClick={() => setIsMobileMenuOpen(false)}
               className="absolute right-3 top-3 rounded-lg p-2 text-text-secondary transition-colors hover:bg-white/10 hover:text-text-primary"
             >

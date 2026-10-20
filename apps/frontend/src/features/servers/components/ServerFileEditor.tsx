@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import Editor, { type OnMount } from "@monaco-editor/react";
+import { useTranslation } from "react-i18next";
 import {
   AlertCircle,
   ArrowLeft,
@@ -108,6 +109,7 @@ export const ServerFileEditor = ({
   onBack,
   onSave,
 }: Props) => {
+  const { t } = useTranslation();
   const [content, setContent] = useState(initialContent);
   const [savedContent, setSavedContent] = useState(initialContent);
   const [showSaved, setShowSaved] = useState(false);
@@ -117,7 +119,7 @@ export const ServerFileEditor = ({
     column: 1,
   });
 
-  const saveRef = useRef<() => void>(() => {});
+  const saveRef = useRef<() => void>(() => { });
   const keepEditingRef = useRef<HTMLButtonElement>(null);
 
   const language = useMemo(
@@ -173,7 +175,9 @@ export const ServerFileEditor = ({
   }, [content, isDemoMode, onSave]);
 
   // Monaco registers Ctrl+S once and invokes the latest save handler.
-  saveRef.current = handleSave;
+  useEffect(() => {
+    saveRef.current = handleSave;
+  }, [handleSave]);
 
   const handleReset = () => {
     setContent(savedContent);
@@ -222,7 +226,7 @@ export const ServerFileEditor = ({
           <button
             type="button"
             onClick={handleBack}
-            aria-label="Back to files"
+            aria-label={t("servers.files.editorUi.backToFiles")}
             className="rounded-lg border border-border-subtle p-2 text-text-secondary transition-colors hover:bg-white/5 hover:text-text-primary"
           >
             <ArrowLeft size={18} aria-hidden="true" />
@@ -241,7 +245,7 @@ export const ServerFileEditor = ({
 
                 {isDirty && (
                   <span
-                    title="Unsaved changes"
+                    title={t("servers.files.editorUi.unsavedChanges")}
                     className="size-2 shrink-0 rounded-full bg-amber-400"
                   />
                 )}
@@ -262,7 +266,7 @@ export const ServerFileEditor = ({
             className="inline-flex items-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <RotateCcw size={15} aria-hidden="true" />
-            Reset
+            {t("servers.files.editorUi.reset")}
           </button>
 
           <button
@@ -271,40 +275,40 @@ export const ServerFileEditor = ({
             disabled={!isDemoMode || !isDirty}
             title={
               isDemoMode
-                ? "Save in demo memory (Ctrl+S)"
-                : "File API not connected"
+                ? t("servers.files.editorUi.saveDemoHint")
+                : t("servers.files.editorUi.apiUnavailable")
             }
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Save size={16} aria-hidden="true" />
-            Save
+            {t("servers.files.editorUi.save")}
           </button>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-subtle bg-white/[0.02] px-4 py-2.5">
         <div className="flex flex-wrap items-center gap-3 text-xs text-text-secondary">
-          <span>{getLanguageLabel(language)}</span>
+          <span>{language === "plaintext" ? t("servers.files.editorUi.plainText") : language === "ini" ? t("servers.files.editorUi.configuration") : getLanguageLabel(language)}</span>
           <span>UTF-8</span>
-          <span>{lineCount} lines</span>
+          <span>{t("servers.files.editorUi.lines", { count: lineCount })}</span>
           <span>
-            Ln {cursorPosition.line}, Col {cursorPosition.column}
+            {t("servers.files.editorUi.cursorPosition", { line: cursorPosition.line, column: cursorPosition.column })}
           </span>
         </div>
 
         <div className="text-xs">
           {isDirty ? (
             <span className="text-amber-400">
-              Unsaved changes
+              {t("servers.files.editorUi.unsavedChanges")}
             </span>
           ) : showSaved ? (
             <span className="inline-flex items-center gap-1 text-emerald-400">
               <Check size={14} aria-hidden="true" />
-              Saved in demo
+              {t("servers.files.editorUi.savedDemo")}
             </span>
           ) : (
             <span className="text-text-secondary">
-              No changes
+              {t("servers.files.editorUi.noChanges")}
             </span>
           )}
         </div>
@@ -317,8 +321,8 @@ export const ServerFileEditor = ({
           aria-hidden="true"
         />
         {isDemoMode
-          ? "Demo editor. Changes are kept in memory while the file manager is open. Nothing is written to the server."
-          : "File content is unavailable until the server file API is connected."}
+          ? t("servers.files.editorUi.demoNotice")
+          : t("servers.files.editorUi.contentUnavailable")}
       </div>
 
       <div className="h-[520px] bg-[#080d16] sm:h-[620px]">
@@ -330,7 +334,7 @@ export const ServerFileEditor = ({
           theme="vs-dark"
           loading={
             <div className="flex h-full items-center justify-center bg-[#080d16] text-sm text-text-secondary">
-              Loading editor...
+              {t("servers.files.editorUi.loading")}
             </div>
           }
           onMount={handleEditorMount}
@@ -379,8 +383,8 @@ export const ServerFileEditor = ({
         <span className="truncate">{filePath}</span>
 
         <div className="flex items-center gap-3">
-          <span>{byteSize.toLocaleString()} bytes</span>
-          <span>Ctrl+S to save</span>
+          <span>{t("servers.files.editorUi.bytes", { count: byteSize })}</span>
+          <span>{t("servers.files.editorUi.saveShortcut")}</span>
         </div>
       </div>
 
@@ -411,23 +415,18 @@ export const ServerFileEditor = ({
                   id="discard-dialog-title"
                   className="text-lg font-semibold text-text-primary"
                 >
-                  Discard changes?
+                  {t("servers.files.editorUi.discardTitle")}
                 </h3>
 
                 <p
                   id="discard-dialog-description"
                   className="mt-2 text-sm leading-6 text-text-secondary"
                 >
-                  You have unsaved changes in{" "}
-                  <span className="break-all font-semibold text-text-primary">
-                    {fileName}
-                  </span>
-                  .
+                  {t("servers.files.editorUi.unsavedInFile", { fileName })}
                 </p>
 
                 <p className="mt-3 text-xs text-text-secondary">
-                  Leaving the editor without saving will discard
-                  your latest changes.
+                  {t("servers.files.editorUi.discardDescription")}
                 </p>
               </div>
             </div>
@@ -439,7 +438,7 @@ export const ServerFileEditor = ({
                 onClick={() => setShowDiscardDialog(false)}
                 className="rounded-lg border border-border-subtle px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-white/5 hover:text-text-primary"
               >
-                Keep editing
+                {t("servers.files.editorUi.keepEditing")}
               </button>
 
               <button
@@ -448,7 +447,7 @@ export const ServerFileEditor = ({
                 className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-500"
               >
                 <X size={16} aria-hidden="true" />
-                Discard changes
+                {t("servers.files.editorUi.discard")}
               </button>
             </div>
           </div>

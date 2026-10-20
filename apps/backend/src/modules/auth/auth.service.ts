@@ -157,13 +157,21 @@ export class AuthService {
     username: string,
     email: string,
     password: string,
+    firstName?: string,
+    lastName?: string,
   ): Promise<UserDTO> {
     // Fail closed when the setting is missing, disabled, or cannot be read.
     if (!(await this.registrationSettings?.isRegistrationEnabled())) {
       throw new ForbiddenException('Public registration is disabled');
     }
 
-    const validated = validateRegistrationInput({ username, email, password });
+    const validated = validateRegistrationInput({
+      username,
+      email,
+      password,
+      ...(firstName !== undefined ? { firstName } : {}),
+      ...(lastName !== undefined ? { lastName } : {}),
+    });
     const hashed = await bcrypt.hash(validated.password, 10);
 
     let user;
@@ -173,6 +181,8 @@ export class AuthService {
           username: validated.username,
           email: validated.email,
           password: hashed,
+          ...(validated.firstName !== undefined ? { firstName: validated.firstName } : {}),
+          ...(validated.lastName !== undefined ? { lastName: validated.lastName } : {}),
         },
       });
     } catch (error: unknown) {

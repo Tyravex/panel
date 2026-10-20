@@ -4,7 +4,9 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const safeUserSelect = {
-  id: true, username: true, email: true, avatar: true, language: true,
+  id: true, username: true, email: true,
+  firstName: true, lastName: true,
+  avatar: true, language: true,
   isActive: true, createdAt: true, updatedAt: true,
   roles: { select: { assignedAt: true, role: { select: { id: true, name: true } } } },
   _count: { select: { servers: true, services: true } },
@@ -12,10 +14,31 @@ const safeUserSelect = {
 
 const usernamePattern = /^[A-Za-z0-9_-]{3,32}$/;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const namePattern = /^[\p{L}\p{M}][\p{L}\p{M}' -]*$/u;
+
+function validateOptionalName(
+  value: unknown,
+  field: string,
+): string | null {
+  if (value === null || value === '') {
+    return null;
+  }
+
+  if (
+    typeof value !== 'string' ||
+    value.length > 80 ||
+    value.trim() !== value ||
+    !namePattern.test(value)
+  ) {
+    throw new BadRequestException(`Invalid ${field}`);
+  }
+
+  return value;
+}
 
 @Injectable()
 export class AdminUsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async list(rawPage?: string, rawSearch?: string, rawStatus?: string) {
     const page = rawPage === undefined ? 1 : Number(rawPage);
@@ -25,10 +48,12 @@ export class AdminUsersService {
     if (rawStatus && !['active', 'disabled', 'all'].includes(rawStatus)) throw new BadRequestException('Invalid status');
     const where: Prisma.UserWhereInput = {
       ...(rawStatus === 'active' ? { isActive: true } : rawStatus === 'disabled' ? { isActive: false } : {}),
-      ...(search ? { OR: [
-        { username: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-      ] } : {}),
+      ...(search ? {
+        OR: [
+          { username: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+        ]
+      } : {}),
     };
     const limit = 20;
     const [total, items] = await this.prisma.$transaction([
@@ -58,34 +83,87 @@ export class AdminUsersService {
     }
   }
 
-  async create(input: { username?: string; email?: string; password?: string }, actorId?: number) {
+  async create(
+    input: {
+      username?: string;
+      email?: string;
+      password?: string;
+      firstName?: string | null;
+      lastName?: string | null;
+    },
+    actorId?: number,
+  ) {
     const identity = this.validateIdentity(input?.username, input?.email);
     if (typeof input?.password !== 'string' || input.password.length < 12 || input.password.length > 128) throw new BadRequestException('Password must be 12-128 characters');
     const password = await bcrypt.hash(input.password, 12);
+    const names: {
+      firstName?: string | null;
+      lastName?: string | null;
+    } = {};
+
+    if (Object.prototype.hasOwnProperty.call(input, 'firstName')) {
+      names.firstName = validateOptionalName(input.firstName, 'firstName');
+    }
+
+    if (Object.prototype.hasOwnProperty.call(input, 'lastName')) {
+      names.lastName = validateOptionalName(input.lastName, 'lastName');
+    }
     return this.unique(() => this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({ data: { ...identity, password }, select: safeUserSelect });
+      const user = await tx.user.create({
+        data: { ...identity, ...names, password },
+        select: safeUserSelect,
+      });
       if (actorId !== undefined) {
-        await tx.adminAuditLog.create({ data: {
-          actorId, action: 'USER_CREATED', targetType: 'USER', targetId: String(user.id),
-          metadata: { username: identity.username },
-        } });
+        await tx.adminAuditLog.create({
+          data: {
+            actorId, action: 'USER_CREATED', targetType: 'USER', targetId: String(user.id),
+            metadata: { username: identity.username },
+          }
+        });
       }
       return user;
     }));
   }
 
-  async update(id: number, input: { username?: string; email?: string }, actorId?: number) {
+  async update(
+    id: number,
+    input: {
+      username?: string;
+      email?: string;
+      firstName?: string | null;
+      lastName?: string | null;
+    },
+    actorId?: number,
+  ) {
     if (!Number.isSafeInteger(id) || id <= 0) throw new BadRequestException('Invalid user ID');
     const identity = this.validateIdentity(input?.username, input?.email);
+    const names: {
+      firstName?: string | null;
+      lastName?: string | null;
+    } = {};
+
+    if (Object.prototype.hasOwnProperty.call(input, 'firstName')) {
+      names.firstName = validateOptionalName(input.firstName, 'firstName');
+    }
+
+    if (Object.prototype.hasOwnProperty.call(input, 'lastName')) {
+      names.lastName = validateOptionalName(input.lastName, 'lastName');
+    }
     const existing = await this.prisma.user.findUnique({ where: { id }, select: { id: true } });
     if (!existing) throw new NotFoundException('User not found');
     return this.unique(() => this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.update({ where: { id }, data: identity, select: safeUserSelect });
+      const user = await tx.user.update({
+        where: { id },
+        data: { ...identity, ...names },
+        select: safeUserSelect,
+      });
       if (actorId !== undefined) {
-        await tx.adminAuditLog.create({ data: {
-          actorId, action: 'USER_UPDATED', targetType: 'USER', targetId: String(id),
-          metadata: { username: identity.username },
-        } });
+        await tx.adminAuditLog.create({
+          data: {
+            actorId, action: 'USER_UPDATED', targetType: 'USER', targetId: String(id),
+            metadata: { username: identity.username },
+          }
+        });
       }
       return user;
     }));
@@ -109,10 +187,12 @@ export class AdminUsersService {
         await tx.session.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });
       }
       if (target.isActive !== isActive) {
-        await tx.adminAuditLog.create({ data: {
-          actorId, action: isActive ? 'USER_ENABLED' : 'USER_DISABLED',
-          targetType: 'USER', targetId: String(id),
-        } });
+        await tx.adminAuditLog.create({
+          data: {
+            actorId, action: isActive ? 'USER_ENABLED' : 'USER_DISABLED',
+            targetType: 'USER', targetId: String(id),
+          }
+        });
       }
       return user;
     });

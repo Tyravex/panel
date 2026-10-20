@@ -34,6 +34,8 @@ export class AuthController {
       validated.username,
       validated.email,
       validated.password,
+      validated.firstName,
+      validated.lastName,
     );
   }
 

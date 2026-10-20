@@ -16,11 +16,13 @@ datasource db {
 // =============================================================================
 
 model User {
-  id       Int     @id @default(autoincrement())
-  username String  @unique
-  email    String  @unique
-  password String
-  isActive Boolean @default(true)
+  id        Int     @id @default(autoincrement())
+  username  String  @unique
+  email     String  @unique
+  password  String
+  isActive  Boolean @default(true)
+  firstName String?
+  lastName  String?
 
   avatar   String?
   language String  @default("en")
@@ -318,4 +320,86 @@ model AdminAuditLog {
   @@index([actorId, createdAt])
   @@index([action, createdAt])
   @@index([targetType, targetId])
+}
+
+// =============================================================================
+// Language plugins
+// =============================================================================
+
+// Registry of languages available to the Tyravex panel.
+// Language packages are discovered automatically but activated by an admin.
+model Language {
+  // BCP 47 language tag, e.g. en, pl, de, fr, pt-BR.
+  code String @id @db.VarChar(35)
+
+  // Native display name, e.g. English, Polski, Deutsch.
+  name String
+
+  // Optional plugin providing this language.
+  pluginId String? @unique
+
+  // Built-in languages do not require a plugin.
+  plugin Plugin? @relation(fields: [pluginId], references: [id], onDelete: Restrict)
+
+  // Built-in languages are distributed with Tyravex.
+  isBuiltIn Boolean @default(false)
+
+  // New language plugins remain disabled until approved.
+  isEnabled Boolean @default(false)
+
+  // Prevent removal or disabling of the fallback language.
+  isFallback Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isEnabled])
+}
+
+// =============================================================================
+// Plugin registry
+// =============================================================================
+
+// Categories of extensions supported by Tyravex.
+enum PluginType {
+  LANGUAGE
+  THEME
+  INTEGRATION
+  BILLING
+  NOTIFICATION
+  OTHER
+}
+
+// Installation lifecycle of a plugin on this instance.
+enum PluginStatus {
+  INSTALLED
+  DISABLED
+  FAILED
+}
+
+// Registry of locally installed plugin packages.
+// The plugin files are stored outside the database.
+model Plugin {
+  // Stable identifier from the plugin manifest.
+  id String @id
+
+  type    PluginType
+  version String
+
+  // Installation and activation state.
+  status PluginStatus @default(DISABLED)
+
+  // Path relative to the managed plugin storage root.
+  // Never use this value as an unrestricted filesystem path.
+  storagePath String
+
+  // Optional origin information for future catalog integration.
+  sourceRepository String?
+
+  installedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  languages Language[]
+
+  @@index([type, status])
 }

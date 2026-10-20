@@ -44,7 +44,7 @@ describe('Registration settings - public HTTP boundary', () => {
         isRegistrationEnabled.mockResolvedValue(true);
         const response = await request(app.getHttpServer()).post('/auth/register')
             .send({ username: 'new-user', email: 'new@example.test', password: 'secret-password-123' }).expect(201);
-        expect(register).toHaveBeenCalledWith('new-user', 'new@example.test', 'secret-password-123');
+        expect(register).toHaveBeenCalledWith('new-user', 'new@example.test', 'secret-password-123', undefined, undefined);
         expect(response.body).toEqual({ id: 42, username: 'new-user' });
     });
 

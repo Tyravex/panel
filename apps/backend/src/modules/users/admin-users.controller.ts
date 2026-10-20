@@ -7,7 +7,7 @@ import { AdminUsersService } from './admin-users.service';
 @Controller('admin/users')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class AdminUsersController {
-  constructor(private readonly users: AdminUsersService) {}
+  constructor(private readonly users: AdminUsersService) { }
 
   @Get()
   @Permissions('user:read')
@@ -21,13 +21,31 @@ export class AdminUsersController {
 
   @Post()
   @Permissions('user:manage')
-  create(@Body() body: { username?: string; email?: string; password?: string }, @Req() req: { user: { id: number } }) {
+  create(
+    @Body() body: {
+      username?: string;
+      email?: string;
+      password?: string;
+      firstName?: string | null;
+      lastName?: string | null;
+    },
+    @Req() req: { user: { id: number } },
+  ) {
     return this.users.create(body, req.user.id);
   }
 
   @Patch(':id')
   @Permissions('user:manage')
-  update(@Param('id', ParseIntPipe) id: number, @Body() body: { username?: string; email?: string }, @Req() req: { user: { id: number } }) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: {
+      username?: string;
+      email?: string;
+      firstName?: string | null;
+      lastName?: string | null;
+    },
+    @Req() req: { user: { id: number } },
+  ) {
     return this.users.update(id, body, req.user.id);
   }
 

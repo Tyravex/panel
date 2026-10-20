@@ -32,4 +32,54 @@ describe('Registration input validation', () => {
     ])('rejects %s', (_label, input) => {
         expect(() => validateRegistrationInput(input)).toThrow(BadRequestException);
     });
+
+
+    it('accepts optional first name and last name', () => {
+        expect(validateRegistrationInput({
+            ...valid(),
+            firstName: 'Łukasz',
+            lastName: 'Żółkiewicz',
+        })).toEqual({
+            ...valid(),
+            firstName: 'Łukasz',
+            lastName: 'Żółkiewicz',
+        });
+    });
+
+    it('accepts each optional name independently', () => {
+        expect(validateRegistrationInput({
+            ...valid(),
+            firstName: 'Anna',
+        })).toEqual({
+            ...valid(),
+            firstName: 'Anna',
+        });
+
+        expect(validateRegistrationInput({
+            ...valid(),
+            lastName: 'Kowalska',
+        })).toEqual({
+            ...valid(),
+            lastName: 'Kowalska',
+        });
+    });
+
+    it.each([
+        ['empty first name', { firstName: '' }],
+        ['empty last name', { lastName: '' }],
+        ['first name with leading space', { firstName: ' Anna' }],
+        ['last name with trailing space', { lastName: 'Kowalska ' }],
+        ['first name too long', { firstName: 'A'.repeat(81) }],
+        ['last name too long', { lastName: 'B'.repeat(81) }],
+        ['non-string first name', { firstName: 123 }],
+        ['non-string last name', { lastName: null }],
+        ['HTML in first name', { firstName: '<script>' }],
+        ['unexpected privilege field', { firstName: 'Anna', isAdmin: true }],
+    ])('rejects invalid optional name: %s', (_label, extra) => {
+        expect(() => validateRegistrationInput({
+            ...valid(),
+            ...extra,
+        })).toThrow(BadRequestException);
+    });
+
 });

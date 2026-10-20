@@ -14,6 +14,7 @@ describe('User preferences HTTP security boundaries', () => {
     const userFindUnique = jest.fn();
     const sessionFindUnique = jest.fn();
     const updatePreferences = jest.fn();
+    const updateProfile = jest.fn();
 
     function token(userId = 12, sessionId = 'session-12', tokenType = 'access') {
         return sign({ sub: userId, sid: sessionId, tokenType }, secret, { expiresIn: '1h' });
@@ -25,7 +26,7 @@ describe('User preferences HTTP security boundaries', () => {
             controllers: [UserController],
             providers: [
                 JwtStrategy,
-                { provide: UsersService, useValue: { updatePreferences } },
+                { provide: UsersService, useValue: { updatePreferences, updateProfile } },
                 {
                     provide: PrismaService,
                     useValue: {
@@ -70,6 +71,13 @@ describe('User preferences HTTP security boundaries', () => {
             username: `user-${id}`,
             language: data.language,
         }));
+        updateProfile.mockImplementation(
+            async (id: number, data: { firstName?: string; lastName?: string }) => ({
+                id,
+                firstName: data.firstName ?? null,
+                lastName: data.lastName ?? null,
+            }),
+        );
     });
 
     it('rejects unauthenticated profile and preferences requests', async () => {
@@ -134,5 +142,72 @@ describe('User preferences HTTP security boundaries', () => {
         userFindUnique.mockResolvedValueOnce({ id: 12, isActive: false, roles: [] });
         await request(app.getHttpServer()).get('/user/me')
             .set('Authorization', `Bearer ${token()}`).expect(401);
+    });
+
+    describe('PATCH /user/profile', () => {
+        it('rejects unauthenticated requests', async () => {
+            await request(app.getHttpServer())
+                .patch('/user/profile')
+                .send({ firstName: 'Anna' })
+                .expect(401);
+
+            expect(updateProfile).not.toHaveBeenCalled();
+        });
+
+        it('uses the authenticated user ID from JWT', async () => {
+            await request(app.getHttpServer())
+                .patch('/user/profile')
+                .set('Authorization', `Bearer ${token()}`)
+                .send({ firstName: 'Łukasz', lastName: 'Nowak' })
+                .expect(200);
+
+            expect(updateProfile).toHaveBeenCalledWith(12, {
+                firstName: 'Łukasz',
+                lastName: 'Nowak',
+            });
+        });
+
+        it('does not use a client-supplied user ID', async () => {
+            await request(app.getHttpServer())
+                .patch('/user/profile')
+                .set('Authorization', `Bearer ${token()}`)
+                .send({ firstName: 'Anna', userId: 999 })
+                .expect(200);
+
+            expect(updateProfile).toHaveBeenCalledWith(12, {
+                firstName: 'Anna',
+                userId: 999,
+            });
+            expect(updateProfile).not.toHaveBeenCalledWith(
+                999,
+                expect.anything(),
+            );
+        });
+
+        it('rejects refresh tokens', async () => {
+            await request(app.getHttpServer())
+                .patch('/user/profile')
+                .set('Authorization', `Bearer ${token(12, 'session-12', 'refresh')}`)
+                .send({ firstName: 'Anna' })
+                .expect(401);
+
+            expect(updateProfile).not.toHaveBeenCalled();
+        });
+
+        it('rejects disabled accounts', async () => {
+            userFindUnique.mockResolvedValueOnce({
+                id: 12,
+                isActive: false,
+                roles: [],
+            });
+
+            await request(app.getHttpServer())
+                .patch('/user/profile')
+                .set('Authorization', `Bearer ${token()}`)
+                .send({ firstName: 'Anna' })
+                .expect(401);
+
+            expect(updateProfile).not.toHaveBeenCalled();
+        });
     });
 });

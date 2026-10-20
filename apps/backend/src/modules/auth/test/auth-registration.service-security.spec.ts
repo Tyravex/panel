@@ -110,4 +110,29 @@ describe('AuthService registration persistence security', () => {
             .rejects.toThrow(new ConflictException('Nie można utworzyć konta z podanymi danymi.'));
         expect(create).toHaveBeenCalledTimes(1);
     });
+
+
+    it('persists optional names without assigning extra privileges', async () => {
+        await service.register(
+            'new-user',
+            'new-user@example.invalid',
+            'secret-password-123',
+            'Anna',
+            'Kowalska',
+        );
+
+        expect(create).toHaveBeenCalledWith({
+            data: {
+                username: 'new-user',
+                email: 'new-user@example.invalid',
+                password: expect.any(String),
+                firstName: 'Anna',
+                lastName: 'Kowalska',
+            },
+        });
+
+        expect(create.mock.calls[0][0].data).not.toHaveProperty('isAdmin');
+        expect(create.mock.calls[0][0].data).not.toHaveProperty('roles');
+    });
+
 });

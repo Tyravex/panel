@@ -26,6 +26,26 @@ const permissionNames = [
   'billing:manage',
 ] as const;
 
+// Built-in languages distributed with Tyravex.
+// Community language plugins will be registered separately.
+const builtInLanguages = [
+  {
+    code: 'en',
+    name: 'English',
+    isFallback: true,
+  },
+  {
+    code: 'pl',
+    name: 'Polski',
+    isFallback: false,
+  },
+  {
+    code: 'de',
+    name: 'Deutsch',
+    isFallback: false,
+  },
+] as const;
+
 // Default service categories for the Tyravex service catalog.
 const serviceCategories = [
   {
@@ -97,12 +117,39 @@ async function main() {
     });
   }
 
+  // Register built-in languages without overwriting administrator choices.
+  for (const language of builtInLanguages) {
+    await prisma.language.upsert({
+      where: { code: language.code },
+      update: {
+        name: language.name,
+        isBuiltIn: true,
+        ...(language.isFallback
+          ? { isEnabled: true, isFallback: true }
+          : {}),
+      },
+      create: {
+        code: language.code,
+        name: language.name,
+        isBuiltIn: true,
+        isEnabled: true,
+        isFallback: language.isFallback,
+      },
+    });
+  }
+
   console.log(`RBAC seed completed. Owner role ID: ${owner.id}`);
   console.log('No user accounts were assigned roles.');
   console.log(
     `Service catalog seed completed. ${serviceCategories.length} default categories checked.`,
   );
   console.log('Existing service categories and services were preserved.');
+  console.log(
+    `Language seed completed. ${builtInLanguages.length} built-in languages checked.`,
+  );
+  console.log(
+    'Existing administrator language activation choices were preserved.',
+  );
 }
 
 main()

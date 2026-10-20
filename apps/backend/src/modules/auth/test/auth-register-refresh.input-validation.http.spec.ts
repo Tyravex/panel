@@ -49,7 +49,7 @@ describe('Auth register and refresh HTTP input boundaries', () => {
         await request(app.getHttpServer()).post('/auth/register')
             .send({ username: 'tester', email: 'tester@example.invalid', password: 'secret-password-123' })
             .expect(201);
-        expect(register).toHaveBeenCalledWith('tester', 'tester@example.invalid', 'secret-password-123');
+        expect(register).toHaveBeenCalledWith('tester', 'tester@example.invalid', 'secret-password-123', undefined, undefined);
     });
 
     it('returns registration service validation errors as HTTP 400', async () => {
@@ -90,4 +90,29 @@ describe('Auth register and refresh HTTP input boundaries', () => {
         expect(cookies[0]).toContain('HttpOnly');
         expect(response.body).toEqual({ success: true });
     });
+
+
+    it('passes optional names to the registration service', async () => {
+        register.mockResolvedValue({ id: 8 });
+
+        await request(app.getHttpServer())
+            .post('/auth/register')
+            .send({
+                username: 'tester',
+                email: 'tester@example.invalid',
+                password: 'secret-password-123',
+                firstName: 'Anna',
+                lastName: 'Kowalska',
+            })
+            .expect(201);
+
+        expect(register).toHaveBeenCalledWith(
+            'tester',
+            'tester@example.invalid',
+            'secret-password-123',
+            'Anna',
+            'Kowalska',
+        );
+    });
+
 });

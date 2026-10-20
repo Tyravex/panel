@@ -7,31 +7,87 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import type { Language } from "@/features/auth/api/getLanguages";
+import {
+  fallbackLanguage,
+  getAvailableLanguages,
+} from "@/shared/i18n/availableLanguages";
 import { useUser } from "@/shared/store/user";
 
-const languages = [
-  { code: "pl", label: "Polski", country: "pl" },
-  { code: "en", label: "English", country: "gb" },
-  { code: "de", label: "Deutsch", country: "de" },
-] as const;
+const countryByLanguage: Record<string, string> = {
+  en: "gb",
+  pl: "pl",
+  de: "de",
+};
 
 export const LanguageSwitcher = () => {
   const { t } = useTranslation();
 
-  const language = useUser((state) => state.language);
+  const language = useUser((state) => state.activeLanguage);
   const updateLanguage = useUser((state) => state.updateLanguage);
 
+  const [languages, setLanguages] = useState<Language[]>([
+    fallbackLanguage,
+  ]);
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [hasLoadError, setHasLoadError] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const savingRef = useRef(false);
+  const mountedRef = useRef(true);
+  const loadVersionRef = useRef(0);
   const listId = useId();
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+      loadVersionRef.current++;
+    };
+  }, []);
+
+  const loadLanguages = async () => {
+    const loadVersion = ++loadVersionRef.current;
+
+    try {
+      const available = await getAvailableLanguages();
+
+      if (
+        !mountedRef.current ||
+        loadVersion !== loadVersionRef.current
+      ) {
+        return;
+      }
+
+      setLanguages(available);
+      setHasLoadError(false);
+    } catch {
+      if (
+        !mountedRef.current ||
+        loadVersion !== loadVersionRef.current
+      ) {
+        return;
+      }
+
+      setLanguages([fallbackLanguage]);
+      setHasLoadError(true);
+    }
+  };
+
+  useEffect(() => {
+    void loadLanguages();
+  }, []);
 
   const currentLanguage =
     languages.find((item) => item.code === language) ??
-    languages[1];
+    fallbackLanguage;
+
+  const currentCountry =
+    countryByLanguage[currentLanguage.code];
 
   useEffect(() => {
     if (!isOpen) return;
@@ -63,21 +119,39 @@ export const LanguageSwitcher = () => {
   }, [isOpen]);
 
   const selectLanguage = async (code: string) => {
-    if (isSaving || code === language) {
+    if (savingRef.current) {
+      return;
+    }
+
+    if (
+      code === language ||
+      !languages.some((item) => item.code === code)
+    ) {
       setIsOpen(false);
       return;
     }
 
+    savingRef.current = true;
     setIsSaving(true);
     setIsOpen(false);
     setHasError(false);
 
     try {
       await updateLanguage(code);
+
+      if (mountedRef.current) {
+        triggerRef.current?.focus();
+      }
     } catch {
-      setHasError(true);
+      if (mountedRef.current) {
+        setHasError(true);
+      }
     } finally {
-      setIsSaving(false);
+      savingRef.current = false;
+
+      if (mountedRef.current) {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -94,20 +168,29 @@ export const LanguageSwitcher = () => {
         ref={triggerRef}
         type="button"
         onClick={() => {
+          if (savingRef.current) return;
+
+          if (!isOpen) {
+            void loadLanguages();
+          }
+
           setIsOpen((previous) => !previous);
           setHasError(false);
+          setHasLoadError(false);
         }}
         disabled={isSaving}
         aria-expanded={isOpen}
-        aria-controls={listId}
+        aria-controls={isOpen ? listId : undefined}
         className="flex w-full items-center justify-between gap-3 rounded-xl border border-border-subtle bg-background/60 px-3 py-2.5 text-sm text-text-primary transition-colors hover:bg-white/5 disabled:cursor-wait disabled:opacity-60"
       >
         <span className="flex items-center gap-3">
-          <span
-            className={`fi fi-${currentLanguage.country} rounded-sm`}
-            aria-hidden="true"
-          />
-          <span>{currentLanguage.label}</span>
+          {currentCountry && (
+            <span
+              className={`fi fi-${currentCountry} rounded-sm`}
+              aria-hidden="true"
+            />
+          )}
+          <span>{currentLanguage.name}</span>
         </span>
 
         <ChevronDown
@@ -126,7 +209,10 @@ export const LanguageSwitcher = () => {
           className="mt-2 overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-lg"
         >
           {languages.map((item) => {
-            const isSelected = item.code === language;
+            const isSelected =
+              item.code === currentLanguage.code;
+
+            const country = countryByLanguage[item.code];
 
             return (
               <button
@@ -143,11 +229,13 @@ export const LanguageSwitcher = () => {
                 ].join(" ")}
               >
                 <span className="flex items-center gap-3">
-                  <span
-                    className={`fi fi-${item.country} rounded-sm`}
-                    aria-hidden="true"
-                  />
-                  <span>{item.label}</span>
+                  {country && (
+                    <span
+                      className={`fi fi-${country} rounded-sm`}
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span>{item.name}</span>
                 </span>
 
                 {isSelected && (
@@ -157,6 +245,25 @@ export const LanguageSwitcher = () => {
             );
           })}
         </div>
+      )}
+
+      {hasLoadError && (
+        <p
+          role="alert"
+          className="mt-3 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300"
+        >
+          <AlertCircle
+            size={16}
+            className="mt-0.5 shrink-0"
+            aria-hidden="true"
+          />
+          <span>
+            {t("language.loadError", {
+              defaultValue:
+                "Could not load available languages. Please try again.",
+            })}
+          </span>
+        </p>
       )}
 
       {hasError && (

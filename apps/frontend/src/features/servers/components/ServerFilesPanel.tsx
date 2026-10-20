@@ -222,7 +222,7 @@ export const ServerFilesPanel = ({
       }
 
       if (demoEntries.some((entry) => entry.path === nextPath)) {
-        setDialogError("An item with this name already exists.");
+        setDialogError(t("servers.files.panelUi.errors.nameExists"));
         return;
       }
 
@@ -253,7 +253,7 @@ export const ServerFilesPanel = ({
       const path = joinPath(directory, name);
 
       if (demoEntries.some((entry) => entry.path === path)) {
-        setDialogError("An item with this name already exists.");
+        setDialogError(t("servers.files.panelUi.errors.nameExists"));
         return;
       }
 
@@ -284,25 +284,25 @@ export const ServerFilesPanel = ({
     const paths = transferDialog.sourcePaths ?? [transferDialog.sourcePath];
     const sources = paths.map((path) => demoEntries.find((entry) => entry.path === path));
     if (sources.some((entry) => !entry)) {
-      setTransferError("One of the selected items no longer exists.");
+      setTransferError(t("servers.files.panelUi.errors.selectedMissing"));
       return;
     }
     const roots = sources.filter((entry): entry is DemoEntry => Boolean(entry));
     const destination = transferDestination;
     if (destination !== "/" && !demoEntries.some((entry) => entry.path === destination && entry.kind === "folder")) {
-      setTransferError("Destination folder no longer exists.");
+      setTransferError(t("servers.files.panelUi.errors.destinationMissing"));
       return;
     }
     if (roots.some((source) => source.kind === "folder" && isWithin(destination, source.path))) {
-      setTransferError("A folder cannot be moved or copied into itself.");
+      setTransferError(t("servers.files.panelUi.errors.folderIntoSelf"));
       return;
     }
     if (roots.some((source) => getParent(source.path) === destination)) {
-      setTransferError("Select a different destination for all selected items.");
+      setTransferError(t("servers.files.panelUi.errors.differentDestinationAll"));
       return;
     }
     if (roots.some((source) => demoEntries.some((entry) => entry.path === joinPath(destination, source.name)))) {
-      setTransferError("An item with one of these names already exists in the destination.");
+      setTransferError(t("servers.files.panelUi.errors.destinationNameExists"));
       return;
     }
     const mapping = roots.map((source) => ({ oldPath: source.path, newPath: joinPath(destination, source.name) }));
@@ -334,22 +334,22 @@ export const ServerFilesPanel = ({
     if (!clipboard || !isDemoMode) return;
     const roots = clipboard.paths.map((path) => demoEntriesRef.current.find((entry) => entry.path === path));
     if (roots.some((entry) => !entry)) {
-      setClipboardError("Clipboard items no longer exist.");
+      setClipboardError(t("servers.files.panelUi.errors.clipboardMissing"));
       setClipboard(null);
       return;
     }
     const sources = roots.filter((entry): entry is DemoEntry => Boolean(entry));
     if (sources.some((entry) => entry.kind === "folder" && isWithin(directory, entry.path))) {
-      setClipboardError("A folder cannot be pasted into itself.");
+      setClipboardError(t("servers.files.panelUi.errors.pasteIntoSelf"));
       return;
     }
     if (sources.some((entry) => getParent(entry.path) === directory)) {
-      setClipboardError("Choose a different destination directory.");
+      setClipboardError(t("servers.files.panelUi.errors.differentDestination"));
       return;
     }
     const mapping = sources.map((entry) => ({ oldPath: entry.path, newPath: joinPath(directory, entry.name) }));
     if (mapping.some(({ newPath }) => demoEntriesRef.current.some((entry) => entry.path === newPath))) {
-      setClipboardError("An item with this name already exists in the destination.");
+      setClipboardError(t("servers.files.panelUi.errors.destinationNameExists"));
       return;
     }
     transferEntries(mapping, clipboard.action);
@@ -407,7 +407,7 @@ export const ServerFilesPanel = ({
       } else {
         const path = joinPath(directory, filename);
         if (demoEntriesRef.current.some((entry) => entry.path === path)) {
-          throw new Error("An item with this ZIP name already exists.");
+          throw new Error(t("servers.files.panelUi.errors.zipNameExists"));
         }
         appendUploads([{
           path, name: filename, kind: "file", modified: new Date().toLocaleString("en-GB"),
@@ -416,9 +416,9 @@ export const ServerFilesPanel = ({
         setSelectedPath(path);
         setSearch("");
       }
-      setZipSuccess(downloadOnly ? "ZIP downloaded." : "ZIP created.");
+      setZipSuccess(downloadOnly ? t("servers.files.panelUi.zip.downloaded") : t("servers.files.panelUi.zip.created"));
     } catch (error) {
-      setZipError(error instanceof Error ? error.message : "ZIP operation failed.");
+      setZipError(error instanceof Error ? error.message : t("servers.files.panelUi.zip.operationFailed"));
     } finally {
       setZipBusy(false);
     }
@@ -435,14 +435,14 @@ export const ServerFilesPanel = ({
       const blob = binaryFiles[entry.path] ??
         (Object.prototype.hasOwnProperty.call(fileContents, entry.path)
           ? new Blob([fileContents[entry.path]]) : null);
-      if (!blob) throw new Error("ZIP content is unavailable in demo memory.");
+      if (!blob) throw new Error(t("servers.files.panelUi.zip.contentMissing"));
       const extracted = await extractZip(blob, directory, demoEntriesRef.current);
-      if (extracted.entries.length === 0) throw new Error("ZIP has no files or folders to extract.");
+      if (extracted.entries.length === 0) throw new Error(t("servers.files.panelUi.zip.empty"));
       appendUploads(extracted.entries, extracted.texts, extracted.binaries);
-      setZipSuccess(`Extracted ${extracted.entries.length} items.`);
+      setZipSuccess(t("servers.files.panelUi.zip.extracted", { count: extracted.entries.length }));
       setSearch("");
     } catch (error) {
-      setZipError(error instanceof Error ? error.message : "ZIP extraction failed.");
+      setZipError(error instanceof Error ? error.message : t("servers.files.panelUi.zip.extractionFailed"));
     } finally {
       setZipBusy(false);
     }
@@ -480,10 +480,10 @@ export const ServerFilesPanel = ({
     const blob = hasBinary
       ? binaryFiles[entry.path]
       : new Blob([
-          hasText
-            ? fileContents[entry.path]
-            : `Demo placeholder for ${entry.path}\nOriginal file contents are not available in demo mode.\n`,
-        ], { type: "text/plain;charset=utf-8" });
+        hasText
+          ? fileContents[entry.path]
+          : `Demo placeholder for ${entry.path}\nOriginal file contents are not available in demo mode.\n`,
+      ], { type: "text/plain;charset=utf-8" });
     downloadBlob(blob, hasBinary || hasText ? entry.name : `${entry.name}.demo-placeholder.txt`);
     setContextMenu(null);
   };
@@ -585,7 +585,7 @@ export const ServerFilesPanel = ({
     <div
       ref={panelRef}
       tabIndex={0}
-      aria-label="File manager"
+      aria-label={t("servers.files.panelUi.fileManager")}
       className="relative space-y-4"
       onDragEnter={(event) => {
         if (!isDemoMode || !Array.from(event.dataTransfer.types).includes("Files")) return;
@@ -614,8 +614,12 @@ export const ServerFilesPanel = ({
         <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center rounded-2xl border-2 border-primary bg-slate-950/85 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 p-6 text-center">
             <Upload size={36} className="text-primary" aria-hidden="true" />
-            <span className="text-lg font-semibold text-text-primary">Drop files to upload</span>
-            <span className="text-sm text-text-secondary">Upload to {directory} · Files up to 100 MB each · Text editor up to 10 MB</span>
+            <span className="text-lg font-semibold text-text-primary">
+              {t("servers.files.panelUi.upload.dropToUpload")}
+            </span>
+            <span className="text-sm text-text-secondary">
+              {t("servers.files.panelUi.upload.dropDetails", { directory })}
+            </span>
           </div>
         </div>
       )}
@@ -634,16 +638,52 @@ export const ServerFilesPanel = ({
       )}
 
       {clipboardError && (
-        <div role="alert" className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">
+        <div
+          role="alert"
+          className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-400"
+        >
           {clipboardError}
-          <button type="button" onClick={() => setClipboardError("")} className="ml-3 underline">Dismiss</button>
+          <button
+            type="button"
+            onClick={() => setClipboardError("")}
+            className="ml-3 underline"
+          >
+            {t("servers.files.panelUi.clipboard.dismiss")}
+          </button>
         </div>
       )}
+
       {clipboard && (
-        <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-border-subtle bg-surface px-4 py-3 text-sm text-text-secondary">
-          <span>{clipboard.action === "copy" ? "Copied" : "Cut"} {clipboard.paths.length} item(s) · Ctrl+V to paste</span>
-          <button type="button" onClick={pasteSelection} className="rounded-lg border border-border-subtle px-3 py-1 hover:bg-white/5">Paste here</button>
-          <button type="button" onClick={() => setClipboard(null)} className="ml-auto underline">Clear</button>
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-3 rounded-xl border border-border-subtle bg-surface px-4 py-3 text-sm text-text-secondary"
+        >
+          <span>
+            {t(
+              clipboard.action === "copy"
+                ? "servers.files.panelUi.clipboard.copied"
+                : "servers.files.panelUi.clipboard.cut",
+              { count: clipboard.paths.length },
+            )}
+            {" · "}
+            {t("servers.files.panelUi.clipboard.pasteHint")}
+          </span>
+
+          <button
+            type="button"
+            onClick={pasteSelection}
+            className="rounded-lg border border-border-subtle px-3 py-1 hover:bg-white/5"
+          >
+            {t("servers.files.panelUi.clipboard.pasteHere")}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setClipboard(null)}
+            className="ml-auto underline"
+          >
+            {t("servers.files.panelUi.clipboard.clear")}
+          </button>
         </div>
       )}
       {zipError && (
@@ -659,14 +699,14 @@ export const ServerFilesPanel = ({
         <div role="status" className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
           <CheckCircle2 size={17} aria-hidden="true" />
           {uploadSuccess}
-          <button type="button" onClick={() => setUploadSuccess("")} aria-label="Dismiss upload message" className="ml-auto"><X size={16} /></button>
+          <button type="button" onClick={() => setUploadSuccess("")} aria-label={t("servers.files.panelUi.upload.dismissSuccess")} className="ml-auto"><X size={16} /></button>
         </div>
       )}
       {uploadError && (
         <div role="alert" className="flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">
           <AlertCircle size={17} className="mt-0.5 shrink-0" aria-hidden="true" />
           <span className="whitespace-pre-line">{uploadError}</span>
-          <button type="button" onClick={() => setUploadError("")} aria-label="Dismiss upload errors" className="ml-auto"><X size={16} /></button>
+          <button type="button" onClick={() => setUploadError("")} aria-label={t("servers.files.panelUi.upload.dismissErrors")} className="ml-auto"><X size={16} /></button>
         </div>
       )}
 
@@ -678,7 +718,7 @@ export const ServerFilesPanel = ({
               type="file"
               multiple
               className="hidden"
-              aria-label="Select files to upload"
+              aria-label={t("servers.files.panelUi.upload.selectFiles")}
               onChange={(event) => {
                 if (event.target.files) void uploadFiles(event.target.files);
                 event.target.value = "";
@@ -688,7 +728,7 @@ export const ServerFilesPanel = ({
               type="button"
               disabled={!isDemoMode}
               onClick={() => uploadInputRef.current?.click()}
-              title={isDemoMode ? "Upload files to demo memory" : "Upload API not connected"}
+              title={isDemoMode ? t("servers.files.panelUi.tooltips.uploadDemo") : t("servers.files.panelUi.tooltips.uploadUnavailable")}
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Upload size={16} aria-hidden="true" />
@@ -705,7 +745,7 @@ export const ServerFilesPanel = ({
               type="file"
               multiple
               className="hidden"
-              aria-label="Select folder to upload"
+              aria-label={t("servers.files.panelUi.upload.selectFolder")}
               onChange={(event) => {
                 if (event.target.files) uploadFiles(event.target.files);
                 event.target.value = "";
@@ -715,18 +755,18 @@ export const ServerFilesPanel = ({
               type="button"
               disabled={!isDemoMode}
               onClick={() => folderInputRef.current?.click()}
-              title={isDemoMode ? "Upload a folder and its files" : "Upload API not connected"}
+              title={isDemoMode ? t("servers.files.panelUi.tooltips.uploadFolderDemo") : t("servers.files.panelUi.tooltips.uploadUnavailable")}
               className="inline-flex items-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-sm text-text-secondary hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <FolderPlus size={16} aria-hidden="true" />
-              Upload Folder
+              {t("servers.files.panelUi.upload.folder")}
             </button>
 
             <button
               type="button"
               disabled={!isDemoMode}
               onClick={() => openDialog("new-file")}
-              title={isDemoMode ? "Create demo file" : "File API not connected"}
+              title={isDemoMode ? t("servers.files.panelUi.tooltips.createFile") : t("servers.files.panelUi.tooltips.fileUnavailable")}
               className="inline-flex items-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-sm text-text-secondary hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <FilePlus size={16} aria-hidden="true" />
@@ -739,7 +779,7 @@ export const ServerFilesPanel = ({
               type="button"
               disabled={!isDemoMode}
               onClick={() => openDialog("new-folder")}
-              title={isDemoMode ? "Create demo folder" : "File API not connected"}
+              title={isDemoMode ? t("servers.files.panelUi.tooltips.createFolder") : t("servers.files.panelUi.tooltips.fileUnavailable")}
               className="inline-flex items-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-sm text-text-secondary hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <FolderPlus size={16} aria-hidden="true" />
@@ -756,7 +796,7 @@ export const ServerFilesPanel = ({
                 setSelectedPath(null);
                 setContextMenu(null);
               }}
-              title={isDemoMode ? "Refresh demo view" : "File API not connected"}
+              title={isDemoMode ? t("servers.files.panelUi.tooltips.refreshDemo") : t("servers.files.panelUi.tooltips.fileUnavailable")}
               className="inline-flex items-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-sm text-text-secondary hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RefreshCw size={16} aria-hidden="true" />
@@ -772,7 +812,7 @@ export const ServerFilesPanel = ({
                 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary"
               />
               <input
-                aria-label="Search files"
+                aria-label={t("servers.files.panelUi.searchFiles")}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={t("servers.files.search", {
@@ -886,30 +926,30 @@ export const ServerFilesPanel = ({
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
                         {explorer.scope !== "current" && <button type="button" title={t("servers.files.explorer.goToFolder", { defaultValue: "Go to containing folder" })} aria-label={`${t("servers.files.explorer.goToFolder", { defaultValue: "Go to containing folder" })}: ${entry.name}`} onClick={() => navigate(getParent(entry.path))} className="rounded-lg px-2 py-1 text-xs text-primary hover:bg-white/10">↗</button>}
-                        <button type="button" title={favorites.includes(entry.path) ? t("servers.files.explorer.removeFavorite", { defaultValue: "Remove favorite" }) : t("servers.files.explorer.addFavorite", { defaultValue: "Add favorite" })} aria-label={`${favorites.includes(entry.path) ? "Remove favorite" : "Add favorite"}: ${entry.name}`} aria-pressed={favorites.includes(entry.path)} onClick={() => toggleFavorite(entry.path)} className={`rounded-lg px-2 py-1 text-lg hover:bg-white/10 ${favorites.includes(entry.path) ? "text-amber-400" : "text-text-secondary"}`}>{favorites.includes(entry.path) ? "★" : "☆"}</button>
-                      <button
-                        type="button"
-                        aria-label={`Actions for ${entry.name}`}
-                        aria-expanded={contextMenu?.path === entry.path}
-                        onClick={(event) => {
-                          if (contextMenu?.path === entry.path) {
-                            setContextMenu(null);
-                            return;
-                          }
+                        <button type="button" title={favorites.includes(entry.path) ? t("servers.files.explorer.removeFavorite", { defaultValue: "Remove favorite" }) : t("servers.files.explorer.addFavorite", { defaultValue: "Add favorite" })} aria-label={`${t(favorites.includes(entry.path) ? "servers.files.explorer.removeFavorite" : "servers.files.explorer.addFavorite")}: ${entry.name}`} aria-pressed={favorites.includes(entry.path)} onClick={() => toggleFavorite(entry.path)} className={`rounded-lg px-2 py-1 text-lg hover:bg-white/10 ${favorites.includes(entry.path) ? "text-amber-400" : "text-text-secondary"}`}>{favorites.includes(entry.path) ? "★" : "☆"}</button>
+                        <button
+                          type="button"
+                          aria-label={t("servers.files.panelUi.actionsFor", { name: entry.name })}
+                          aria-expanded={contextMenu?.path === entry.path}
+                          onClick={(event) => {
+                            if (contextMenu?.path === entry.path) {
+                              setContextMenu(null);
+                              return;
+                            }
 
-                          const rect =
-                            event.currentTarget.getBoundingClientRect();
+                            const rect =
+                              event.currentTarget.getBoundingClientRect();
 
-                          openContextMenu(
-                            entry,
-                            rect.right - MENU_WIDTH,
-                            rect.bottom + 6,
-                          );
-                        }}
-                        className="rounded-lg p-1.5 text-text-secondary hover:bg-white/10 hover:text-text-primary"
-                      >
-                        <MoreHorizontal size={18} aria-hidden="true" />
-                      </button>
+                            openContextMenu(
+                              entry,
+                              rect.right - MENU_WIDTH,
+                              rect.bottom + 6,
+                            );
+                          }}
+                          className="rounded-lg p-1.5 text-text-secondary hover:bg-white/10 hover:text-text-primary"
+                        >
+                          <MoreHorizontal size={18} aria-hidden="true" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -955,17 +995,17 @@ export const ServerFilesPanel = ({
 
               <dl className="space-y-3 text-sm">
                 <div className="flex justify-between gap-3">
-                  <dt className="text-text-secondary">Type</dt>
-                  <dd className="text-text-primary">{selected.kind}</dd>
+                  <dt className="text-text-secondary">{t("servers.files.panelUi.details.type")}</dt>
+                  <dd className="text-text-primary">{t(selected.kind === "folder" ? "servers.files.panelUi.details.folder" : "servers.files.panelUi.details.file")}</dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-text-secondary">Size</dt>
+                  <dt className="text-text-secondary">{t("servers.files.panelUi.details.size")}</dt>
                   <dd className="text-text-primary">
                     {selected.size ?? "—"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-text-secondary">Modified</dt>
+                  <dt className="text-text-secondary">{t("servers.files.panelUi.details.modified")}</dt>
                   <dd className="text-text-primary">{selected.modified}</dd>
                 </div>
               </dl>
@@ -978,7 +1018,7 @@ export const ServerFilesPanel = ({
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
                   >
                     <FileCode2 size={16} aria-hidden="true" />
-                    Edit file
+                    {t("servers.files.panelUi.buttons.edit")}
                   </button>
                 )}
 
@@ -995,14 +1035,14 @@ export const ServerFilesPanel = ({
                     disabled={!canDownload(selected)}
                     title={
                       canDownload(selected)
-                        ? "Download demo file"
-                        : "File content is not available in demo memory"
+                        ? t("servers.files.panelUi.tooltips.downloadDemo")
+                        : t("servers.files.panelUi.tooltips.downloadUnavailable")
                     }
                     onClick={() => downloadEntry(selected)}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-sm text-text-secondary hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Download size={16} aria-hidden="true" />
-                    Download
+                    {t("servers.files.panelUi.buttons.download")}
                   </button>
                 )}
 
@@ -1013,7 +1053,7 @@ export const ServerFilesPanel = ({
                   className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-sm text-text-secondary hover:bg-white/5 disabled:opacity-50"
                 >
                   <Pencil size={16} aria-hidden="true" />
-                  Rename
+                  {t("servers.files.panelUi.buttons.rename")}
                 </button>
 
                 <button
@@ -1023,12 +1063,12 @@ export const ServerFilesPanel = ({
                   className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-rose-500/30 px-3 py-2 text-sm text-rose-400 hover:bg-rose-500/10 disabled:opacity-50"
                 >
                   <Trash2 size={16} aria-hidden="true" />
-                  Delete
+                  {t("servers.files.panelUi.buttons.delete")}
                 </button>
               </div>
 
               <p className="text-xs text-text-secondary">
-                Demo metadata only. Changes are not written to the server.
+                {t("servers.files.panelUi.demoMetadata")}
               </p>
             </div>
           ) : (
@@ -1057,7 +1097,7 @@ export const ServerFilesPanel = ({
               onClick={onOpenUploads}
               className="mt-5 w-full rounded-lg border border-border-subtle px-3 py-2 text-sm text-text-secondary hover:text-primary"
             >
-              Open transfer panel
+              {t("servers.files.panelUi.openTransfers")}
             </button>
           )}
         </aside>
