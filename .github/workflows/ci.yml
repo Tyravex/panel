@@ -30,16 +30,47 @@ jobs:
             "CONTRIBUTING.md"
             "CODE_OF_CONDUCT.md"
             "SECURITY.md"
+            "pnpm-workspace.yaml"
+            "pnpm-lock.yaml"
           )
 
           for file in "${files[@]}"; do
             if [[ ! -s "$file" ]]; then
-              echo "Missing or empty required file: $file"
+              echo "Missing or empty file: $file"
               exit 1
             fi
           done
 
           echo "Repository structure check passed."
+
+  frontend-check:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared types
+        run: pnpm --filter @shared/types build
+
+      - name: Build frontend
+        run: pnpm --filter frontend build
 
   backend-check:
     name: Backend Tests and Build
