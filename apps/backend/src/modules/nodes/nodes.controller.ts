@@ -21,7 +21,13 @@ import { NodesService } from './nodes.service';
 export class NodesController {
     constructor(
         private readonly nodesService: NodesService,
-    ) {}
+    ) { }
+
+    // Return all nodes without authentication credentials.
+    @Get()
+    findAll() {
+        return this.nodesService.findAll();
+    }
 
     // Provision a node and return its token only once.
     @Post()

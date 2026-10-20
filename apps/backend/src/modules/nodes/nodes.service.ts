@@ -11,7 +11,24 @@ export class NodesService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly tokenService: NodeTokenService,
-    ) {}
+    ) { }
+
+    // List nodes without exposing authentication credentials.
+    async findAll() {
+        return this.prisma.node.findMany({
+            select: {
+                id: true,
+                name: true,
+                status: true,
+                lastSeenAt: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+        });
+    }
 
     // Return public node metadata without exposing the token hash.
     async findById(nodeId: string) {
@@ -93,7 +110,6 @@ export class NodesService {
                 token,
             };
         } catch (error) {
-            // Prisma P2025 means the requested record does not exist.
             if (
                 typeof error === 'object' &&
                 error !== null &&
