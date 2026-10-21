@@ -1,11 +1,12 @@
 import {
-    Body,
-    Controller,
-    Get,
-    Header,
-    Param,
-    Post,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  Header,
+  Headers,
+  Param,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
@@ -19,33 +20,40 @@ import { NodesService } from './nodes.service';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Permissions('node:manage')
 export class NodesController {
-    constructor(
-        private readonly nodesService: NodesService,
-    ) { }
+  constructor(private readonly nodesService: NodesService) {}
 
-    // Return all nodes without authentication credentials.
-    @Get()
-    findAll() {
-        return this.nodesService.findAll();
-    }
+  @Get()
+  findAll() {
+    return this.nodesService.findAll();
+  }
 
-    // Provision a node and return its token only once.
-    @Post()
-    @Header('Cache-Control', 'no-store')
-    create(@Body() body: CreateNodeDto) {
-        return this.nodesService.createNode(body.name);
-    }
+  @Post()
+  @Header('Cache-Control', 'no-store')
+  create(@Body() body: CreateNodeDto) {
+    return this.nodesService.createNode(body.name);
+  }
 
-    // Return public node metadata without credentials.
-    @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.nodesService.findById(id);
-    }
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.nodesService.findById(id);
+  }
 
-    // Invalidate the previous token and issue a replacement.
-    @Post(':id/rotate-token')
-    @Header('Cache-Control', 'no-store')
-    rotateToken(@Param('id') id: string) {
-        return this.nodesService.rotateToken(id);
-    }
+  @Post(':id/rotate-token')
+  @Header('Cache-Control', 'no-store')
+  rotateToken(@Param('id') id: string) {
+    return this.nodesService.rotateToken(id);
+  }
+}
+
+// Agent-facing endpoint: authenticated by node credentials,
+// not by a user session or administrative permissions.
+@Controller('nodes')
+export class NodesHeartbeatController {
+  constructor(private readonly nodesService: NodesService) {}
+
+  @Post(':id/heartbeat')
+  @Header('Cache-Control', 'no-store')
+  heartbeat(@Param('id') id: string, @Headers('x-node-token') token: string) {
+    return this.nodesService.heartbeat(id, token);
+  }
 }

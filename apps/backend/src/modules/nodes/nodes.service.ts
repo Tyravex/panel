@@ -1,165 +1,237 @@
 ﻿import {
-    BadRequestException,
-    Injectable,
-    NotFoundException,
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { NodeTokenService } from './node-token.service';
 
+const HEARTBEAT_TIMEOUT_MS = 90_000;
+
 @Injectable()
 export class NodesService {
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly tokenService: NodeTokenService,
-    ) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tokenService: NodeTokenService,
+  ) {}
 
-    // List nodes without exposing authentication credentials.
-    async findAll() {
-        return this.prisma.node.findMany({
-            select: {
-                id: true,
-                name: true,
-                status: true,
-                lastSeenAt: true,
-                createdAt: true,
-                updatedAt: true,
-            },
-            orderBy: {
-                createdAt: 'desc',
-            },
-        });
+  // Mark nodes as offline when their heartbeat has expired.
+  // MAINTENANCE is an administrative state and is not changed.
+  private async expireStaleNodes(): Promise<void> {
+    const cutoff = new Date(Date.now() - HEARTBEAT_TIMEOUT_MS);
+
+    await this.prisma.node.updateMany({
+      where: {
+        status: 'ONLINE',
+        OR: [{ lastSeenAt: null }, { lastSeenAt: { lt: cutoff } }],
+      },
+      data: {
+        status: 'OFFLINE',
+      },
+    });
+  }
+
+  // Return public node metadata without authentication credentials.
+  async findAll() {
+    await this.expireStaleNodes();
+
+    return this.prisma.node.findMany({
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        lastSeenAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  async findById(nodeId: string) {
+    await this.expireStaleNodes();
+
+    return this.prisma.node.findUnique({
+      where: { id: nodeId },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        lastSeenAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  // Provision a node and reveal its token only once.
+  async createNode(name: string) {
+    const normalizedName = name?.trim();
+
+    if (!normalizedName || normalizedName.length > 100) {
+      throw new BadRequestException(
+        'Node name must contain between 1 and 100 characters',
+      );
     }
 
-    // Return public node metadata without exposing the token hash.
-    async findById(nodeId: string) {
-        return this.prisma.node.findUnique({
-            where: { id: nodeId },
-            select: {
-                id: true,
-                name: true,
-                status: true,
-                lastSeenAt: true,
-                createdAt: true,
-                updatedAt: true,
-            },
-        });
+    const token = this.tokenService.generateToken();
+    const tokenHash = this.tokenService.hashToken(token);
+
+    const node = await this.prisma.node.create({
+      data: {
+        name: normalizedName,
+        tokenHash,
+      },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      ...node,
+      token,
+    };
+  }
+
+  // Invalidate the previous token and reset connectivity.
+  async rotateToken(nodeId: string) {
+    if (!nodeId?.trim()) {
+      throw new BadRequestException('Node ID is required');
     }
 
-    // Provision a new node and reveal its token only once.
-    async createNode(name: string) {
-        const normalizedName = name?.trim();
+    const token = this.tokenService.generateToken();
+    const tokenHash = this.tokenService.hashToken(token);
 
-        if (
-            !normalizedName ||
-            normalizedName.length > 100
-        ) {
-            throw new BadRequestException(
-                'Node name must contain between 1 and 100 characters',
-            );
-        }
+    try {
+      const node = await this.prisma.node.update({
+        where: { id: nodeId },
+        data: {
+          tokenHash,
+          status: 'OFFLINE',
+          lastSeenAt: null,
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+      });
 
-        const token = this.tokenService.generateToken();
-        const tokenHash = this.tokenService.hashToken(token);
+      return {
+        ...node,
+        token,
+      };
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException(`Node ${nodeId} not found`);
+      }
 
-        const node = await this.prisma.node.create({
-            data: {
-                name: normalizedName,
-                tokenHash,
-            },
-            select: {
-                id: true,
-                name: true,
-                status: true,
-                createdAt: true,
-            },
-        });
+      throw error;
+    }
+  }
 
-        return {
-            ...node,
-            token,
-        };
+  // Authenticate a node without exposing its stored token hash.
+  async authenticateNode(nodeId: string, token: string) {
+    if (
+      typeof nodeId !== 'string' ||
+      !nodeId ||
+      typeof token !== 'string' ||
+      !token
+    ) {
+      return null;
     }
 
-    // Replace the existing token, immediately invalidating the old one.
-    async rotateToken(nodeId: string) {
-        if (!nodeId?.trim()) {
-            throw new BadRequestException(
-                'Node ID is required',
-            );
-        }
+    const node = await this.prisma.node.findUnique({
+      where: { id: nodeId },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        tokenHash: true,
+      },
+    });
 
-        const token = this.tokenService.generateToken();
-        const tokenHash = this.tokenService.hashToken(token);
-
-        try {
-            const node = await this.prisma.node.update({
-                where: { id: nodeId },
-                data: {
-                    tokenHash,
-                    status: 'OFFLINE',
-                    lastSeenAt: null,
-                },
-                select: {
-                    id: true,
-                    name: true,
-                },
-            });
-
-            return {
-                ...node,
-                token,
-            };
-        } catch (error) {
-            if (
-                typeof error === 'object' &&
-                error !== null &&
-                'code' in error &&
-                error.code === 'P2025'
-            ) {
-                throw new NotFoundException(
-                    `Node ${nodeId} not found`,
-                );
-            }
-
-            throw error;
-        }
+    if (!node || !this.tokenService.verifyToken(token, node.tokenHash)) {
+      return null;
     }
 
-    // Verify credentials without returning the stored token hash.
-    async authenticateNode(nodeId: string, token: string) {
-        if (
-            typeof nodeId !== 'string' ||
-            !nodeId ||
-            typeof token !== 'string' ||
-            !token
-        ) {
-            return null;
-        }
+    return {
+      id: node.id,
+      name: node.name,
+      status: node.status,
+    };
+  }
 
-        const node = await this.prisma.node.findUnique({
-            where: { id: nodeId },
-            select: {
-                id: true,
-                name: true,
-                status: true,
-                tokenHash: true,
-            },
-        });
-
-        if (
-            !node ||
-            !this.tokenService.verifyToken(
-                token,
-                node.tokenHash,
-            )
-        ) {
-            return null;
-        }
-
-        return {
-            id: node.id,
-            name: node.name,
-            status: node.status,
-        };
+  // Record a heartbeat using the current node token.
+  async heartbeat(nodeId: string, token: string) {
+    if (
+      !nodeId ||
+      !token ||
+      typeof nodeId !== 'string' ||
+      typeof token !== 'string'
+    ) {
+      throw new UnauthorizedException('Invalid node credentials');
     }
+
+    const node = await this.prisma.node.findUnique({
+      where: { id: nodeId },
+      select: {
+        id: true,
+        tokenHash: true,
+        status: true,
+      },
+    });
+
+    if (!node || !this.tokenService.verifyToken(token, node.tokenHash)) {
+      throw new UnauthorizedException('Invalid node credentials');
+    }
+
+    const now = new Date();
+
+    // Conditional updates prevent a heartbeat authenticated
+    // with an old token from succeeding after token rotation.
+    const updated = await this.prisma.node.updateMany({
+      where: {
+        id: nodeId,
+        tokenHash: node.tokenHash,
+        status: { not: 'MAINTENANCE' },
+      },
+      data: {
+        status: 'ONLINE',
+        lastSeenAt: now,
+      },
+    });
+
+    if (updated.count === 0) {
+      const maintenanceUpdate = await this.prisma.node.updateMany({
+        where: {
+          id: nodeId,
+          tokenHash: node.tokenHash,
+          status: 'MAINTENANCE',
+        },
+        data: {
+          lastSeenAt: now,
+        },
+      });
+
+      if (maintenanceUpdate.count === 0) {
+        throw new UnauthorizedException('Invalid node credentials');
+      }
+    }
+
+    return {
+      ok: true,
+      lastSeenAt: now.toISOString(),
+    };
+  }
 }
