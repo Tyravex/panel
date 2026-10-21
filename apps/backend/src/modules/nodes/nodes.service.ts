@@ -6,35 +6,18 @@
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { NodeTokenService } from './node-token.service';
-
-const HEARTBEAT_TIMEOUT_MS = 90_000;
+import { NodeHeartbeatMonitorService } from './services/node-heartbeat-monitor.service';
 
 @Injectable()
 export class NodesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokenService: NodeTokenService,
+    private readonly heartbeatMonitor: NodeHeartbeatMonitorService,
   ) {}
 
-  // Mark nodes as offline when their heartbeat has expired.
-  // MAINTENANCE is an administrative state and is not changed.
-  private async expireStaleNodes(): Promise<void> {
-    const cutoff = new Date(Date.now() - HEARTBEAT_TIMEOUT_MS);
-
-    await this.prisma.node.updateMany({
-      where: {
-        status: 'ONLINE',
-        OR: [{ lastSeenAt: null }, { lastSeenAt: { lt: cutoff } }],
-      },
-      data: {
-        status: 'OFFLINE',
-      },
-    });
-  }
-
-  // Return public node metadata without authentication credentials.
   async findAll() {
-    await this.expireStaleNodes();
+    await this.heartbeatMonitor.expireStaleNodes();
 
     return this.prisma.node.findMany({
       select: {
@@ -52,7 +35,7 @@ export class NodesService {
   }
 
   async findById(nodeId: string) {
-    await this.expireStaleNodes();
+    await this.heartbeatMonitor.expireStaleNodes();
 
     return this.prisma.node.findUnique({
       where: { id: nodeId },
@@ -67,7 +50,6 @@ export class NodesService {
     });
   }
 
-  // Provision a node and reveal its token only once.
   async createNode(name: string) {
     const normalizedName = name?.trim();
 
@@ -99,7 +81,6 @@ export class NodesService {
     };
   }
 
-  // Invalidate the previous token and reset connectivity.
   async rotateToken(nodeId: string) {
     if (!nodeId?.trim()) {
       throw new BadRequestException('Node ID is required');
@@ -140,7 +121,6 @@ export class NodesService {
     }
   }
 
-  // Authenticate a node without exposing its stored token hash.
   async authenticateNode(nodeId: string, token: string) {
     if (
       typeof nodeId !== 'string' ||
@@ -172,7 +152,6 @@ export class NodesService {
     };
   }
 
-  // Record a heartbeat using the current node token.
   async heartbeat(nodeId: string, token: string) {
     if (
       !nodeId ||
@@ -198,8 +177,6 @@ export class NodesService {
 
     const now = new Date();
 
-    // Conditional updates prevent a heartbeat authenticated
-    // with an old token from succeeding after token rotation.
     const updated = await this.prisma.node.updateMany({
       where: {
         id: nodeId,

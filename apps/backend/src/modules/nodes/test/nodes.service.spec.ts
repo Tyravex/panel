@@ -1,6 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { NodesService } from '../nodes.service';
 import { NodeTokenService } from '../node-token.service';
+import { NodeHeartbeatMonitorService } from '../services/node-heartbeat-monitor.service';
 import { PrismaService } from '@/prisma/prisma.service';
 
 describe('NodesService - heartbeat', () => {
@@ -18,6 +19,10 @@ describe('NodesService - heartbeat', () => {
     };
   };
 
+  let monitor: {
+    expireStaleNodes: jest.Mock;
+  };
+
   beforeEach(() => {
     prisma = {
       node: {
@@ -27,11 +32,16 @@ describe('NodesService - heartbeat', () => {
       },
     };
 
+    monitor = {
+      expireStaleNodes: jest.fn().mockResolvedValue(undefined),
+    };
+
     tokenService = new NodeTokenService();
 
     service = new NodesService(
       prisma as unknown as PrismaService,
       tokenService,
+      monitor as unknown as NodeHeartbeatMonitorService,
     );
   });
 
@@ -128,39 +138,21 @@ describe('NodesService - heartbeat', () => {
     );
   });
 
-  it('marks stale ONLINE nodes as OFFLINE before listing them', async () => {
-    prisma.node.updateMany.mockResolvedValue({ count: 1 });
+  it('checks stale nodes before listing them', async () => {
     prisma.node.findMany.mockResolvedValue([]);
 
     await service.findAll();
 
-    expect(prisma.node.updateMany).toHaveBeenCalledWith({
-      where: {
-        status: 'ONLINE',
-        OR: [
-          { lastSeenAt: null },
-          {
-            lastSeenAt: {
-              lt: expect.any(Date) as Date,
-            },
-          },
-        ],
-      },
-      data: {
-        status: 'OFFLINE',
-      },
-    });
-
-    expect(prisma.node.findMany).toHaveBeenCalled();
+    expect(monitor.expireStaleNodes).toHaveBeenCalledTimes(1);
+    expect(prisma.node.findMany).toHaveBeenCalledTimes(1);
   });
 
   it('checks stale nodes before fetching a single node', async () => {
-    prisma.node.updateMany.mockResolvedValue({ count: 0 });
     prisma.node.findUnique.mockResolvedValue(mockNode());
 
     await service.findById(nodeId);
 
-    expect(prisma.node.updateMany).toHaveBeenCalledTimes(1);
+    expect(monitor.expireStaleNodes).toHaveBeenCalledTimes(1);
     expect(prisma.node.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: nodeId },

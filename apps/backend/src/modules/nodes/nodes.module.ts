@@ -3,10 +3,11 @@
 import { NodesController, NodesHeartbeatController } from './nodes.controller';
 import { NodesService } from './nodes.service';
 import { NodeTokenService } from './node-token.service';
+import { NodeHeartbeatMonitorService } from './services/node-heartbeat-monitor.service';
 
 @Module({
   controllers: [NodesController, NodesHeartbeatController],
-  providers: [NodesService, NodeTokenService],
+  providers: [NodesService, NodeTokenService, NodeHeartbeatMonitorService],
   exports: [NodesService, NodeTokenService],
 })
 export class NodesModule {}
