@@ -6,11 +6,12 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '@/prisma/prisma.service';
+import { CreateServiceDto } from './dto/create-service.dto';
 import { SetServiceMemberDto, UpdateServiceMemberDto } from './dto/service-member.dto';
 
 @Injectable()
 export class ServicesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async getUserServices(userId: number) {
     return this.prisma.service.findMany({
@@ -20,6 +21,55 @@ export class ServicesService {
         server: { select: { id: true, status: true } },
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createService(userId: number, dto: CreateServiceDto) {
+    const name = dto.name.trim();
+    const categoryKey = dto.categoryKey.trim();
+
+    if (!name || !categoryKey) {
+      throw new BadRequestException('Name and category are required');
+    }
+
+    const category = await this.prisma.serviceCategory.findUnique({
+      where: { key: categoryKey },
+      select: { id: true },
+    });
+    if (!category) throw new BadRequestException('Unknown service category');
+
+    if (dto.nodeId !== undefined) {
+      const node = await this.prisma.node.findUnique({
+        where: { id: dto.nodeId },
+        select: { id: true },
+      });
+      if (!node) throw new BadRequestException('Unknown node');
+    }
+
+    // Create a draft only. No container, port, or agent command is allocated.
+    return this.prisma.service.create({
+      data: {
+        name,
+        userId,
+        categoryId: category.id,
+        nodeId: dto.nodeId,
+        memoryMb: dto.memoryMb,
+        cpuPercent: dto.cpuPercent,
+        diskMb: dto.diskMb,
+        installStatus: 'DRAFT',
+      },
+      select: {
+        id: true,
+        name: true,
+        userId: true,
+        categoryId: true,
+        nodeId: true,
+        memoryMb: true,
+        cpuPercent: true,
+        diskMb: true,
+        installStatus: true,
+        createdAt: true,
+      },
     });
   }
 

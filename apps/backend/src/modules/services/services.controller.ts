@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   ParseIntPipe,
@@ -13,6 +14,7 @@ import {
 
 import { UserDTO } from '@shared/types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CreateServiceDto } from './dto/create-service.dto';
 import { SetServiceMemberDto, UpdateServiceMemberDto } from './dto/service-member.dto';
 import { ServicesService } from './services.service';
 
@@ -23,11 +25,20 @@ interface AuthenticatedRequest {
 @Controller('services')
 @UseGuards(JwtAuthGuard)
 export class ServicesController {
-  constructor(private readonly servicesService: ServicesService) {}
+  constructor(private readonly servicesService: ServicesService) { }
 
   @Get()
   getUserServices(@Request() req: AuthenticatedRequest) {
     return this.servicesService.getUserServices(req.user.id);
+  }
+
+  @Post()
+  createService(@Request() req: AuthenticatedRequest, @Body() dto: CreateServiceDto) {
+    // Reuse the existing global creation permission until service:create is introduced.
+    if (!req.user.permissions.includes('server:create')) {
+      throw new ForbiddenException('You do not have permission to create services');
+    }
+    return this.servicesService.createService(req.user.id, dto);
   }
 
   @Get(':id/members')
