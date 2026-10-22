@@ -32,11 +32,12 @@ model User {
   sessions  Session[]
   auditLogs AdminAuditLog[]
 
-  notifications     Notification[]
-  servers           Server[]
-  serverMemberships ServerMember[]
-  services          Service[]
-  jobs              Job[]
+  notifications      Notification[]
+  servers            Server[]
+  serverMemberships  ServerMember[]
+  services           Service[]
+  serviceMemberships ServiceMember[]
+  jobs               Job[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -133,6 +134,8 @@ model Node {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
+  services Service[]
+
   @@index([status])
 }
 
@@ -154,6 +157,15 @@ model ServiceCategory {
   updatedAt DateTime @updatedAt
 }
 
+// Installation lifecycle of a hosted service.
+enum ServiceInstallStatus {
+  DRAFT
+  PENDING_INSTALL
+  INSTALLING
+  INSTALLED
+  FAILED
+}
+
 // A hosted service assigned to a panel user.
 // Existing servers can be linked without changing their original records.
 model Service {
@@ -166,16 +178,56 @@ model Service {
   categoryId String
   category   ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
+  // Existing services can remain unassigned until provisioning is configured.
+  nodeId String?
+  node   Node? @relation(fields: [nodeId], references: [id], onDelete: Restrict)
+
+  // Resource limits are optional for previously created services.
+  memoryMb   Int?
+  cpuPercent Int?
+  diskMb     Int?
+
+  installStatus ServiceInstallStatus @default(DRAFT)
+
   // Optional reference to an existing hosted server.
   // A server can be linked to at most one service.
   serverId Int?    @unique
   server   Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
 
+  members ServiceMember[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([nodeId])
+  @@index([installStatus])
   @@index([userId, categoryId])
   @@index([categoryId])
+}
+
+// =============================================================================
+// Service-specific access control
+// =============================================================================
+
+// A user invited to manage one service with individually granted permissions.
+// The service owner remains defined by Service.userId.
+model ServiceMember {
+  id String @id @default(cuid())
+
+  serviceId String
+  userId    Int
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Service-scoped permissions, independent of global panel roles.
+  permissions String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([serviceId, userId])
+  @@index([userId])
 }
 
 // =============================================================================
