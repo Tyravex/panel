@@ -166,14 +166,14 @@ enum ServiceInstallStatus {
   FAILED
 }
 
-// A hosted service assigned to a panel user.
+// A hosted service that may be unassigned until an administrator assigns an owner.
 // Existing servers can be linked without changing their original records.
 model Service {
   id   String @id @default(cuid())
   name String
 
-  userId Int
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   categoryId String
   category   ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
