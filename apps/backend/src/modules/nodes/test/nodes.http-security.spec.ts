@@ -4,6 +4,7 @@ import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
+import { AgentWebSocketLifecycle } from '../transport/agent-websocket.lifecycle';
 import { NodesController } from '../nodes.controller';
 import { NodesService } from '../nodes.service';
 
@@ -11,6 +12,7 @@ describe('Nodes HTTP security', () => {
     const findById = jest.fn();
     const createNode = jest.fn();
     const rotateToken = jest.fn();
+    const disconnectNode = jest.fn();
     let app: INestApplication;
 
     beforeAll(async () => {
@@ -21,6 +23,7 @@ describe('Nodes HTTP security', () => {
                 PermissionsGuard,
                 { provide: NodesService, useValue: { findById, createNode, rotateToken } },
                 { provide: JwtAuthGuard, useValue: { canActivate: () => true } },
+                { provide: AgentWebSocketLifecycle, useValue: { disconnectNode } },
             ],
         })
             .overrideGuard(JwtAuthGuard)
@@ -110,5 +113,20 @@ describe('Nodes HTTP security', () => {
         expect(response.headers['cache-control']).toBe('no-store');
         expect(response.body.token).toBe('rotated-token');
         expect(rotateToken).toHaveBeenCalledWith('node-1');
+        expect(disconnectNode).toHaveBeenCalledWith('node-1');
+    });
+
+    it('does not disconnect node when token rotation fails', async () => {
+        rotateToken.mockRejectedValue(
+            new Error('Database unavailable'),
+        );
+
+        await authorized(
+            request(app.getHttpServer()).post(
+                '/nodes/node-1/rotate-token',
+            ),
+        ).expect(500);
+
+        expect(disconnectNode).not.toHaveBeenCalled();
     });
 });

@@ -6,6 +6,8 @@ import { AppModule } from './app.module';
 import { getCorsOrigins } from './cors-origins';
 import { validateJwtEnvironment } from './env-validation';
 import { getRuntimeConfig } from './runtime-config';
+import { NodesService } from './modules/nodes/nodes.service';
+import { AgentWebSocketLifecycle } from './modules/nodes/transport/agent-websocket.lifecycle';
 
 async function bootstrap(): Promise<void> {
   // Validate critical secrets before initializing NestJS.
@@ -37,6 +39,12 @@ async function bootstrap(): Promise<void> {
   });
 
   await app.listen(port);
+
+  app.get(AgentWebSocketLifecycle).attach(
+    app.getHttpServer(),
+  );
+
+  app.enableShutdownHooks();
 
   console.log(`Server running on port ${port}`);
 }

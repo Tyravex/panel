@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { Permissions } from '@/rbac/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
 
+import { AgentWebSocketLifecycle } from './transport/agent-websocket.lifecycle';
 import { CreateNodeDto } from './dto/create-node.dto';
 import { NodesService } from './nodes.service';
 
@@ -20,7 +21,10 @@ import { NodesService } from './nodes.service';
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 @Permissions('node:manage')
 export class NodesController {
-  constructor(private readonly nodesService: NodesService) {}
+  constructor(
+    private readonly nodesService: NodesService,
+    private readonly agentWebSocket: AgentWebSocketLifecycle,
+  ) { }
 
   @Get()
   findAll() {
@@ -40,8 +44,12 @@ export class NodesController {
 
   @Post(':id/rotate-token')
   @Header('Cache-Control', 'no-store')
-  rotateToken(@Param('id') id: string) {
-    return this.nodesService.rotateToken(id);
+  async rotateToken(@Param('id') id: string) {
+    const result = await this.nodesService.rotateToken(id);
+
+    this.agentWebSocket.disconnectNode(id);
+
+    return result;
   }
 }
 
@@ -49,7 +57,7 @@ export class NodesController {
 // not by a user session or administrative permissions.
 @Controller('nodes')
 export class NodesHeartbeatController {
-  constructor(private readonly nodesService: NodesService) {}
+  constructor(private readonly nodesService: NodesService) { }
 
   @Post(':id/heartbeat')
   @Header('Cache-Control', 'no-store')
