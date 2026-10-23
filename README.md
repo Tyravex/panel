@@ -1,93 +1,42 @@
 # Tyravex
 
-**Tyravex** is an open-source server management panel designed to provide a modern, flexible interface for managing game servers, Discord bots, and other containerized applications.
+Tyravex is an open-source hosting control panel for game servers, Discord/Telegram bots and containerized applications.
 
-Tyravex aims to combine an intuitive user experience with a modular architecture, extensibility, and reliable Docker-based server management.
+> **Status:** Early development. Not production-ready.
 
-> **Project status:** Early development. Tyravex is not yet production-ready.
+## Repositories
 
-## Features
+- **[Tyravex/panel](https://github.com/Tyravex/panel):** React, TypeScript, Vite, NestJS, Prisma, PostgreSQL and Redis/BullMQ.
+- **[Tyravex/agent](https://github.com/Tyravex/agent):** separate Go daemon for hosting nodes, WebSocket heartbeat and Docker diagnostics.
 
-### Core platform
-- Modern web dashboard
-- User authentication and account management
-- Role-based access control
-- Server management interface
-- Notifications
-- Multi-language support
-- Light and dark themes
-
-### Planned capabilities
-- Docker-based server provisioning and lifecycle management
-- Remote nodes managed through a dedicated Node Agent
-- Real-time server console and resource monitoring
-- Server templates for games, bots, and applications
-- Plugin and extension system
-- Administrative settings and branding
-- Linux and Docker Compose installation options
-
-Features listed as planned may change during development.
-
-## Technology Stack
-
-| Component | Technology |
-|---|---|
-| Frontend | React, TypeScript, Vite |
-| Backend | NestJS, TypeScript |
-| Database | PostgreSQL |
-| ORM | Prisma |
-| Container runtime | Docker |
-| Package management | pnpm |
-| Node management | Dedicated Node Agent (planned) |
-
-## Architecture
-
-Tyravex is designed around a modular architecture:
-
-- **Frontend:** The web interface used by administrators and server owners.
-- **Backend:** Authentication, permissions, API endpoints, and business logic.
-- **Database:** Persistent application data.
-- **Node Agent:** A separate service responsible for managing Docker workloads on remote machines.
-- **Plugin system:** An extensibility layer for additional functionality.
-
-See [Architecture](docs/architecture.md).
-
-## Installation
-
-Installation instructions are being developed.
-
-- [Linux installation](docs/installation/linux.md)
-- [Docker Compose installation](docs/installation/docker.md)
-
-**Do not deploy Tyravex in production until a stable release and security review are available.**
+The canonical Node Agent lives in its **own Go repository**. The previous TypeScript scaffold was removed from the Panel in commit [`c0c9eff`](https://github.com/Tyravex/panel/commit/c0c9eff).
 
 ## Documentation
 
-- [Configuration](docs/configuration.md)
+Start at **[Documentation index](docs/README.md)**.
+
+- [Architecture and modularity](docs/architecture/README.md)
+- [Repository structure](docs/architecture/repository-structure.md)
+- [Module rules](docs/architecture/module-rules.md)
+- [Migration plan](docs/architecture/migration.md)
 - [Development](docs/development.md)
-- [Architecture](docs/architecture.md)
+- [Configuration](docs/configuration.md)
 - [Plugins](docs/plugins.md)
+- [Linux installation](docs/installation/linux.md)
+- [Docker installation](docs/installation/docker.md)
 
-## Roadmap
+**Contributors:** Read [the module rules](docs/architecture/module-rules.md) before changing code.
 
-- [ ] Establish the public development repository
-- [ ] Stabilize authentication and frontend navigation
-- [ ] Complete administrative settings
-- [ ] Prepare Linux and Docker Compose deployment
-- [ ] Implement the Node Agent
-- [ ] Integrate Docker-based server provisioning
-- [ ] Introduce server templates
-- [ ] Develop the plugin SDK and extension system
-- [ ] Prepare automated testing and releases
+## Current capabilities
 
-This roadmap is indicative and does not guarantee release dates.
+Authentication and RBAC, service drafts and ownership, node registration and authenticated WebSocket heartbeat, notifications, localization (PL/EN/DE) and background-jobs infrastructure.
 
-## Contributing
+**Not yet complete:** end-to-end service installation, command execution on the Go agent, production Docker provisioning and production deployment.
 
-Contributions, bug reports, documentation improvements, and feature suggestions are welcome.
+## Development
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request.
+See [the development guide](docs/development.md) for prerequisites, environment variables, commands, tests and database isolation.
 
-## Security
+## Contributing and security
 
-Please do not disclose
+Read [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). Never commit secrets or expose node credentials.

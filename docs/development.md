@@ -4,11 +4,11 @@
 
 Tyravex is in early development and is not yet production-ready.
 
-This guide describes the current local development workflow.
+This guide describes the current local development workflow for the Tyravex Panel.
 
 ## Technology
 
-The Tyravex monorepo uses:
+The Tyravex Panel monorepo uses:
 
 - TypeScript
 - React and Vite
@@ -17,6 +17,10 @@ The Tyravex monorepo uses:
 - Prisma
 - Redis and BullMQ
 - pnpm workspaces
+
+The official [Go Node Agent](https://github.com/Tyravex/agent) is developed in a separate repository and is not part of the Panel's pnpm workspace.
+
+For design and code organization, see the [Architecture Overview](architecture/README.md), [Repository Structure](architecture/repository-structure.md), [Frontend Architecture](architecture/frontend.md), [Backend Architecture](architecture/backend.md), and [Module Rules](architecture/module-rules.md).
 
 ## Prerequisites
 
@@ -38,8 +42,13 @@ apps/
 packages/
   types/
 docs/
+  architecture/
 .github/
 ```
+
+The legacy `apps/agent` TypeScript stub has been removed. Agent development belongs in the [separate Go repository](https://github.com/Tyravex/agent).
+
+For a fuller overview, see [Repository Structure](architecture/repository-structure.md).
 
 ## Environment Configuration
 
@@ -83,7 +92,7 @@ docker compose ps
 Default local endpoints:
 
 | Service | Address |
-|---|---|
+| --- | --- |
 | PostgreSQL | `127.0.0.1:5433` |
 | Redis | `127.0.0.1:6380` |
 
@@ -163,6 +172,12 @@ Run the backend build:
 pnpm --filter ./apps/backend build
 ```
 
+Run the frontend build:
+
+```powershell
+pnpm --filter ./apps/frontend build
+```
+
 ## Integration Test Isolation
 
 Integration tests require a dedicated PostgreSQL database named exactly:
@@ -184,11 +199,13 @@ The backend defines a separate `test:integration` script. Do not run it with the
 ## Development Workflow
 
 1. Make focused changes.
-2. Run the relevant tests.
-3. Run the backend build when backend code changes.
-4. Review the Git diff.
-5. Stage only the intended files.
-6. Commit and push after verification.
+2. Follow the [Migration Guide](architecture/migration.md) when moving files or splitting modules.
+3. Update imports, tests, and documentation as needed.
+4. Run the relevant tests.
+5. Run the backend or frontend build when changing the respective application.
+6. Review the Git diff.
+7. Stage only the intended files.
+8. Commit and push after verification.
 
 Useful Git checks:
 
@@ -203,7 +220,7 @@ Do not use `git add .` when unrelated or sensitive files may be present.
 ## Security
 
 - Use development-only credentials locally.
-- Never commit real secrets, populated `.env` files or private keys.
+- Never commit real secrets, populated `.env` files, or private keys.
 - Do not expose PostgreSQL or Redis unnecessarily.
 - Never run integration tests against the application database.
 - Keep the BullMQ worker disabled until its handlers are ready.
