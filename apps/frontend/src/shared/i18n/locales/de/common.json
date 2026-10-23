@@ -750,5 +750,68 @@
     "online": "Online",
     "empty": "Keine Knoten vorhanden.",
     "title": "Knoten"
+  },
+  "adminServices": {
+    "administration": "Verwaltung",
+    "title": "Dienste",
+    "description": "Dienstentwürfe und deren Besitzer verwalten.",
+    "createService": "Dienst erstellen",
+    "createTitle": "Neuer Dienst",
+    "draftDescription": "Beim Erstellen wird nur ein Entwurf (DRAFT) gespeichert. Es werden keine Ressourcen reserviert und kein Docker-Container gestartet.",
+    "name": "Name",
+    "category": "Kategorie",
+    "ownerOptional": "Besitzer (optional)",
+    "nodeOptional": "Node (optional)",
+    "unassigned": "Nicht zugewiesen",
+    "createDraft": "Entwurf erstellen",
+    "nodesUnavailable": "Nodes konnten nicht geladen werden: {{message}}",
+    "allServices": "Alle Dienste ({{count}})",
+    "searchLabel": "Dienste suchen",
+    "loading": "Dienste werden geladen...",
+    "empty": "Keine Dienste gefunden.",
+    "confirmOwner": "Besitzer des Dienstes „{{name}}“ ändern?",
+    "changeOwner": "Besitzer ändern",
+    "createdNotice": "Dienstentwurf erstellt. Der Container wurde noch nicht gestartet.",
+    "ownerUpdated": "Dienstbesitzer aktualisiert.",
+    "unexpectedError": "Der Vorgang konnte nicht abgeschlossen werden.",
+    "categories": {
+      "server": "Server",
+      "discord_bot": "Discord-Bot",
+      "telegram_bot": "Telegram-Bot",
+      "other": "Anderer Dienst"
+    },
+    "resources": {
+      "memoryMb": "RAM (MB)",
+      "cpuPercent": "CPU (%)",
+      "diskMb": "Speicherplatz (MB)"
+    },
+    "columns": {
+      "service": "Dienst",
+      "category": "Kategorie",
+      "status": "Status",
+      "node": "Node",
+      "owner": "Besitzer",
+      "actions": "Aktionen"
+    },
+    "validation": {
+      "name": "Der Name muss zwischen 1 und 100 Zeichen lang sein.",
+      "memoryMb": "RAM: Ganzzahl von 1 bis 1048576 eingeben.",
+      "cpuPercent": "CPU: Ganzzahl von 1 bis 100000 eingeben.",
+      "diskMb": "Speicherplatz: Ganzzahl von 1 bis 10485760 eingeben."
+    },
+    "ownerPicker": {
+      "searchLabel": "Benutzer nach Name oder E-Mail suchen",
+      "searchPlaceholder": "Nach Name oder E-Mail suchen...",
+      "selectLabel": "Dienstbesitzer auswählen",
+      "noOwner": "Kein Besitzer",
+      "userId": "Benutzer #{{id}}",
+      "loading": "Benutzer werden geladen...",
+      "error": "Benutzer konnten nicht geladen werden. Die Berechtigung user:read ist erforderlich.",
+      "empty": "Keine aktiven Benutzer für diese Suche gefunden.",
+      "page": "Seite {{page}} von {{pages}}",
+      "selected": "Ausgewählt: {{name}}"
+    },
+    "refresh": "Aktualisieren",
+    "nodesLoading": "Knoten werden geladen..."
   }
 }

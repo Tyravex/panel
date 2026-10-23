@@ -750,5 +750,68 @@
     "online": "Online",
     "empty": "No nodes to display.",
     "title": "Nodes"
+  },
+  "adminServices": {
+    "administration": "Administration",
+    "title": "Services",
+    "description": "Manage service drafts and their owners.",
+    "createService": "Create service",
+    "createTitle": "New service",
+    "draftDescription": "Creating a service only saves a draft (DRAFT). It does not reserve resources or start Docker.",
+    "name": "Name",
+    "category": "Category",
+    "ownerOptional": "Owner (optional)",
+    "nodeOptional": "Node (optional)",
+    "unassigned": "Unassigned",
+    "createDraft": "Create draft",
+    "nodesUnavailable": "Unable to load nodes: {{message}}",
+    "allServices": "All services ({{count}})",
+    "searchLabel": "Search services",
+    "loading": "Loading services...",
+    "empty": "No services found.",
+    "confirmOwner": "Change the owner of service “{{name}}”?",
+    "changeOwner": "Change owner",
+    "createdNotice": "Service draft created. The container has not been started.",
+    "ownerUpdated": "Service owner updated.",
+    "unexpectedError": "The operation could not be completed.",
+    "categories": {
+      "server": "Server",
+      "discord_bot": "Discord bot",
+      "telegram_bot": "Telegram bot",
+      "other": "Other service"
+    },
+    "resources": {
+      "memoryMb": "RAM (MB)",
+      "cpuPercent": "CPU (%)",
+      "diskMb": "Disk (MB)"
+    },
+    "columns": {
+      "service": "Service",
+      "category": "Category",
+      "status": "Status",
+      "node": "Node",
+      "owner": "Owner",
+      "actions": "Actions"
+    },
+    "validation": {
+      "name": "Name must be between 1 and 100 characters.",
+      "memoryMb": "RAM: enter an integer from 1 to 1048576.",
+      "cpuPercent": "CPU: enter an integer from 1 to 100000.",
+      "diskMb": "Disk: enter an integer from 1 to 10485760."
+    },
+    "ownerPicker": {
+      "searchLabel": "Search users by name or email",
+      "searchPlaceholder": "Search by name or email...",
+      "selectLabel": "Select service owner",
+      "noOwner": "No owner",
+      "userId": "User #{{id}}",
+      "loading": "Loading users...",
+      "error": "Unable to load users. The user:read permission is required.",
+      "empty": "No active users match this search.",
+      "page": "Page {{page}} of {{pages}}",
+      "selected": "Selected: {{name}}"
+    },
+    "refresh": "Refresh",
+    "nodesLoading": "Loading nodes..."
   }
 }

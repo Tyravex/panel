@@ -758,5 +758,68 @@
     "online": "Online",
     "empty": "Brak węzłów do wyświetlenia.",
     "title": "Węzły"
+  },
+  "adminServices": {
+    "administration": "Administracja",
+    "title": "Usługi",
+    "description": "Zarządzaj szkicami usług i ich właścicielami.",
+    "createService": "Utwórz usługę",
+    "createTitle": "Nowa usługa",
+    "draftDescription": "Utworzenie zapisuje tylko szkic (DRAFT). Nie rezerwuje zasobów ani nie uruchamia Dockera.",
+    "name": "Nazwa",
+    "category": "Kategoria",
+    "ownerOptional": "Właściciel (opcjonalnie)",
+    "nodeOptional": "Node (opcjonalnie)",
+    "unassigned": "Nieprzypisany",
+    "createDraft": "Utwórz szkic",
+    "nodesUnavailable": "Nie można pobrać węzłów: {{message}}",
+    "allServices": "Wszystkie usługi ({{count}})",
+    "searchLabel": "Szukaj usług",
+    "loading": "Ładowanie usług...",
+    "empty": "Nie znaleziono usług.",
+    "confirmOwner": "Zmienić właściciela usługi „{{name}}”?",
+    "changeOwner": "Zmień właściciela",
+    "createdNotice": "Utworzono szkic usługi. Kontener nie został jeszcze uruchomiony.",
+    "ownerUpdated": "Właściciel usługi został zaktualizowany.",
+    "unexpectedError": "Nie udało się wykonać operacji.",
+    "categories": {
+      "server": "Serwer",
+      "discord_bot": "Bot Discord",
+      "telegram_bot": "Bot Telegram",
+      "other": "Inna usługa"
+    },
+    "resources": {
+      "memoryMb": "RAM (MB)",
+      "cpuPercent": "CPU (%)",
+      "diskMb": "Dysk (MB)"
+    },
+    "columns": {
+      "service": "Usługa",
+      "category": "Kategoria",
+      "status": "Status",
+      "node": "Node",
+      "owner": "Właściciel",
+      "actions": "Akcje"
+    },
+    "validation": {
+      "name": "Nazwa musi mieć od 1 do 100 znaków.",
+      "memoryMb": "RAM: wpisz liczbę całkowitą od 1 do 1048576.",
+      "cpuPercent": "CPU: wpisz liczbę całkowitą od 1 do 100000.",
+      "diskMb": "Dysk: wpisz liczbę całkowitą od 1 do 10485760."
+    },
+    "ownerPicker": {
+      "searchLabel": "Szukaj użytkownika po nazwie lub e-mailu",
+      "searchPlaceholder": "Szukaj po nazwie lub e-mailu...",
+      "selectLabel": "Wybierz właściciela usługi",
+      "noOwner": "Bez właściciela",
+      "userId": "Użytkownik #{{id}}",
+      "loading": "Ładowanie użytkowników...",
+      "error": "Nie udało się pobrać użytkowników. Wymagane uprawnienie user:read.",
+      "empty": "Brak aktywnych użytkowników dla tego wyszukiwania.",
+      "page": "Strona {{page}} z {{pages}}",
+      "selected": "Wybrano: {{name}}"
+    },
+    "refresh": "Odśwież",
+    "nodesLoading": "Ładowanie węzłów..."
   }
 }
