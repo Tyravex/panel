@@ -74,7 +74,15 @@
       "errorTitle": "Dienste konnten nicht geladen werden",
       "errorDescription": "Die Dienstliste konnte nicht geladen werden. Bitte versuche es erneut.",
       "emptyDescription": "Deinem Konto sind in dieser Kategorie noch keine Dienste zugewiesen.",
-      "serviceId": "Dienst-ID"
+      "serviceId": "Dienst-ID",
+      "count": "Anzahl Dienste",
+      "draft": "Entwurf",
+      "linkedServer": "Verknüpfter Server",
+      "pendingInstallation": "Wartet auf Installation",
+      "detailsUnavailable": "Details sind nach der Installation verfügbar.",
+      "previewOn": "Vorschau: EIN",
+      "previewOff": "Vorschau: AUS",
+      "previewNote": "Dies sind Beispielserver, die nicht in der Datenbank gespeichert sind."
     },
     "servers": {
       "title": "Deine Server",

@@ -13,6 +13,7 @@ import { AdminSectionPage } from "@/pages/admin/AdminSectionPage";
 import { AdminAuditPage } from "@/pages/admin/AdminAuditPage";
 import { AdminSettingsPage } from "@/pages/admin/AdminSettingsPage";
 import { AdminNodesPage } from "@/pages/admin/AdminNodesPage";
+import { AdminServicesPage } from "@/pages/admin/AdminServicesPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { ProfilePage } from "@/pages/profile/ProfilePage";
@@ -106,6 +107,17 @@ export const AppRoutes = () => {
             <AdminRoute>
               <AdminPermissionRoute permission="node:manage">
                 <AdminNodesPage />
+              </AdminPermissionRoute>
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/services"
+          element={
+            <AdminRoute>
+              <AdminPermissionRoute permission="service:manage:any">
+                <AdminServicesPage />
               </AdminPermissionRoute>
             </AdminRoute>
           }

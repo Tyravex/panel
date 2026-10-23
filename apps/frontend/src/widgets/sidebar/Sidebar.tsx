@@ -29,6 +29,7 @@ type Item = {
   label: string;
   icon: LucideIcon;
   permission?: string;
+  ownerOnly?: boolean;
 };
 
 type Section = {
@@ -70,7 +71,13 @@ const adminSections: Section[] = [
         permission: "node:manage",
       },
       { label: "Servers", icon: Server },
-      { label: "Services", icon: Boxes },
+      {
+        path: "/admin/services",
+        label: "Services",
+        icon: Boxes,
+        permission: "service:manage:any",
+        ownerOnly: true,
+      },
     ],
   },
   {
@@ -156,8 +163,8 @@ export const Sidebar = ({
   }, [location.pathname, isAdmin]);
 
   const visible = (item: Item) =>
-    !item.permission ||
-    !!user?.permissions?.includes(item.permission);
+    (!item.ownerOnly || !!user?.roles?.includes("Owner")) &&
+    (!item.permission || !!user?.permissions?.includes(item.permission));
 
   const translateLabel = (label: string) =>
     t(`navigation.${label.toLowerCase().replace(/\W+/g, "")}`, {

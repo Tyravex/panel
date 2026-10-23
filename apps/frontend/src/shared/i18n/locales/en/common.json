@@ -74,7 +74,15 @@
       "errorTitle": "Unable to load services",
       "errorDescription": "The service list could not be loaded. Please try again.",
       "emptyDescription": "No services are assigned to your account in this category.",
-      "serviceId": "Service ID"
+      "serviceId": "Service ID",
+      "count": "Service count",
+      "draft": "Draft",
+      "linkedServer": "Linked server",
+      "pendingInstallation": "Awaiting installation",
+      "detailsUnavailable": "Details will be available after installation.",
+      "previewOn": "Preview: ON",
+      "previewOff": "Preview: OFF",
+      "previewNote": "These are sample servers and are not stored in the database."
     },
     "servers": {
       "title": "Your servers",

@@ -74,7 +74,15 @@
       "errorTitle": "Nie udało się załadować usług",
       "errorDescription": "Nie można pobrać listy usług. Spróbuj ponownie.",
       "emptyDescription": "Do Twojego konta nie przypisano jeszcze usług w tej kategorii.",
-      "serviceId": "ID usługi"
+      "serviceId": "ID usługi",
+      "count": "Liczba usług",
+      "draft": "Szkic",
+      "linkedServer": "Powiązany serwer",
+      "pendingInstallation": "Oczekuje na instalację",
+      "detailsUnavailable": "Szczegóły będą dostępne po instalacji.",
+      "previewOn": "Podgląd: WŁ.",
+      "previewOff": "Podgląd: WYŁ.",
+      "previewNote": "To przykładowe serwery. Nie są zapisane w bazie danych."
     },
     "servers": {
       "title": "Twoje serwery",
