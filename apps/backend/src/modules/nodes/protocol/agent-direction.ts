@@ -1,4 +1,3 @@
-
 import {
     AgentEnvelope,
     AgentMessageType,

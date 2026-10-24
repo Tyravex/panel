@@ -1,4 +1,3 @@
-
 export const AGENT_PROTOCOL_VERSION = 1 as const;
 
 export const AGENT_MESSAGE_TYPES = [
@@ -44,7 +43,7 @@ export interface AgentHeartbeatPayload {
 export interface AgentCommandPayload {
     commandId: string;
     operation: string;
-    serverId: string;
+    serviceId: string;
     parameters: Record<string, unknown>;
 }
 

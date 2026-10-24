@@ -1,4 +1,3 @@
-
 import {
     AGENT_TO_PANEL_TYPES,
     PANEL_TO_AGENT_TYPES,
@@ -46,8 +45,8 @@ describe('Agent protocol message direction', () => {
         'command.execute',
         {
             commandId: 'command-1',
-            operation: 'server.start',
-            serverId: 'server-1',
+            operation: 'service.start',
+            serviceId: 'service-1',
             parameters: {},
         },
         'command-message-1',

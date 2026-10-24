@@ -1,14 +1,15 @@
-
 import {
     AgentEnvelope,
     AgentMessageType,
     isAgentEnvelope,
 } from './agent-protocol';
+import { isServiceInstallPayload } from './service-install-payload';
 
 export const AGENT_OPERATIONS = [
-    'server.start',
-    'server.stop',
-    'server.restart',
+    'service.install',
+    'service.start',
+    'service.stop',
+    'service.restart',
 ] as const;
 
 export type AgentOperation =
@@ -118,21 +119,32 @@ export function isValidAgentPayload(
         case 'node.heartbeat.ack':
             return Object.keys(payload).length === 0;
 
-        case 'command.execute':
-            return (
-                hasOnlyKeys(payload, [
+        case 'command.execute': {
+            if (
+                !hasOnlyKeys(payload, [
                     'commandId',
                     'operation',
-                    'serverId',
+                    'serviceId',
                     'parameters',
-                ]) &&
-                isNonEmptyString(payload.commandId) &&
-                typeof payload.operation === 'string' &&
-                OPERATIONS.has(payload.operation) &&
-                isNonEmptyString(payload.serverId) &&
-                isRecord(payload.parameters) &&
-                Object.keys(payload.parameters).length === 0
-            );
+                ]) ||
+                !isNonEmptyString(payload.commandId) ||
+                !isNonEmptyString(payload.serviceId) ||
+                typeof payload.operation !== 'string' ||
+                !OPERATIONS.has(payload.operation) ||
+                !isRecord(payload.parameters)
+            ) {
+                return false;
+            }
+
+            if (payload.operation === 'service.install') {
+                return (
+                    isServiceInstallPayload(payload.parameters) &&
+                    payload.parameters.serviceId === payload.serviceId
+                );
+            }
+
+            return Object.keys(payload.parameters).length === 0;
+        }
 
         case 'command.accepted':
             return (

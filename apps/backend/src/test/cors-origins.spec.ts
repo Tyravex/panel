@@ -1,4 +1,3 @@
-
 import { getCorsOrigins } from '../cors-origins';
 
 describe('getCorsOrigins', () => {

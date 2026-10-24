@@ -7,6 +7,7 @@ import { AdminRoute } from "./AdminRoute";
 import { AdminPermissionRoute } from "./AdminPermissionRoute";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
 import { ServerDetailsPage } from "@/pages/dashboard/ServerDetailsPage";
+import { ServiceDetailsPage } from "@/pages/dashboard/ServiceDetailsPage";
 import { AdminRolesPage } from "@/pages/admin/AdminRolesPage";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
 import { AdminSectionPage } from "@/pages/admin/AdminSectionPage";
@@ -40,10 +41,8 @@ export const AppRoutes = () => {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route
-          path="/servers/:id"
-          element={<ServerDetailsPage />}
-        />
+        <Route path="/servers/:id" element={<ServerDetailsPage />} />
+        <Route path="/services/:id" element={<ServiceDetailsPage />} />
 
         <Route
           path="/admin"

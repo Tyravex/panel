@@ -1,4 +1,3 @@
-
 export function getCorsOrigins(
     configuredOrigins: string | undefined = process.env.CORS_ORIGIN,
 ): string[] {

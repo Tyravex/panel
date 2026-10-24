@@ -1,4 +1,3 @@
-
 import {
     isValidAgentMessage,
     isValidAgentPayload,
@@ -63,8 +62,8 @@ describe('Agent protocol payload validation', () => {
         expect(
             isValidAgentPayload('command.execute', {
                 commandId: 'command-1',
-                operation: 'server.start',
-                serverId: 'server-1',
+                operation: 'service.start',
+                serviceId: 'service-1',
                 parameters: {},
             }),
         ).toBe(true);
@@ -75,7 +74,7 @@ describe('Agent protocol payload validation', () => {
             isValidAgentPayload('command.execute', {
                 commandId: 'command-1',
                 operation: 'system.execute',
-                serverId: 'server-1',
+                serviceId: 'service-1',
                 parameters: {},
             }),
         ).toBe(false);
@@ -85,11 +84,34 @@ describe('Agent protocol payload validation', () => {
         expect(
             isValidAgentPayload('command.execute', {
                 commandId: 'command-1',
-                operation: 'server.start',
-                serverId: 'server-1',
+                operation: 'service.start',
+                serviceId: 'service-1',
                 parameters: {
                     shell: 'powershell',
                 },
+            }),
+        ).toBe(false);
+    });
+
+    it('rejects legacy server commands', () => {
+        expect(
+            isValidAgentPayload('command.execute', {
+                commandId: 'command-1',
+                operation: 'server.start',
+                serverId: 'server-1',
+                parameters: {},
+            }),
+        ).toBe(false);
+    });
+
+    it('rejects serverId in a service command', () => {
+        expect(
+            isValidAgentPayload('command.execute', {
+                commandId: 'command-1',
+                operation: 'service.start',
+                serviceId: 'service-1',
+                serverId: 'server-1',
+                parameters: {},
             }),
         ).toBe(false);
     });

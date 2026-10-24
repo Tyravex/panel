@@ -15,6 +15,8 @@ export class JobDispatcherService {
         return this.prisma.job.findMany({
             where: {
                 status: 'PENDING',
+                serviceId: null,
+                serverId: { not: null },
             },
             orderBy: [
                 { createdAt: 'asc' },

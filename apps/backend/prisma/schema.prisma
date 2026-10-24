@@ -1,12 +1,10 @@
-// =============================================================================
-// Prisma configuration
-// =============================================================================
-
+// Prisma Client is generated for the CommonJS backend runtime.
 generator client {
   provider     = "prisma-client-js"
   moduleFormat = "cjs"
 }
 
+// PostgreSQL connection URL is supplied by the Prisma runtime configuration.
 datasource db {
   provider = "postgresql"
 }
@@ -15,10 +13,12 @@ datasource db {
 // Identity and access management
 // =============================================================================
 
+// Panel account. Global roles and service membership are separate access paths.
 model User {
   id        Int     @id @default(autoincrement())
   username  String  @unique
   email     String  @unique
+  // Password hash only; never store a plaintext password.
   password  String
   isActive  Boolean @default(true)
   firstName String?
@@ -27,7 +27,7 @@ model User {
   avatar   String?
   language String  @default("en")
 
-  // Global panel roles assigned to this user.
+  // Global permissions are granted through roles, not service ownership.
   roles     UserRole[]
   sessions  Session[]
   auditLogs AdminAuditLog[]
@@ -43,6 +43,7 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
+// Named collection of global permissions assigned to users.
 model Role {
   id   String @id @default(cuid())
   name String @unique
@@ -51,7 +52,7 @@ model Role {
   users       UserRole[]
 }
 
-// Explicit membership allows future metadata such as assignedBy and expiresAt.
+// Explicit many-to-many role assignment with an audit-friendly timestamp.
 model UserRole {
   userId Int
   roleId String
@@ -65,6 +66,7 @@ model UserRole {
   @@index([roleId])
 }
 
+// Individual global capability; role membership controls its grant.
 model Permission {
   id   String @id @default(cuid())
   name String @unique
@@ -76,14 +78,14 @@ model Permission {
 // Authentication sessions
 // =============================================================================
 
-// Server-side session used to revoke JWT access before token expiration.
+// Revocable login session. JWT validity alone does not guarantee access.
 model Session {
   id String @id @default(cuid())
 
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Session validity is checked independently of JWT expiration.
+  // Revocation and expiration must be checked on authenticated requests.
   expiresAt DateTime
   revokedAt DateTime?
 
@@ -98,6 +100,7 @@ model Session {
 // Notifications
 // =============================================================================
 
+// User-facing notification persisted independently of realtime delivery.
 model Notification {
   id      Int     @id @default(autoincrement())
   content String
@@ -113,21 +116,20 @@ model Notification {
 // Infrastructure and nodes
 // =============================================================================
 
-// Current connectivity or administrative state of a node.
+// Administrative or observed state; not proof of an active WebSocket session.
 enum NodeStatus {
   OFFLINE
   ONLINE
   MAINTENANCE
 }
 
-// A machine running a Tyravex Agent.
-// Each node authenticates independently using its own token.
+// Physical or virtual host authenticated independently by the Agent.
 model Node {
   id     String     @id @default(cuid())
   name   String
   status NodeStatus @default(OFFLINE)
 
-  // Store a cryptographic token hash, never the plaintext token.
+  // Store only a token hash; plaintext Agent tokens must not enter the database.
   tokenHash String @unique
 
   lastSeenAt DateTime?
@@ -143,8 +145,7 @@ model Node {
 // Service catalog
 // =============================================================================
 
-// A configurable category of hosted services.
-// Examples include game servers, Discord bots, and Telegram bots.
+// Extensible type of hosted workload (server, Discord bot, Telegram bot, etc.).
 model ServiceCategory {
   id          String  @id @default(cuid())
   key         String  @unique
@@ -157,7 +158,7 @@ model ServiceCategory {
   updatedAt DateTime @updatedAt
 }
 
-// Installation lifecycle of a hosted service.
+// Service provisioning lifecycle, separate from individual Job states.
 enum ServiceInstallStatus {
   DRAFT
   PENDING_INSTALL
@@ -166,35 +167,44 @@ enum ServiceInstallStatus {
   FAILED
 }
 
-// A hosted service that may be unassigned until an administrator assigns an owner.
-// Existing servers can be linked without changing their original records.
+// Canonical hosted workload. New functionality must target Service, not Server.
 model Service {
   id   String @id @default(cuid())
   name String
 
+  // Ownership may be unset until the service is assigned.
   userId Int?
   user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   categoryId String
   category   ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
-  // Existing services can remain unassigned until provisioning is configured.
+  // Node assignment is optional before provisioning.
   nodeId String?
-  node   Node? @relation(fields: [nodeId], references: [id], onDelete: Restrict)
+  node   Node?   @relation(fields: [nodeId], references: [id], onDelete: Restrict)
 
-  // Resource limits are optional for previously created services.
+  // Optional limits preserve compatibility with older service records.
   memoryMb   Int?
   cpuPercent Int?
   diskMb     Int?
 
   installStatus ServiceInstallStatus @default(DRAFT)
 
-  // Optional reference to an existing hosted server.
-  // A server can be linked to at most one service.
+  // Resolved image for the installation.
+  // The selected Egg is the source of installation configuration.
+  dockerImage String?
+
+  // Selected, versioned installation Egg.
+  eggId String?
+  egg   Egg?    @relation(fields: [eggId], references: [id], onDelete: Restrict)
+
+  // Temporary compatibility with the legacy Server model.
+  // Remove only after all old server functionality has been migrated.
   serverId Int?    @unique
   server   Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
 
   members ServiceMember[]
+  jobs    Job[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -203,14 +213,14 @@ model Service {
   @@index([installStatus])
   @@index([userId, categoryId])
   @@index([categoryId])
+  @@index([eggId])
 }
 
 // =============================================================================
 // Service-specific access control
 // =============================================================================
 
-// A user invited to manage one service with individually granted permissions.
-// The service owner remains defined by Service.userId.
+// Service-scoped access grants; independent of global role permissions.
 model ServiceMember {
   id String @id @default(cuid())
 
@@ -220,7 +230,7 @@ model ServiceMember {
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Service-scoped permissions, independent of global panel roles.
+  // Explicit permission keys granted to this member.
   permissions String[]
 
   createdAt DateTime @default(now())
@@ -231,9 +241,71 @@ model ServiceMember {
 }
 
 // =============================================================================
-// Hosted servers
+// Egg repositories and installation templates
 // =============================================================================
 
+// A configured source of installation Eggs.
+// Repository contents are not trusted automatically.
+enum EggRepositoryStatus {
+  ENABLED
+  DISABLED
+}
+
+// Repository registry. ENABLED alone does not approve every contained Egg.
+model EggRepository {
+  id String @id @default(cuid())
+
+  name String
+  // Source URL is metadata; imports still require validation.
+  url  String @unique
+
+  // Metadata only. This does not grant automatic trust.
+  isOfficial Boolean             @default(false)
+  status     EggRepositoryStatus @default(DISABLED)
+
+  eggs Egg[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+// A versioned installation definition imported from a repository.
+// The manifest is data, not executable backend plugin code.
+model Egg {
+  id String @id @default(cuid())
+
+  key         String
+  name        String
+  description String?
+  version     String
+
+  // The importer must validate this document before storing it.
+  manifest Json
+
+  repositoryId String
+  repository   EggRepository @relation(fields: [repositoryId], references: [id], onDelete: Restrict)
+
+  // Administrator approval is required before an Egg can be selected.
+  isEnabled Boolean @default(false)
+
+  services Service[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Different versions of the same Egg can coexist in one repository.
+  @@unique([repositoryId, key, version])
+  @@index([repositoryId, isEnabled])
+}
+
+// =============================================================================
+// Legacy hosted servers
+// =============================================================================
+
+// Compatibility only. New hosting functionality must use Service.
+// Legacy model retained until existing server routes and jobs are migrated.
 model Server {
   id   Int    @id @default(autoincrement())
   name String
@@ -247,20 +319,17 @@ model Server {
   user    User           @relation(fields: [userId], references: [id])
   members ServerMember[]
 
-  // Optional catalog entry for this existing hosted server.
   service Service?
-
-  jobs Job[]
+  jobs    Job[]
 
   createdAt DateTime @default(now())
 }
 
 // =============================================================================
-// Server-specific access control
+// Legacy server-specific access control
 // =============================================================================
 
-// A user invited to manage a specific server.
-// The server owner remains defined by Server.userId.
+// Legacy Server-scoped permissions; do not use for new Service authorization.
 model ServerMember {
   id String @id @default(cuid())
 
@@ -270,13 +339,12 @@ model ServerMember {
   server Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Server-scoped permissions, independent of global panel roles.
+  // Explicit permission keys granted to this member.
   permissions String[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // A user can be a member of a server only once.
   @@unique([serverId, userId])
   @@index([userId])
 }
@@ -285,7 +353,7 @@ model ServerMember {
 // Background jobs
 // =============================================================================
 
-// Supported background operations in the Tyravex panel.
+// Job operations are queued work requests, not direct Agent instructions.
 enum JobType {
   INSTALL
   BACKUP
@@ -293,7 +361,7 @@ enum JobType {
   REINSTALL
 }
 
-// Lifecycle states shared by the API, workers, and UI.
+// Job status is distinct from AgentCommandStatus and ServiceInstallStatus.
 enum JobStatus {
   PENDING
   DISPATCHING
@@ -304,25 +372,48 @@ enum JobStatus {
   CANCELLED
 }
 
+// Persistent state of a command sent to an Agent.
+// UNKNOWN means execution may have occurred but the result is unconfirmed.
+enum AgentCommandStatus {
+  PREPARED
+  SENT
+  ACCEPTED
+  COMPLETED
+  FAILED
+  UNKNOWN
+}
+
+// Durable user-requested operation. INSTALL uses an immutable configuration snapshot.
 model Job {
   id       String    @id @default(cuid())
   type     JobType
   status   JobStatus @default(PENDING)
   progress Int       @default(0)
 
-  // User who requested the operation.
+  // Immutable installation configuration captured when the job is created.
+  // Secret values must never be stored in this field.
+  installConfig Json?
+
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Restrict)
 
-  // Some operations may not belong to a specific server.
+  // Legacy relation; no new functionality should depend on it.
   serverId Int?
   server   Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
 
-  // BullMQ job reference and dispatcher recovery metadata.
+  // Canonical relation for new hosting jobs.
+  serviceId String?
+  service   Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  // Commands issued to an Agent for this job.
+  // A Job may retain command history; INSTALL command uniqueness is enforced by key.
+  agentCommands AgentCommand[]
+
+  // Legacy queue dispatch metadata; not proof that an Agent executed work.
   queueJobId        String?   @unique
   dispatchClaimedAt DateTime?
 
-  // Safe error summary; never store credentials or tokens.
+  // Only sanitized errors may be exposed to users or persisted.
   errorMessage String? @db.Text
 
   createdAt  DateTime  @default(now())
@@ -331,14 +422,61 @@ model Job {
 
   @@index([userId, createdAt])
   @@index([serverId, createdAt])
+  @@index([serviceId, createdAt])
   @@index([status, createdAt, id])
+}
+
+// =============================================================================
+// Persistent Agent commands
+// =============================================================================
+
+// This record is the durable identity of an Agent operation.
+// Never treat a timeout or disconnect as proof that execution failed.
+// Persistent transport command record, not an execution guarantee.
+// Dispatch must use atomic state transitions and must not retry UNKNOWN blindly.
+model AgentCommand {
+  id String @id @default(cuid())
+
+  jobId String
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Restrict)
+
+  // Target and operation are captured when the command is prepared.
+  nodeId    String
+  serviceId String
+  operation String
+
+  // PREPARED is not sent; SENT/ACCEPTED may already be executing remotely.
+  status AgentCommandStatus @default(PREPARED)
+
+  // Connection metadata, not the authentication token.
+  sessionId String?
+
+  // Timestamps document observed transitions, not remote execution certainty.
+  preparedAt DateTime  @default(now())
+  sentAt     DateTime?
+  acceptedAt DateTime?
+  finishedAt DateTime?
+
+  // Sanitized diagnostic information only.
+  errorCode    String?
+  // Only sanitized errors may be exposed to users or persisted.
+  errorMessage String? @db.Text
+
+  // Example: install:<jobId>.
+  // This is a database uniqueness guard, not Agent-side idempotency.
+  // Prevents creating another command record for the same INSTALL job.
+  jobCommandKey String @unique
+
+  @@index([jobId, status])
+  @@index([nodeId, status])
+  @@index([status, preparedAt])
 }
 
 // =============================================================================
 // Panel settings
 // =============================================================================
 
-// Persisted panel-wide settings. Public registration is disabled by default.
+// Persisted instance-level feature switches and settings.
 model PanelSetting {
   key          String   @id
   booleanValue Boolean
@@ -349,21 +487,19 @@ model PanelSetting {
 // Administrative audit trail
 // =============================================================================
 
+// Administrative action history. Never include credentials in metadata.
 model AdminAuditLog {
   id String @id @default(cuid())
 
-  // Administrator who performed the operation.
+  // Nullable actor preserves history if an account is removed.
   actorId Int?
   actor   User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
-  // Examples: USER_CREATED, USER_DISABLED, ROLE_ASSIGNED.
-  action String
-
-  // Resource affected by the operation.
+  action     String
   targetType String
   targetId   String
 
-  // Only explicitly approved, non-sensitive metadata is stored.
+  // Never store secrets in audit metadata.
   metadata Json?
 
   createdAt DateTime @default(now())
@@ -378,28 +514,17 @@ model AdminAuditLog {
 // Language plugins
 // =============================================================================
 
-// Registry of languages available to the Tyravex panel.
-// Language packages are discovered automatically but activated by an admin.
+// Available UI language, optionally provided by an installed plugin.
 model Language {
-  // BCP 47 language tag, e.g. en, pl, de, fr, pt-BR.
   code String @id @db.VarChar(35)
-
-  // Native display name, e.g. English, Polski, Deutsch.
   name String
 
-  // Optional plugin providing this language.
   pluginId String? @unique
+  plugin   Plugin? @relation(fields: [pluginId], references: [id], onDelete: Restrict)
 
-  // Built-in languages do not require a plugin.
-  plugin Plugin? @relation(fields: [pluginId], references: [id], onDelete: Restrict)
-
-  // Built-in languages are distributed with Tyravex.
-  isBuiltIn Boolean @default(false)
-
-  // New language plugins remain disabled until approved.
-  isEnabled Boolean @default(false)
-
-  // Prevent removal or disabling of the fallback language.
+  // Fallback language must remain available when plugins are disabled.
+  isBuiltIn  Boolean @default(false)
+  isEnabled  Boolean @default(false)
   isFallback Boolean @default(false)
 
   createdAt DateTime @default(now())
@@ -412,7 +537,7 @@ model Language {
 // Plugin registry
 // =============================================================================
 
-// Categories of extensions supported by Tyravex.
+// Registry category; plugins are not automatically trusted or enabled.
 enum PluginType {
   LANGUAGE
   THEME
@@ -422,30 +547,24 @@ enum PluginType {
   OTHER
 }
 
-// Installation lifecycle of a plugin on this instance.
+// DISABLED prevents activation until explicitly approved.
 enum PluginStatus {
   INSTALLED
   DISABLED
   FAILED
 }
 
-// Registry of locally installed plugin packages.
-// The plugin files are stored outside the database.
+// Installed plugin metadata; storagePath must be constrained by application code.
 model Plugin {
-  // Stable identifier from the plugin manifest.
   id String @id
 
   type    PluginType
   version String
 
-  // Installation and activation state.
   status PluginStatus @default(DISABLED)
 
-  // Path relative to the managed plugin storage root.
-  // Never use this value as an unrestricted filesystem path.
-  storagePath String
-
-  // Optional origin information for future catalog integration.
+  // Relative path only; never use unchecked as an arbitrary filesystem path.
+  storagePath      String
   sourceRepository String?
 
   installedAt DateTime @default(now())

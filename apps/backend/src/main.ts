@@ -6,8 +6,8 @@ import { AppModule } from './app.module';
 import { getCorsOrigins } from './cors-origins';
 import { validateJwtEnvironment } from './env-validation';
 import { getRuntimeConfig } from './runtime-config';
-import { NodesService } from './modules/nodes/nodes.service';
 import { AgentWebSocketLifecycle } from './modules/nodes/transport/agent-websocket.lifecycle';
+import { AgentCommandRecoveryService } from './modules/nodes/transport/agent-command-recovery.service';
 
 async function bootstrap(): Promise<void> {
   // Validate critical secrets before initializing NestJS.
@@ -20,33 +20,56 @@ async function bootstrap(): Promise<void> {
 
   const app = await NestFactory.create(AppModule);
 
-  // Reject unknown request fields and transform validated DTOs.
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
+  try {
+    // Reject unknown request fields and transform validated DTOs.
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
 
-  // Enable cookie parsing middleware.
-  app.use(cookieParser());
+    // Enable cookie parsing middleware.
+    app.use(cookieParser());
 
-  // Restrict credentialed cross-origin requests to configured origins.
-  app.enableCors({
-    origin: corsOrigins,
-    credentials: true,
-  });
+    // Restrict credentialed cross-origin requests to configured origins.
+    app.enableCors({
+      origin: corsOrigins,
+      credentials: true,
+    });
 
-  await app.listen(port);
+    // Initialize NestJS providers and establish the Prisma connection
+    // before attempting command recovery.
+    await app.init();
 
-  app.get(AgentWebSocketLifecycle).attach(
-    app.getHttpServer(),
-  );
+    // Recover uncertain command outcomes before accepting any new
+    // Agent WebSocket connections.
+    //
+    // Recovery never re-dispatches a command. If it fails, startup
+    // must stop rather than allow new commands to race with recovery.
+    const recovery = app.get(AgentCommandRecoveryService);
+    const recoveryResult = await recovery.recoverAll();
 
-  app.enableShutdownHooks();
+    console.log(
+      'Agent command recovery completed:',
+      recoveryResult,
+    );
 
-  console.log(`Server running on port ${port}`);
+    // Attach the Agent transport only after durable recovery succeeds.
+    app.get(AgentWebSocketLifecycle).attach(
+      app.getHttpServer(),
+    );
+
+    app.enableShutdownHooks();
+
+    await app.listen(port);
+
+    console.log(`Server running on port ${port}`);
+  } catch (error) {
+    await app.close();
+    throw error;
+  }
 }
 
 void bootstrap();

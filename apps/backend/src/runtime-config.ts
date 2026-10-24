@@ -1,4 +1,3 @@
-
 type RuntimeEnvironment = {
     DATABASE_URL?: string;
     PORT?: string;

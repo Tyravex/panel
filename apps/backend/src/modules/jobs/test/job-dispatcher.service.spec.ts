@@ -21,7 +21,13 @@ describe('JobDispatcherService', () => {
         findMany.mockResolvedValue([]);
         await service.findPendingJobs(500);
         expect(findMany).toHaveBeenCalledWith({
-            where: { status: 'PENDING' },
+            where: {
+                status: 'PENDING',
+                serviceId: null,
+                serverId: {
+                    not: null,
+                },
+            },
             orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
             take: 100,
         });

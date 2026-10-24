@@ -1,10 +1,10 @@
-
 import { createServer, Server as HttpServer } from 'node:http';
 import { once } from 'node:events';
 import { AddressInfo } from 'node:net';
 import { WebSocket } from 'ws';
 
 import { NodesService } from '../../nodes.service';
+import { AgentCommandsService } from '../agent-commands.service';
 import { AgentWebSocketLifecycle } from '../agent-websocket.lifecycle';
 
 describe('AgentWebSocketLifecycle', () => {
@@ -16,6 +16,12 @@ describe('AgentWebSocketLifecycle', () => {
 
     const authenticateNode = jest.fn();
     const heartbeat = jest.fn();
+
+    const findById = jest.fn();
+    const claimSend = jest.fn();
+    const markAccepted = jest.fn();
+    const markResult = jest.fn();
+    const markUnknown = jest.fn();
 
     beforeEach(async () => {
         jest.clearAllMocks();
@@ -31,6 +37,12 @@ describe('AgentWebSocketLifecycle', () => {
             lastSeenAt: new Date().toISOString(),
         });
 
+        findById.mockResolvedValue(null);
+        claimSend.mockResolvedValue(false);
+        markAccepted.mockResolvedValue(false);
+        markResult.mockResolvedValue(false);
+        markUnknown.mockResolvedValue(false);
+
         httpServer = createServer();
 
         lifecycle = new AgentWebSocketLifecycle(
@@ -38,6 +50,13 @@ describe('AgentWebSocketLifecycle', () => {
                 authenticateNode,
                 heartbeat,
             } as unknown as NodesService,
+            {
+                findById,
+                claimSend,
+                markAccepted,
+                markResult,
+                markUnknown,
+            } as unknown as AgentCommandsService,
         );
 
         lifecycle.attach(httpServer);

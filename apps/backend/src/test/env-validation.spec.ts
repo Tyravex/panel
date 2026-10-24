@@ -1,4 +1,3 @@
-
 import { validateJwtEnvironment } from '../env-validation';
 
 describe('validateJwtEnvironment', () => {

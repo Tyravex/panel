@@ -1,4 +1,3 @@
-
 import {
   AGENT_PROTOCOL_VERSION,
   createAgentEnvelope,

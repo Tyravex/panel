@@ -21,9 +21,12 @@ export const useServiceDashboardData = (userId?: number) => {
     });
     const services = servicesQuery.data ?? [];
     const legacyServers = serversQuery.data ?? [];
+
+    // A linked legacy server must not appear as a standalone card, regardless
+    // of the category assigned to its Service record.
     const linkedIds = new Set(
-        services.filter((service) => service.category?.key === 'server')
-            .map((service) => service.serverId)
+        services
+            .map((service) => service.serverId ?? service.server?.id ?? null)
             .filter((id): id is number => id !== null),
     );
     const standaloneServers = legacyServers.filter((server) => !linkedIds.has(server.id));
