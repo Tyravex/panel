@@ -261,16 +261,33 @@ describe('Durable Agent WebSocket races', () => {
     it('does not finalize a command when the database rejects a late result', async () => {
         const client = await readyClient();
         await sendInstall(client);
-        const invoked = deferred<void>();
+
+        const resultInvoked = deferred<void>();
+        const unknownInvoked = deferred<void>();
+
         markResult.mockImplementationOnce(async () => {
-            invoked.resolve();
+            resultInvoked.resolve();
             return false;
         });
+
+        // Observe the actual server-side recovery action.
+        // Client close alone does not guarantee that the
+        // server-side close handler has already completed.
+        markUnknown.mockImplementationOnce(async () => {
+            unknownInvoked.resolve();
+            return true;
+        });
+
         const closed = waitForClose(client);
+
         sendResult(client);
-        await invoked.promise;
+
+        await resultInvoked.promise;
         await closed;
+        await unknownInvoked.promise;
+
         expect(markResult).toHaveBeenCalledTimes(1);
+        expect(markUnknown).toHaveBeenCalledTimes(1);
         expect(markUnknown).toHaveBeenCalledWith(COMMAND_ID);
     });
 
