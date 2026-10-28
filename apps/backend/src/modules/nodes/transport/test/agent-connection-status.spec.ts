@@ -27,6 +27,7 @@ describe('Agent connection status', () => {
             heartbeat: jest.fn().mockResolvedValue({
                 ok: true,
             }),
+            findAssignedServiceIds: jest.fn().mockResolvedValue([]),
         } as unknown as NodesService;
 
         transport = new AgentWebSocketServer(

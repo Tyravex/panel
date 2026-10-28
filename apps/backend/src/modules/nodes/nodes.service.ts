@@ -14,7 +14,7 @@ export class NodesService {
     private readonly prisma: PrismaService,
     private readonly tokenService: NodeTokenService,
     private readonly heartbeatMonitor: NodeHeartbeatMonitorService,
-  ) {}
+  ) { }
 
   async findAll() {
     await this.heartbeatMonitor.expireStaleNodes();
@@ -150,6 +150,27 @@ export class NodesService {
       name: node.name,
       status: node.status,
     };
+  }
+
+  async findAssignedServiceIds(nodeId: string): Promise<string[]> {
+    if (typeof nodeId !== 'string' || !nodeId.trim()) {
+      throw new BadRequestException('Node ID is required');
+    }
+
+    const services = await this.prisma.service.findMany({
+      where: {
+        nodeId,
+      },
+      select: {
+        id: true,
+      },
+      orderBy: {
+        id: 'asc',
+      },
+      take: 4097,
+    });
+
+    return services.map((service) => service.id);
   }
 
   async heartbeat(nodeId: string, token: string) {

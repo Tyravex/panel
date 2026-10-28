@@ -52,7 +52,6 @@ describe('Agent command transport', () => {
 
     beforeEach(async () => {
         clients = [];
-
         httpServer = createServer();
 
         const nodesService = {
@@ -60,12 +59,10 @@ describe('Agent command transport', () => {
                 async (nodeId: string) => ({ id: nodeId }),
             ),
             heartbeat: jest.fn().mockResolvedValue({ ok: true }),
+            findAssignedServiceIds: jest.fn().mockResolvedValue([]),
         } as unknown as NodesService;
 
-        transport = new AgentWebSocketServer(
-            httpServer,
-            nodesService,
-        );
+        transport = new AgentWebSocketServer(httpServer, nodesService);
 
         await new Promise<void>((resolve) => {
             httpServer.listen(0, '127.0.0.1', resolve);
@@ -105,7 +102,6 @@ describe('Agent command transport', () => {
             );
 
             clients.push(client);
-
             client.once('open', () => resolve(client));
             client.once('error', reject);
         });
@@ -118,20 +114,14 @@ describe('Agent command transport', () => {
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 client.off('message', onMessage);
-                reject(
-                    new Error(
-                        `Timed out waiting for ${expectedType}`,
-                    ),
-                );
+                reject(new Error(`Timed out waiting for ${expectedType}`));
             }, 3000);
 
             function onMessage(data: RawData): void {
                 let message: Record<string, unknown>;
 
                 try {
-                    message = JSON.parse(
-                        data.toString('utf8'),
-                    ) as Record<string, unknown>;
+                    message = JSON.parse(data.toString('utf8')) as Record<string, unknown>;
                 } catch (error) {
                     clearTimeout(timeout);
                     client.off('message', onMessage);
@@ -152,269 +142,176 @@ describe('Agent command transport', () => {
         });
     }
 
-    async function completeHello(
-        client: WebSocket,
-    ): Promise<void> {
-        const welcome = waitForMessage(
-            client,
-            'node.welcome',
-        );
+    async function completeHello(client: WebSocket): Promise<void> {
+        // Register both listeners before sending node.hello.
+        const welcome = waitForMessage(client, 'node.welcome');
+        const snapshot = waitForMessage(client, 'ownership.snapshot');
 
-        client.send(
-            JSON.stringify(
-                createAgentEnvelope(
-                    'node.hello',
-                    {
-                        agentVersion: 'test-agent',
-                        capabilities: [],
-                    },
-                    'hello-test-1',
-                ),
-            ),
-        );
+        client.send(JSON.stringify(createAgentEnvelope(
+            'node.hello',
+            { agentVersion: 'test-agent', capabilities: [] },
+            'hello-test-1',
+        )));
 
-        await welcome;
+        const welcomeMessage = await welcome;
+        const snapshotMessage = await snapshot;
+        const welcomePayload = welcomeMessage.payload as {
+            nodeId: string;
+            sessionId: string;
+        };
+        const snapshotPayload = snapshotMessage.payload as {
+            node_id: string;
+            session_id: string;
+            revision: number;
+            assignments: unknown[];
+        };
+
+        console.log('Agent handshake', {
+            welcome: welcomeMessage.payload,
+            snapshot: snapshotMessage.payload,
+        });
+
+        expect(snapshotPayload.node_id).toBe(welcomePayload.nodeId);
+        expect(snapshotPayload.session_id).toBe(welcomePayload.sessionId);
+        expect(snapshotPayload.revision).toBe(1);
+        expect(snapshotPayload.assignments).toEqual([]);
     }
 
     it('delivers a valid install command to the correct Agent', async () => {
         const client = await connect();
         await completeHello(client);
-
-        const received = waitForMessage(
-            client,
-            'command.execute',
-        );
-
-        expect(
-            transport.sendCommand(NODE_ID, installCommand()),
-        ).toBe(true);
-
+        const received = waitForMessage(client, 'command.execute');
+        expect(transport.sendCommand(NODE_ID, installCommand())).toBe(true);
         const message = await received;
-
         expect(message.type).toBe('command.execute');
         expect(message.payload).toEqual(installCommand());
     });
 
     it('rejects commands before node.hello', async () => {
         await connect();
-
-        expect(
-            transport.sendCommand(NODE_ID, installCommand()),
-        ).toBe(false);
+        expect(transport.sendCommand(NODE_ID, installCommand())).toBe(false);
     });
 
     it('rejects an install command targeting a different node', async () => {
         const client = await connect();
         await completeHello(client);
-
         const command = installCommand();
         command.parameters.nodeId = OTHER_NODE_ID;
-
-        expect(
-            transport.sendCommand(NODE_ID, command),
-        ).toBe(false);
+        expect(transport.sendCommand(NODE_ID, command)).toBe(false);
     });
 
     it('rejects an invalid install payload', async () => {
         const client = await connect();
         await completeHello(client);
-
         const command = installCommand();
-
-        expect(
-            transport.sendCommand(NODE_ID, {
-                ...command,
-                parameters: {
-                    ...command.parameters,
-                    resources: {
-                        ...command.parameters.resources,
-                        memoryMb: -1,
-                    },
-                },
-            }),
-        ).toBe(false);
+        expect(transport.sendCommand(NODE_ID, {
+            ...command,
+            parameters: {
+                ...command.parameters,
+                resources: { ...command.parameters.resources, memoryMb: -1 },
+            },
+        })).toBe(false);
     });
 
     it('rejects commands when the node is not connected', () => {
-        expect(
-            transport.sendCommand(NODE_ID, installCommand()),
-        ).toBe(false);
+        expect(transport.sendCommand(NODE_ID, installCommand())).toBe(false);
     });
 
     it('rejects commands after Agent disconnects', async () => {
         const client = await connect();
         await completeHello(client);
-
         const disconnected = new Promise<void>((resolve) => {
             client.once('close', () => resolve());
         });
-
         client.close();
         await disconnected;
-
-        expect(
-            transport.sendCommand(NODE_ID, installCommand()),
-        ).toBe(false);
+        expect(transport.sendCommand(NODE_ID, installCommand())).toBe(false);
     });
 
     it('does not send a command to another connected Agent', async () => {
         const first = await connect(NODE_ID);
         await completeHello(first);
-
         const second = await connect(OTHER_NODE_ID);
         await completeHello(second);
 
-        const receivedByFirst = waitForMessage(
-            first,
-            'command.execute',
-        );
+        console.log('Two-Agent state', {
+            firstReadyState: first.readyState,
+            secondReadyState: second.readyState,
+            firstConnected: transport.isNodeConnected(NODE_ID),
+            secondConnected: transport.isNodeConnected(OTHER_NODE_ID),
+        });
 
-        expect(
-            transport.sendCommand(NODE_ID, installCommand()),
-        ).toBe(true);
+        expect(transport.isNodeConnected(NODE_ID)).toBe(true);
+        expect(transport.isNodeConnected(OTHER_NODE_ID)).toBe(true);
 
+        const receivedByFirst = waitForMessage(first, 'command.execute');
+        expect(transport.sendCommand(NODE_ID, installCommand())).toBe(true);
         const message = await receivedByFirst;
-
         expect(message.payload).toEqual(installCommand());
 
-        // The second Agent remains connected, but its nodeId
-        // does not match the installation target.
-        expect(
-            transport.sendCommand(
-                OTHER_NODE_ID,
-                installCommand(),
-            ),
-        ).toBe(false);
+        // The second Agent must not receive commands for the first node.
+        expect(transport.sendCommand(OTHER_NODE_ID, installCommand())).toBe(false);
     });
 
     it('rejects commands after transport shutdown', async () => {
         const client = await connect();
         await completeHello(client);
-
         transport.close();
-
-        expect(
-            transport.sendCommand(NODE_ID, installCommand()),
-        ).toBe(false);
+        expect(transport.sendCommand(NODE_ID, installCommand())).toBe(false);
     });
 
     it('rejects a duplicate commandId in the active session', async () => {
         const client = await connect();
         await completeHello(client);
-
-        const received = waitForMessage(
-            client,
-            'command.execute',
-        );
-
+        const received = waitForMessage(client, 'command.execute');
         const command = installCommand();
-
-        expect(
-            transport.sendCommand(NODE_ID, command),
-        ).toBe(true);
-
+        expect(transport.sendCommand(NODE_ID, command)).toBe(true);
         await received;
-
-        expect(
-            transport.sendCommand(NODE_ID, command),
-        ).toBe(false);
+        expect(transport.sendCommand(NODE_ID, command)).toBe(false);
     });
 
     it('rejects a duplicate commandId with different parameters', async () => {
         const client = await connect();
         await completeHello(client);
-
-        const received = waitForMessage(
-            client,
-            'command.execute',
-        );
-
+        const received = waitForMessage(client, 'command.execute');
         const command = installCommand();
-
-        expect(
-            transport.sendCommand(NODE_ID, command),
-        ).toBe(true);
-
+        expect(transport.sendCommand(NODE_ID, command)).toBe(true);
         await received;
-
-        expect(
-            transport.sendCommand(NODE_ID, {
-                ...command,
-                serviceId: 'another-service',
-                parameters: {
-                    ...command.parameters,
-                    serviceId: 'another-service',
-                },
-            }),
-        ).toBe(false);
+        expect(transport.sendCommand(NODE_ID, {
+            ...command,
+            serviceId: 'another-service',
+            parameters: { ...command.parameters, serviceId: 'another-service' },
+        })).toBe(false);
     });
 
     it('allows a different commandId in the same session', async () => {
         const client = await connect();
         await completeHello(client);
-
-        const firstReceived = waitForMessage(
-            client,
-            'command.execute',
-        );
-
-        expect(
-            transport.sendCommand(NODE_ID, installCommand()),
-        ).toBe(true);
-
+        const firstReceived = waitForMessage(client, 'command.execute');
+        expect(transport.sendCommand(NODE_ID, installCommand())).toBe(true);
         await firstReceived;
 
-        const secondReceived = waitForMessage(
-            client,
-            'command.execute',
-        );
-
-        expect(
-            transport.sendCommand(NODE_ID, {
-                ...installCommand(),
-                commandId: 'command-install-2',
-            }),
-        ).toBe(true);
-
+        const secondReceived = waitForMessage(client, 'command.execute');
+        expect(transport.sendCommand(NODE_ID, {
+            ...installCommand(), commandId: 'command-install-2',
+        })).toBe(true);
         const second = await secondReceived;
-
-        expect(
-            (second.payload as { commandId: string }).commandId,
-        ).toBe('command-install-2');
+        expect((second.payload as { commandId: string }).commandId).toBe('command-install-2');
     });
 
     it('cleans pending commands when a node is disconnected', async () => {
         const client = await connect();
         await completeHello(client);
-
-        const received = waitForMessage(
-            client,
-            'command.execute',
-        );
-
-        expect(
-            transport.sendCommand(NODE_ID, installCommand()),
-        ).toBe(true);
-
+        const received = waitForMessage(client, 'command.execute');
+        expect(transport.sendCommand(NODE_ID, installCommand())).toBe(true);
         await received;
-
         transport.disconnectNode(NODE_ID);
-
         expect(transport.isNodeConnected(NODE_ID)).toBe(false);
 
         const replacement = await connect();
         await completeHello(replacement);
-
-        const receivedAgain = waitForMessage(
-            replacement,
-            'command.execute',
-        );
-
-        expect(
-            transport.sendCommand(NODE_ID, installCommand()),
-        ).toBe(true);
-
+        const receivedAgain = waitForMessage(replacement, 'command.execute');
+        expect(transport.sendCommand(NODE_ID, installCommand())).toBe(true);
         await receivedAgain;
     });
-
 });

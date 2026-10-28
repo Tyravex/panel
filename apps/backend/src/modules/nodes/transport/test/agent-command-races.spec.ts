@@ -83,10 +83,13 @@ describe('Durable Agent WebSocket races', () => {
         } as unknown as AgentCommandsService;
 
         const nodesService = {
-            authenticateNode: jest.fn().mockImplementation(
-                async (nodeId: string) => ({ id: nodeId }),
-            ),
-            heartbeat: jest.fn().mockResolvedValue({ ok: true }),
+            authenticateNode: jest.fn().mockResolvedValue({
+                id: NODE_ID,
+            }),
+            heartbeat: jest.fn().mockResolvedValue({
+                ok: true,
+            }),
+            findAssignedServiceIds: jest.fn().mockResolvedValue([]),
         } as unknown as NodesService;
 
         httpServer = createServer();

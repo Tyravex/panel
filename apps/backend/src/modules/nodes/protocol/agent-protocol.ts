@@ -5,6 +5,7 @@ export const AGENT_MESSAGE_TYPES = [
     'node.welcome',
     'node.heartbeat',
     'node.heartbeat.ack',
+    'ownership.snapshot',
     'command.execute',
     'command.accepted',
     'command.result',
@@ -30,6 +31,7 @@ export interface AgentHelloPayload {
 export interface AgentWelcomePayload {
     nodeId: string;
     heartbeatIntervalSeconds: number;
+    sessionId?: string;
 }
 
 export interface AgentHeartbeatPayload {

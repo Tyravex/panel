@@ -18,6 +18,7 @@ export const AGENT_TO_PANEL_TYPES = [
 export const PANEL_TO_AGENT_TYPES = [
     'node.welcome',
     'node.heartbeat.ack',
+    'ownership.snapshot',
     'command.execute',
     'protocol.error',
 ] as const satisfies readonly AgentMessageType[];

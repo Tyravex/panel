@@ -3,6 +3,7 @@ import {
     AgentMessageType,
     isAgentEnvelope,
 } from './agent-protocol';
+
 import { isServiceInstallPayload } from './service-install-payload';
 
 export const AGENT_OPERATIONS = [
@@ -75,18 +76,25 @@ export function isValidAgentPayload(
                 isNonEmptyString(payload.agentVersion, 64) &&
                 isStringArray(payload.capabilities)
             );
+        case 'ownership.snapshot':
+            return false;
 
         case 'node.welcome':
             return (
                 hasOnlyKeys(payload, [
                     'nodeId',
                     'heartbeatIntervalSeconds',
+                    'sessionId',
                 ]) &&
                 isNonEmptyString(payload.nodeId) &&
-                Number.isInteger(payload.heartbeatIntervalSeconds) &&
                 typeof payload.heartbeatIntervalSeconds === 'number' &&
+                Number.isInteger(payload.heartbeatIntervalSeconds) &&
                 payload.heartbeatIntervalSeconds >= 5 &&
-                payload.heartbeatIntervalSeconds <= 300
+                payload.heartbeatIntervalSeconds <= 300 &&
+                (
+                    payload.sessionId === undefined ||
+                    isValidOwnershipSessionId(payload.sessionId)
+                )
             );
 
         case 'node.heartbeat': {
@@ -188,6 +196,15 @@ export function isValidAgentPayload(
         default:
             return false;
     }
+}
+
+function isValidOwnershipSessionId(value: unknown): value is string {
+    return (
+        typeof value === 'string' &&
+        value.length >= 16 &&
+        value.length <= 128 &&
+        /^[A-Za-z0-9_-]+$/.test(value)
+    );
 }
 
 export function isValidAgentMessage(

@@ -9,13 +9,9 @@ import { AgentWebSocketServer } from '../agent-websocket.server';
 const NODE_ID = 'response-test-node';
 const OTHER_NODE_ID = 'response-other-node';
 const TOKEN = 'response-test-token';
-
 const COMMAND_ID = 'response-command-1';
 
-function installCommand(
-    commandId = COMMAND_ID,
-    nodeId = NODE_ID,
-) {
+function installCommand(commandId = COMMAND_ID, nodeId = NODE_ID) {
     return {
         commandId,
         operation: 'service.install',
@@ -40,10 +36,7 @@ function installCommand(
                 diskMb: 512,
             },
             variables: [
-                {
-                    key: 'BOT_TOKEN',
-                    required: true,
-                },
+                { key: 'BOT_TOKEN', required: true },
             ],
         },
     };
@@ -64,12 +57,10 @@ describe('Agent command responses over WebSocket', () => {
                 async (nodeId: string) => ({ id: nodeId }),
             ),
             heartbeat: jest.fn().mockResolvedValue({ ok: true }),
+            findAssignedServiceIds: jest.fn().mockResolvedValue([]),
         } as unknown as NodesService;
 
-        transport = new AgentWebSocketServer(
-            httpServer,
-            nodesService,
-        );
+        transport = new AgentWebSocketServer(httpServer, nodesService);
 
         await new Promise<void>((resolve) => {
             httpServer.listen(0, '127.0.0.1', resolve);
@@ -80,11 +71,9 @@ describe('Agent command responses over WebSocket', () => {
 
     afterEach(async () => {
         transport.close();
-
         for (const client of clients) {
             client.terminate();
         }
-
         await new Promise<void>((resolve, reject) => {
             httpServer.close((error) => {
                 if (error) {
@@ -107,9 +96,7 @@ describe('Agent command responses over WebSocket', () => {
                     },
                 },
             );
-
             clients.push(client);
-
             client.once('open', () => resolve(client));
             client.once('error', reject);
         });
@@ -122,36 +109,26 @@ describe('Agent command responses over WebSocket', () => {
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 client.off('message', onMessage);
-                reject(
-                    new Error(
-                        `Timed out waiting for ${expectedType}`,
-                    ),
-                );
+                reject(new Error(`Timed out waiting for ${expectedType}`));
             }, 3000);
 
             function onMessage(data: RawData): void {
                 let message: Record<string, unknown>;
-
                 try {
-                    message = JSON.parse(
-                        data.toString('utf8'),
-                    ) as Record<string, unknown>;
+                    message = JSON.parse(data.toString('utf8')) as Record<string, unknown>;
                 } catch (error) {
                     clearTimeout(timeout);
                     client.off('message', onMessage);
                     reject(error);
                     return;
                 }
-
                 if (message.type !== expectedType) {
                     return;
                 }
-
                 clearTimeout(timeout);
                 client.off('message', onMessage);
                 resolve(message);
             }
-
             client.on('message', onMessage);
         });
     }
@@ -162,7 +139,6 @@ describe('Agent command responses over WebSocket', () => {
                 resolve(1006);
                 return;
             }
-
             const timeout = setTimeout(() => {
                 client.off('close', onClose);
                 reject(new Error('Timed out waiting for close'));
@@ -172,66 +148,59 @@ describe('Agent command responses over WebSocket', () => {
                 clearTimeout(timeout);
                 resolve(code);
             }
-
             client.once('close', onClose);
         });
     }
 
-    async function completeHello(
-        client: WebSocket,
-    ): Promise<void> {
-        const welcome = waitForMessage(
-            client,
-            'node.welcome',
-        );
+    async function completeHello(client: WebSocket): Promise<void> {
+        // Register both listeners before sending node.hello.
+        const welcome = waitForMessage(client, 'node.welcome');
+        const snapshot = waitForMessage(client, 'ownership.snapshot');
 
-        client.send(
-            JSON.stringify(
-                createAgentEnvelope(
-                    'node.hello',
-                    {
-                        agentVersion: 'test-agent',
-                        capabilities: [],
-                    },
-                    'response-hello-1',
-                ),
-            ),
-        );
+        client.send(JSON.stringify(createAgentEnvelope(
+            'node.hello',
+            { agentVersion: 'test-agent', capabilities: [] },
+            'response-hello-1',
+        )));
 
-        await welcome;
+        const welcomeMessage = await welcome;
+        const snapshotMessage = await snapshot;
+        const welcomePayload = welcomeMessage.payload as {
+            nodeId: string;
+            sessionId: string;
+        };
+        const snapshotPayload = snapshotMessage.payload as {
+            node_id: string;
+            session_id: string;
+            revision: number;
+            assignments: unknown[];
+        };
+
+        console.log('Agent handshake', {
+            welcome: welcomeMessage.payload,
+            snapshot: snapshotMessage.payload,
+        });
+
+        expect(snapshotPayload.node_id).toBe(welcomePayload.nodeId);
+        expect(snapshotPayload.session_id).toBe(welcomePayload.sessionId);
+        expect(snapshotPayload.revision).toBe(1);
+        expect(snapshotPayload.assignments).toEqual([]);
     }
 
-    function sendAccepted(
-        client: WebSocket,
-        commandId = COMMAND_ID,
-    ): void {
-        client.send(
-            JSON.stringify(
-                createAgentEnvelope(
-                    'command.accepted',
-                    { commandId },
-                    'response-accepted-1',
-                ),
-            ),
-        );
+    function sendAccepted(client: WebSocket, commandId = COMMAND_ID): void {
+        client.send(JSON.stringify(createAgentEnvelope(
+            'command.accepted',
+            { commandId },
+            'response-accepted-1',
+        )));
     }
 
-    function sendResult(
-        client: WebSocket,
-        commandId = COMMAND_ID,
-    ): void {
-        client.send(
-            JSON.stringify(
-                createAgentEnvelope(
-                    'command.result',
-                    {
-                        commandId,
-                        success: true,
-                    },
-                    'response-result-1',
-                ),
-            ),
-        );
+    function sendResult(client: WebSocket, commandId = COMMAND_ID): void {
+        client.send(JSON.stringify(createAgentEnvelope(
+            'command.result',
+            { commandId, success: true },
+            'response-result-1',
+        )));
     }
 
     async function sendInstall(
@@ -239,18 +208,11 @@ describe('Agent command responses over WebSocket', () => {
         nodeId = NODE_ID,
         commandId = COMMAND_ID,
     ): Promise<void> {
-        const received = waitForMessage(
-            client,
-            'command.execute',
-        );
-
-        expect(
-            transport.sendCommand(
-                nodeId,
-                installCommand(commandId, nodeId),
-            ),
-        ).toBe(true);
-
+        const received = waitForMessage(client, 'command.execute');
+        expect(transport.sendCommand(
+            nodeId,
+            installCommand(commandId, nodeId),
+        )).toBe(true);
         await received;
     }
 
@@ -263,15 +225,11 @@ describe('Agent command responses over WebSocket', () => {
     it('accepts a valid command.accepted response', async () => {
         const client = await connect();
         await completeHello(client);
+        expect(transport.isNodeConnected(NODE_ID)).toBe(true);
         await sendInstall(client);
-
         sendAccepted(client);
-
         // A duplicate send remains blocked while the command is pending.
-        expect(
-            transport.sendCommand(NODE_ID, installCommand()),
-        ).toBe(false);
-
+        expect(transport.sendCommand(NODE_ID, installCommand())).toBe(false);
         expect(transport.isNodeConnected(NODE_ID)).toBe(true);
     });
 
@@ -279,15 +237,10 @@ describe('Agent command responses over WebSocket', () => {
         const client = await connect();
         await completeHello(client);
         await sendInstall(client);
-
         sendAccepted(client);
-
         await waitForProcessing();
-
         sendResult(client);
-
         await waitForProcessing();
-
         expect(transport.isNodeConnected(NODE_ID)).toBe(true);
     });
 
@@ -295,22 +248,16 @@ describe('Agent command responses over WebSocket', () => {
         const client = await connect();
         await completeHello(client);
         await sendInstall(client);
-
         sendResult(client);
-
         await waitForProcessing();
-
         expect(transport.isNodeConnected(NODE_ID)).toBe(true);
     });
 
     it('closes the connection for an unknown commandId', async () => {
         const client = await connect();
         await completeHello(client);
-
         const closed = waitForClose(client);
-
         sendAccepted(client, 'unknown-command');
-
         expect(await closed).toBe(1008);
     });
 
@@ -318,12 +265,9 @@ describe('Agent command responses over WebSocket', () => {
         const client = await connect();
         await completeHello(client);
         await sendInstall(client);
-
         const closed = waitForClose(client);
-
         sendAccepted(client);
         sendAccepted(client);
-
         expect(await closed).toBe(1008);
     });
 
@@ -331,28 +275,30 @@ describe('Agent command responses over WebSocket', () => {
         const client = await connect();
         await completeHello(client);
         await sendInstall(client);
-
         const closed = waitForClose(client);
-
         sendResult(client);
         sendResult(client);
-
         expect(await closed).toBe(1008);
     });
 
     it('rejects responses from a different Agent', async () => {
         const first = await connect(NODE_ID);
         await completeHello(first);
-
         const second = await connect(OTHER_NODE_ID);
         await completeHello(second);
 
+        console.log('Two-Agent state', {
+            firstReadyState: first.readyState,
+            secondReadyState: second.readyState,
+            firstConnected: transport.isNodeConnected(NODE_ID),
+            secondConnected: transport.isNodeConnected(OTHER_NODE_ID),
+        });
+
+        expect(transport.isNodeConnected(NODE_ID)).toBe(true);
+        expect(transport.isNodeConnected(OTHER_NODE_ID)).toBe(true);
         await sendInstall(first);
-
         const closed = waitForClose(second);
-
         sendAccepted(second);
-
         expect(await closed).toBe(1008);
         expect(transport.isNodeConnected(NODE_ID)).toBe(true);
     });
@@ -361,23 +307,14 @@ describe('Agent command responses over WebSocket', () => {
         const first = await connect();
         await completeHello(first);
         await sendInstall(first);
-
         const oldClosed = waitForClose(first);
-
         const replacement = await connect();
         await completeHello(replacement);
-
         await oldClosed;
-
         expect(transport.isNodeConnected(NODE_ID)).toBe(true);
-
-        // The old session's pending command has been removed.
-        // A response from the new session for that old command
-        // must not be accepted.
+        // Responses for the old session's pending command must be rejected.
         const replacementClosed = waitForClose(replacement);
-
         sendResult(replacement);
-
         expect(await replacementClosed).toBe(1008);
     });
 });

@@ -16,9 +16,11 @@ describe('Agent WebSocket transport', () => {
 
     const authenticateNode = jest.fn();
     const heartbeat = jest.fn();
+    const findAssignedServiceIds = jest.fn();
 
     beforeEach(async () => {
         jest.clearAllMocks();
+        findAssignedServiceIds.mockReset();
 
         authenticateNode.mockResolvedValue({
             id: 'node-1',
@@ -31,6 +33,8 @@ describe('Agent WebSocket transport', () => {
             lastSeenAt: new Date().toISOString(),
         });
 
+        findAssignedServiceIds.mockResolvedValue([]);
+
         httpServer = createServer();
 
         transport = new AgentWebSocketServer(
@@ -38,6 +42,7 @@ describe('Agent WebSocket transport', () => {
             {
                 authenticateNode,
                 heartbeat,
+                findAssignedServiceIds,
             } as unknown as NodesService,
         );
 
@@ -146,6 +151,84 @@ describe('Agent WebSocket transport', () => {
         >;
     }
 
+    function captureMessages(client: WebSocket) {
+        const messages: Record<string, unknown>[] = [];
+
+        client.on('message', (data) => {
+            messages.push(
+                JSON.parse(data.toString('utf8')) as Record<
+                    string,
+                    unknown
+                >,
+            );
+        });
+
+        async function waitForType(
+            type: string,
+        ): Promise<Record<string, unknown>> {
+            for (let attempt = 0; attempt < 100; attempt++) {
+                const message = messages.find(
+                    (item) => item.type === type,
+                );
+
+                if (message) {
+                    return message;
+                }
+
+                await new Promise<void>((resolve) => {
+                    setTimeout(resolve, 5);
+                });
+            }
+
+            throw new Error(`Timed out waiting for ${type}`);
+        }
+
+        return { messages, waitForType };
+    }
+
+    async function waitForSnapshotCount(
+        capture: ReturnType<typeof captureMessages>,
+        expectedCount: number,
+    ): Promise<Record<string, unknown>[]> {
+        for (let attempt = 0; attempt < 200; attempt++) {
+            const snapshots = capture.messages.filter(
+                (message) => message.type === 'ownership.snapshot',
+            );
+
+            if (snapshots.length >= expectedCount) {
+                return snapshots;
+            }
+
+            await new Promise<void>((resolve) => {
+                setTimeout(resolve, 5);
+            });
+        }
+
+        throw new Error(
+            `Timed out waiting for ${expectedCount} ownership snapshots`,
+        );
+    }
+
+    function sendHello(client: WebSocket): void {
+        client.send(JSON.stringify(hello()));
+    }
+
+    function payloadOf(
+        message: Record<string, unknown>,
+    ): Record<string, unknown> {
+        const payload = message.payload;
+
+        if (
+            typeof payload !== 'object' ||
+            payload === null ||
+            Array.isArray(payload)
+        ) {
+            throw new Error('Invalid message payload');
+        }
+
+        return payload as Record<string, unknown>;
+    }
+
     it('authenticates a valid node', async () => {
         const client = await openClient();
 
@@ -164,18 +247,23 @@ describe('Agent WebSocket transport', () => {
 
         const statusCode = await new Promise<number>(
             (resolve, reject) => {
-                client.once('unexpected-response', (_request, response) => {
-                    const status = response.statusCode;
+                client.once(
+                    'unexpected-response',
+                    (_request, response) => {
+                        const status = response.statusCode;
 
-                    response.resume();
+                        response.resume();
 
-                    if (status === undefined) {
-                        reject(new Error('Missing HTTP status code'));
-                        return;
-                    }
+                        if (status === undefined) {
+                            reject(
+                                new Error('Missing HTTP status code'),
+                            );
+                            return;
+                        }
 
-                    resolve(status);
-                });
+                        resolve(status);
+                    },
+                );
 
                 client.once('error', reject);
             },
@@ -199,9 +287,13 @@ describe('Agent WebSocket transport', () => {
 
         expect(response.type).toBe('node.welcome');
         expect(response.protocol).toBe(1);
-        expect(response.payload).toEqual({
+
+        const payload = payloadOf(response);
+
+        expect(payload).toEqual({
             nodeId: 'node-1',
             heartbeatIntervalSeconds: 30,
+            sessionId: expect.any(String),
         });
     });
 
@@ -221,11 +313,12 @@ describe('Agent WebSocket transport', () => {
     it('accepts heartbeat after hello', async () => {
         const client = await openClient();
 
-        const welcomePromise = receiveMessage(client);
+        const capture = captureMessages(client);
 
-        client.send(JSON.stringify(hello()));
+        sendHello(client);
 
-        await welcomePromise;
+        await capture.waitForType('node.welcome');
+        await capture.waitForType('ownership.snapshot');
 
         const ackPromise = receiveMessage(client);
 
@@ -331,11 +424,12 @@ describe('Agent WebSocket transport', () => {
         expect(firstCloseCode).toBe(1006);
         expect(second.readyState).toBe(WebSocket.OPEN);
 
-        const welcomePromise = receiveMessage(second);
+        const capture = captureMessages(second);
 
-        second.send(JSON.stringify(hello()));
+        sendHello(second);
 
-        const welcome = await welcomePromise;
+        const welcome = await capture.waitForType('node.welcome');
+        await capture.waitForType('ownership.snapshot');
 
         expect(welcome.type).toBe('node.welcome');
 
@@ -371,18 +465,23 @@ describe('Agent WebSocket transport', () => {
 
         const statusCode = await new Promise<number>(
             (resolve, reject) => {
-                client.once('unexpected-response', (_request, response) => {
-                    const status = response.statusCode;
+                client.once(
+                    'unexpected-response',
+                    (_request, response) => {
+                        const status = response.statusCode;
 
-                    response.resume();
+                        response.resume();
 
-                    if (status === undefined) {
-                        reject(new Error('Missing HTTP status code'));
-                        return;
-                    }
+                        if (status === undefined) {
+                            reject(
+                                new Error('Missing HTTP status code'),
+                            );
+                            return;
+                        }
 
-                    resolve(status);
-                });
+                        resolve(status);
+                    },
+                );
 
                 client.once('error', reject);
             },
@@ -476,11 +575,12 @@ describe('Agent WebSocket transport', () => {
 
         await once(client, 'open');
 
-        const welcomePromise = receiveMessage(client);
+        const capture = captureMessages(client);
 
-        client.send(JSON.stringify(hello()));
+        sendHello(client);
 
-        await welcomePromise;
+        await capture.waitForType('node.welcome');
+        await capture.waitForType('ownership.snapshot');
 
         const pingPromise = once(client, 'ping');
 
@@ -522,18 +622,23 @@ describe('Agent WebSocket transport', () => {
 
         const statusCode = await new Promise<number>(
             (resolve, reject) => {
-                client.once('unexpected-response', (_request, response) => {
-                    const status = response.statusCode;
+                client.once(
+                    'unexpected-response',
+                    (_request, response) => {
+                        const status = response.statusCode;
 
-                    response.resume();
+                        response.resume();
 
-                    if (status === undefined) {
-                        reject(new Error('Missing HTTP status code'));
-                        return;
-                    }
+                        if (status === undefined) {
+                            reject(
+                                new Error('Missing HTTP status code'),
+                            );
+                            return;
+                        }
 
-                    resolve(status);
-                });
+                        resolve(status);
+                    },
+                );
 
                 client.once('error', reject);
             },
@@ -605,11 +710,12 @@ describe('Agent WebSocket transport', () => {
 
         const client = await openClient();
 
-        const welcomePromise = receiveMessage(client);
+        const capture = captureMessages(client);
 
-        client.send(JSON.stringify(hello()));
+        sendHello(client);
 
-        await welcomePromise;
+        await capture.waitForType('node.welcome');
+        await capture.waitForType('ownership.snapshot');
 
         const receivedMessages: string[] = [];
 
@@ -653,4 +759,414 @@ describe('Agent WebSocket transport', () => {
         expect(receivedMessages).toHaveLength(0);
     });
 
+    it('sends welcome before ownership snapshot with trusted database assignments', async () => {
+        findAssignedServiceIds.mockResolvedValue([
+            'service-1',
+            'service-2',
+        ]);
+
+        const client = await openClient();
+        const capture = captureMessages(client);
+
+        sendHello(client);
+
+        const welcome = await capture.waitForType('node.welcome');
+        const snapshot = await capture.waitForType('ownership.snapshot');
+
+        const welcomePayload = payloadOf(welcome);
+        const snapshotPayload = payloadOf(snapshot);
+
+        expect(capture.messages[0]?.type).toBe('node.welcome');
+        expect(capture.messages[1]?.type).toBe('ownership.snapshot');
+
+        expect(typeof welcomePayload.sessionId).toBe('string');
+        expect(snapshotPayload).toEqual({
+            type: 'ownership.snapshot',
+            session_id: welcomePayload.sessionId,
+            node_id: 'node-1',
+            revision: 1,
+            ttl_seconds: 60,
+            assignments: [
+                {
+                    service_id: 'service-1',
+                    node_id: 'node-1',
+                    enabled: true,
+                },
+                {
+                    service_id: 'service-2',
+                    node_id: 'node-1',
+                    enabled: true,
+                },
+            ],
+        });
+
+        expect(findAssignedServiceIds).toHaveBeenCalledWith('node-1');
+    });
+
+    it('creates a new ownership session with revision one after reconnect', async () => {
+        const first = await openClient();
+        const firstCapture = captureMessages(first);
+
+        sendHello(first);
+
+        const firstWelcome = await firstCapture.waitForType('node.welcome');
+        await firstCapture.waitForType('ownership.snapshot');
+
+        const firstSessionId = payloadOf(firstWelcome).sessionId;
+
+        const firstClosed = once(first, 'close');
+
+        const second = await openClient();
+        await firstClosed;
+
+        const secondCapture = captureMessages(second);
+
+        sendHello(second);
+
+        const secondWelcome = await secondCapture.waitForType('node.welcome');
+        const secondSnapshot = await secondCapture.waitForType(
+            'ownership.snapshot',
+        );
+
+        const secondSessionId = payloadOf(secondWelcome).sessionId;
+        const snapshotPayload = payloadOf(secondSnapshot);
+
+        expect(secondSessionId).not.toBe(firstSessionId);
+        expect(snapshotPayload.session_id).toBe(secondSessionId);
+        expect(snapshotPayload.revision).toBe(1);
+        expect(transport.isNodeConnected('node-1')).toBe(true);
+    });
+
+    it('does not publish a stale ownership snapshot after reconnect', async () => {
+        let resolveFirstRead!: (value: string[]) => void;
+
+        const firstRead = new Promise<string[]>((resolve) => {
+            resolveFirstRead = resolve;
+        });
+
+        findAssignedServiceIds
+            .mockImplementationOnce(() => firstRead)
+            .mockResolvedValueOnce(['service-current']);
+
+        const first = await openClient();
+        const firstCapture = captureMessages(first);
+
+        sendHello(first);
+
+        await firstCapture.waitForType('node.welcome');
+
+        // Ensure the first database read has started.
+        expect(findAssignedServiceIds).toHaveBeenCalledTimes(1);
+
+        const firstClosed = once(first, 'close');
+
+        const second = await openClient();
+        await firstClosed;
+
+        const secondCapture = captureMessages(second);
+
+        sendHello(second);
+
+        const secondWelcome = await secondCapture.waitForType('node.welcome');
+        const secondSnapshot = await secondCapture.waitForType(
+            'ownership.snapshot',
+        );
+
+        // Complete the old read only after the replacement session is active.
+        resolveFirstRead(['service-stale']);
+
+        await new Promise<void>((resolve) => {
+            setImmediate(resolve);
+        });
+
+        const snapshotPayload = payloadOf(secondSnapshot);
+
+        expect(snapshotPayload.session_id).toBe(
+            payloadOf(secondWelcome).sessionId,
+        );
+
+        expect(snapshotPayload.assignments).toEqual([
+            {
+                service_id: 'service-current',
+                node_id: 'node-1',
+                enabled: true,
+            },
+        ]);
+
+        expect(
+            firstCapture.messages.some(
+                (message) => message.type === 'ownership.snapshot',
+            ),
+        ).toBe(false);
+
+        expect(
+            secondCapture.messages.filter(
+                (message) => message.type === 'ownership.snapshot',
+            ),
+        ).toHaveLength(1);
+    });
+
+    it('closes the connection with 1011 when ownership database read fails', async () => {
+        findAssignedServiceIds.mockRejectedValue(
+            new Error('Database unavailable'),
+        );
+
+        const errorSpy = jest
+            .spyOn(console, 'error')
+            .mockImplementation(() => undefined);
+
+        try {
+            const client = await openClient();
+            const capture = captureMessages(client);
+
+            const closePromise = once(client, 'close');
+
+            sendHello(client);
+
+            const welcome = await capture.waitForType('node.welcome');
+            const [closeCode] = await closePromise;
+
+            expect(welcome.type).toBe('node.welcome');
+            expect(closeCode).toBe(1011);
+
+            expect(
+                capture.messages.some(
+                    (message) => message.type === 'ownership.snapshot',
+                ),
+            ).toBe(false);
+
+            expect(transport.isNodeConnected('node-1')).toBe(false);
+        } finally {
+            errorSpy.mockRestore();
+        }
+    });
+
+    it('refreshes ownership snapshot with increasing revision', async () => {
+        findAssignedServiceIds
+            .mockResolvedValueOnce(['service-1'])
+            .mockResolvedValueOnce(['service-2']);
+
+        const client = await openClient();
+        const capture = captureMessages(client);
+
+        sendHello(client);
+
+        const welcome = await capture.waitForType('node.welcome');
+        const [initial] = await waitForSnapshotCount(capture, 1);
+
+        expect(payloadOf(initial).revision).toBe(1);
+
+        transport.refreshOwnershipSnapshots();
+
+        const snapshots = await waitForSnapshotCount(capture, 2);
+
+        expect(payloadOf(snapshots[0]).revision).toBe(1);
+        expect(payloadOf(snapshots[1]).revision).toBe(2);
+        expect(payloadOf(snapshots[1]).session_id).toBe(
+            payloadOf(welcome).sessionId,
+        );
+        expect(payloadOf(snapshots[1]).assignments).toEqual([
+            {
+                service_id: 'service-2',
+                node_id: 'node-1',
+                enabled: true,
+            },
+        ]);
+        expect(findAssignedServiceIds).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not overlap ownership database reads during refresh', async () => {
+        let resolveRefresh!: (value: string[]) => void;
+
+        const pendingRefresh = new Promise<string[]>((resolve) => {
+            resolveRefresh = resolve;
+        });
+
+        findAssignedServiceIds
+            .mockResolvedValueOnce(['service-initial'])
+            .mockImplementationOnce(() => pendingRefresh)
+            .mockResolvedValue(['service-unexpected']);
+
+        const client = await openClient();
+        const capture = captureMessages(client);
+
+        sendHello(client);
+        await capture.waitForType('node.welcome');
+        await waitForSnapshotCount(capture, 1);
+
+        transport.refreshOwnershipSnapshots();
+        expect(findAssignedServiceIds).toHaveBeenCalledTimes(2);
+
+        // A second tick must not start another database query.
+        transport.refreshOwnershipSnapshots();
+        transport.refreshOwnershipSnapshots();
+        expect(findAssignedServiceIds).toHaveBeenCalledTimes(2);
+
+        resolveRefresh(['service-updated']);
+
+        const snapshots = await waitForSnapshotCount(capture, 2);
+        expect(payloadOf(snapshots[1]).revision).toBe(2);
+        expect(payloadOf(snapshots[1]).assignments).toEqual([
+            {
+                service_id: 'service-updated',
+                node_id: 'node-1',
+                enabled: true,
+            },
+        ]);
+
+        // The lock must be released after the completed refresh.
+        transport.refreshOwnershipSnapshots();
+        const third = await waitForSnapshotCount(capture, 3);
+        expect(payloadOf(third[2]).revision).toBe(3);
+        expect(findAssignedServiceIds).toHaveBeenCalledTimes(3);
+    });
+
+    it('closes with 1011 if an ownership refresh database read fails', async () => {
+        findAssignedServiceIds
+            .mockResolvedValueOnce(['service-initial'])
+            .mockRejectedValueOnce(new Error('Refresh database unavailable'));
+
+        const errorSpy = jest
+            .spyOn(console, 'error')
+            .mockImplementation(() => undefined);
+
+        try {
+            const client = await openClient();
+            const capture = captureMessages(client);
+
+            sendHello(client);
+            await capture.waitForType('node.welcome');
+            await waitForSnapshotCount(capture, 1);
+
+            const closePromise = once(client, 'close');
+            transport.refreshOwnershipSnapshots();
+
+            const [code] = await closePromise;
+
+            expect(code).toBe(1011);
+            expect(
+                capture.messages.filter(
+                    (message) => message.type === 'ownership.snapshot',
+                ),
+            ).toHaveLength(1);
+            expect(transport.isNodeConnected('node-1')).toBe(false);
+            expect(findAssignedServiceIds).toHaveBeenCalledTimes(2);
+        } finally {
+            errorSpy.mockRestore();
+        }
+    });
+
+    it('closes with 1011 when an ownership refresh exceeds its deadline', async () => {
+        let resolveSlowRead!: (value: string[]) => void;
+        const slowRead = new Promise<string[]>((resolve) => {
+            resolveSlowRead = resolve;
+        });
+
+        findAssignedServiceIds
+            .mockResolvedValueOnce(['service-initial'])
+            .mockImplementationOnce(() => slowRead);
+
+        const errorSpy = jest
+            .spyOn(console, 'error')
+            .mockImplementation(() => undefined);
+
+        try {
+            const client = await openClient();
+            const capture = captureMessages(client);
+
+            sendHello(client);
+            await capture.waitForType('node.welcome');
+            await waitForSnapshotCount(capture, 1);
+
+            // Only the new refresh deadline uses fake timers.
+            jest.useFakeTimers({
+                doNotFake: ['nextTick', 'setImmediate', 'clearImmediate'],
+            });
+
+            const closePromise = once(client, 'close');
+            transport.refreshOwnershipSnapshots();
+            expect(findAssignedServiceIds).toHaveBeenCalledTimes(2);
+
+            await jest.advanceTimersByTimeAsync(10_001);
+            const [code] = await closePromise;
+
+            expect(code).toBe(1011);
+            expect(transport.isNodeConnected('node-1')).toBe(false);
+            expect(jest.getTimerCount()).toBe(0);
+
+            // Completing the old Prisma read cannot publish a snapshot.
+            resolveSlowRead(['service-too-late']);
+            await new Promise<void>((resolve) => setImmediate(resolve));
+            expect(
+                capture.messages.filter(
+                    (message) => message.type === 'ownership.snapshot',
+                ),
+            ).toHaveLength(1);
+        } finally {
+            jest.useRealTimers();
+            errorSpy.mockRestore();
+        }
+    });
+
+    it('discards an in-flight ownership refresh after reconnect', async () => {
+        let resolveOldRefresh!: (value: string[]) => void;
+
+        const oldRefresh = new Promise<string[]>((resolve) => {
+            resolveOldRefresh = resolve;
+        });
+
+        findAssignedServiceIds
+            .mockResolvedValueOnce(['service-initial'])
+            .mockImplementationOnce(() => oldRefresh)
+            .mockResolvedValueOnce(['service-new-session']);
+
+        const first = await openClient();
+        const firstCapture = captureMessages(first);
+
+        sendHello(first);
+        const firstWelcome = await firstCapture.waitForType('node.welcome');
+        await waitForSnapshotCount(firstCapture, 1);
+
+        transport.refreshOwnershipSnapshots();
+        expect(findAssignedServiceIds).toHaveBeenCalledTimes(2);
+
+        const firstClosed = once(first, 'close');
+        const second = await openClient();
+        await firstClosed;
+
+        const secondCapture = captureMessages(second);
+        sendHello(second);
+
+        const secondWelcome = await secondCapture.waitForType('node.welcome');
+        const [secondSnapshot] = await waitForSnapshotCount(secondCapture, 1);
+
+        resolveOldRefresh(['service-stale']);
+
+        await new Promise<void>((resolve) => {
+            setImmediate(resolve);
+        });
+
+        expect(payloadOf(secondWelcome).sessionId).not.toBe(
+            payloadOf(firstWelcome).sessionId,
+        );
+        expect(payloadOf(secondSnapshot).revision).toBe(1);
+        expect(payloadOf(secondSnapshot).assignments).toEqual([
+            {
+                service_id: 'service-new-session',
+                node_id: 'node-1',
+                enabled: true,
+            },
+        ]);
+        expect(
+            firstCapture.messages.filter(
+                (message) => message.type === 'ownership.snapshot',
+            ),
+        ).toHaveLength(1);
+        expect(
+            secondCapture.messages.filter(
+                (message) => message.type === 'ownership.snapshot',
+            ),
+        ).toHaveLength(1);
+        expect(transport.isNodeConnected('node-1')).toBe(true);
+    });
 });
