@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   Activity,
   ArrowLeftRight,
+  Blocks,
   Boxes,
   ChevronDown,
   ChevronRight,
@@ -70,7 +71,10 @@ const adminSections: Section[] = [
         icon: Network,
         permission: "node:manage",
       },
-      { label: "Servers", icon: Server },
+      {
+        label: "Servers",
+        icon: Server,
+      },
       {
         path: "/admin/services",
         label: "Services",
@@ -84,7 +88,25 @@ const adminSections: Section[] = [
     id: "operations",
     label: "Operations",
     icon: Activity,
-    items: [{ label: "Jobs", icon: ListTodo }],
+    items: [
+      {
+        label: "Jobs",
+        icon: ListTodo,
+      },
+    ],
+  },
+  {
+    id: "plugins",
+    label: "Plugins",
+    icon: Blocks,
+    items: [
+      {
+        path: "/admin/plugins",
+        label: "Plugins",
+        icon: Blocks,
+        permission: "plugin:manage",
+      },
+    ],
   },
   {
     id: "system",
@@ -103,8 +125,14 @@ const adminSections: Section[] = [
         icon: Settings,
         permission: "user:manage",
       },
-      { label: "Maintenance", icon: Wrench },
-      { label: "Security", icon: LockKeyhole },
+      {
+        label: "Maintenance",
+        icon: Wrench,
+      },
+      {
+        label: "Security",
+        icon: LockKeyhole,
+      },
     ],
   },
 ];
@@ -115,8 +143,16 @@ const userSections: Section[] = [
     label: "Account",
     icon: UserRound,
     items: [
-      { path: "/profile", label: "Profile", icon: UserRound },
-      { path: "/settings", label: "Settings", icon: Settings },
+      {
+        path: "/profile",
+        label: "Profile",
+        icon: UserRound,
+      },
+      {
+        path: "/settings",
+        label: "Settings",
+        icon: Settings,
+      },
     ],
   },
 ];
@@ -144,34 +180,51 @@ export const Sidebar = ({
     management: true,
     infrastructure: false,
     operations: false,
+    plugins: false,
     system: false,
     account: true,
   });
 
   useEffect(() => {
     const active = sections.find((section) =>
-      section.items.some((item) => item.path === location.pathname),
+      section.items.some(
+        (item) => item.path === location.pathname,
+      ),
     );
 
     if (active) {
       setExpanded((previous) =>
         previous[active.id]
           ? previous
-          : { ...previous, [active.id]: true },
+          : {
+            ...previous,
+            [active.id]: true,
+          },
       );
     }
   }, [location.pathname, isAdmin]);
 
   const visible = (item: Item) =>
-    (!item.ownerOnly || !!user?.roles?.includes("Owner")) &&
-    (!item.permission || !!user?.permissions?.includes(item.permission));
+    (!item.ownerOnly ||
+      !!user?.roles?.includes("Owner")) &&
+    (!item.permission ||
+      !!user?.permissions?.includes(item.permission));
 
   const translateLabel = (label: string) =>
-    t(`navigation.${label.toLowerCase().replace(/\W+/g, "")}`, {
-      defaultValue: label,
-    });
+    t(
+      `navigation.${label
+        .toLowerCase()
+        .replace(/\W+/g, "")}`,
+      {
+        defaultValue: label,
+      },
+    );
 
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
+  const linkClass = ({
+    isActive,
+  }: {
+    isActive: boolean;
+  }) =>
     [
       "flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors",
       isActive
@@ -191,7 +244,11 @@ export const Sidebar = ({
           className="flex cursor-not-allowed items-center gap-3 rounded-xl px-4 py-2.5 text-sm text-text-secondary opacity-50"
         >
           <Icon size={17} aria-hidden="true" />
-          <span>{translateLabel(item.label)}</span>
+
+          <span>
+            {translateLabel(item.label)}
+          </span>
+
           <span className="ml-auto text-[10px]">
             {t("sidebar.soon")}
           </span>
@@ -208,7 +265,10 @@ export const Sidebar = ({
         className={linkClass}
       >
         <Icon size={17} aria-hidden="true" />
-        <span>{translateLabel(item.label)}</span>
+
+        <span>
+          {translateLabel(item.label)}
+        </span>
       </NavLink>
     );
   };
@@ -217,7 +277,9 @@ export const Sidebar = ({
     <aside
       className={[
         "w-64 shrink-0 flex-col border-r border-border-subtle bg-surface px-4 py-6",
-        mobile ? "flex h-full" : "hidden min-h-screen lg:flex",
+        mobile
+          ? "flex h-full"
+          : "hidden min-h-screen lg:flex",
       ].join(" ")}
     >
       <NavLink
@@ -228,6 +290,7 @@ export const Sidebar = ({
         <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent font-bold text-white">
           T
         </div>
+
         <span className="text-xl font-bold tracking-tight">
           tyravex
         </span>
@@ -255,7 +318,10 @@ export const Sidebar = ({
 
         {sections.map((section) => {
           const items = section.items.filter(visible);
-          if (!items.length) return null;
+
+          if (!items.length) {
+            return null;
+          }
 
           const SectionIcon = section.icon;
           const open = expanded[section.id] ?? false;
@@ -277,14 +343,25 @@ export const Sidebar = ({
                 }
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-text-secondary transition-colors hover:bg-white/5 hover:text-text-primary"
               >
-                <SectionIcon size={15} aria-hidden="true" />
+                <SectionIcon
+                  size={15}
+                  aria-hidden="true"
+                />
+
                 <span className="flex-1">
                   {t(`sidebar.sections.${section.id}`)}
                 </span>
+
                 {open ? (
-                  <ChevronDown size={15} aria-hidden="true" />
+                  <ChevronDown
+                    size={15}
+                    aria-hidden="true"
+                  />
                 ) : (
-                  <ChevronRight size={15} aria-hidden="true" />
+                  <ChevronRight
+                    size={15}
+                    aria-hidden="true"
+                  />
                 )}
               </button>
 
@@ -304,11 +381,19 @@ export const Sidebar = ({
       <div className="mt-auto space-y-4 border-t border-border-subtle pt-4">
         {hasAdminAccess(user) && (
           <NavLink
-            to={isAdmin ? "/dashboard" : "/admin"}
+            to={
+              isAdmin
+                ? "/dashboard"
+                : "/admin"
+            }
             onClick={onNavigate}
             className="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
           >
-            <ArrowLeftRight size={18} aria-hidden="true" />
+            <ArrowLeftRight
+              size={18}
+              aria-hidden="true"
+            />
+
             <span>
               {isAdmin
                 ? t("sidebar.userPanel")

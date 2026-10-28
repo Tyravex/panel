@@ -12,6 +12,7 @@ import { AdminRolesPage } from "@/pages/admin/AdminRolesPage";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
 import { AdminSectionPage } from "@/pages/admin/AdminSectionPage";
 import { AdminAuditPage } from "@/pages/admin/AdminAuditPage";
+import { AdminPluginsPage } from "@/pages/admin/AdminPluginsPage";
 import { AdminSettingsPage } from "@/pages/admin/AdminSettingsPage";
 import { AdminNodesPage } from "@/pages/admin/AdminNodesPage";
 import { AdminServicesPage } from "@/pages/admin/AdminServicesPage";
@@ -62,6 +63,17 @@ export const AppRoutes = () => {
             <AdminRoute>
               <AdminPermissionRoute permission="user:read">
                 <AdminDashboardPage />
+              </AdminPermissionRoute>
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/plugins"
+          element={
+            <AdminRoute>
+              <AdminPermissionRoute permission="plugin:manage">
+                <AdminPluginsPage />
               </AdminPermissionRoute>
             </AdminRoute>
           }

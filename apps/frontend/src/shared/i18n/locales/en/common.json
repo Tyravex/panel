@@ -11,6 +11,7 @@
       "management": "Management",
       "infrastructure": "Infrastructure",
       "operations": "Operations",
+      "plugins": "Plugins",
       "system": "System",
       "account": "Account"
     }
@@ -29,7 +30,8 @@
     "settings": "Settings",
     "maintenance": "Maintenance",
     "security": "Security",
-    "profile": "Profile"
+    "profile": "Profile",
+    "plugins": "Plugins"
   },
   "Navbar": {
     "Navigation": {
@@ -599,6 +601,33 @@
     "roleUsersCount_other": "{{count}} users",
     "noPermissions": "No permissions",
     "rolesSecurityHint": "The backend prevents removing the final Owner. Role changes may require the affected user to refresh their session."
+  },
+  "adminPlugins": {
+    "title": "Plugins",
+    "description": "Manage extensions registered in Tyravex.",
+    "refresh": "Refresh",
+    "loading": "Loading plugins...",
+    "emptyTitle": "No installed plugins",
+    "emptyDescription": "No plugins were found in the registry.",
+    "name": "Identifier",
+    "type": "Type",
+    "version": "Version",
+    "status": "Status",
+    "errorTitle": "Unable to load plugins",
+    "errorDescription": "Check the backend connection and try again.",
+    "types": {
+      "LANGUAGE": "Language",
+      "THEME": "Theme",
+      "INTEGRATION": "Integration",
+      "BILLING": "Billing",
+      "NOTIFICATION": "Notification",
+      "OTHER": "Other"
+    },
+    "statuses": {
+      "INSTALLED": "Installed",
+      "DISABLED": "Disabled",
+      "FAILED": "Failed"
+    }
   },
   "adminSettings": {
     "title": "Admin settings",

@@ -1,4 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '@/prisma/prisma.service';
 
@@ -11,7 +14,56 @@ import {
 export class PluginsService {
   constructor(
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
+
+  /**
+   * Returns installed plugins for the administration panel.
+   * Internal filesystem paths are never exposed.
+   */
+  listForAdmin() {
+    return this.prisma.plugin.findMany({
+      select: {
+        id: true,
+        type: true,
+        version: true,
+        status: true,
+        sourceRepository: true,
+        installedAt: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        installedAt: 'desc',
+      },
+    });
+  }
+
+  /**
+   * Returns safe metadata for a single plugin.
+   */
+  async getForAdmin(id: string) {
+    const plugin = await this.prisma.plugin.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        type: true,
+        version: true,
+        status: true,
+        sourceRepository: true,
+        installedAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!plugin) {
+      throw new NotFoundException(
+        'Plugin not found',
+      );
+    }
+
+    return plugin;
+  }
 
   /**
    * Finds a locally registered plugin.
@@ -21,7 +73,9 @@ export class PluginsService {
    */
   async findById(id: string) {
     return this.prisma.plugin.findUnique({
-      where: { id },
+      where: {
+        id,
+      },
     });
   }
 

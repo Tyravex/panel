@@ -6,6 +6,7 @@ const ADMIN_ACCESS_PERMISSIONS = [
   "user:read",
   "user:manage",
   "role:manage",
+  "plugin:manage",
 ] as const;
 
 export const hasAdminAccess = (user: User | null | undefined): boolean => {
