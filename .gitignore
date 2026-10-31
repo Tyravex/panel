@@ -70,3 +70,6 @@ local-data/
 
 # Local database backups
 /backups/
+
+# Runtime plugin storage
+/apps/backend/storage/

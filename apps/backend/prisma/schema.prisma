@@ -552,6 +552,8 @@ enum PluginStatus {
   INSTALLED
   DISABLED
   FAILED
+  INSTALLING
+  UNINSTALLING
 }
 
 // Installed plugin metadata; storagePath must be constrained by application code.
@@ -564,8 +566,9 @@ model Plugin {
   status PluginStatus @default(DISABLED)
 
   // Relative path only; never use unchecked as an arbitrary filesystem path.
-  storagePath      String
-  sourceRepository String?
+  storagePath          String
+  sourceRepository     String?
+  uninstallOperationId String? @unique @db.Uuid
 
   installedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
