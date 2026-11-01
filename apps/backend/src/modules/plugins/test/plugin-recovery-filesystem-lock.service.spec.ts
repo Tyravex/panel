@@ -1,3 +1,4 @@
+import { expectTestLogs } from '@/test/helpers/expected-test-log';
 import {
     lstat,
     mkdir,
@@ -208,4 +209,13 @@ describe('PluginRecoveryFilesystemLockService', () => {
 
         expect(firstOperation).toHaveBeenCalledTimes(1);
     });
+    // Expected fault-injection logs are checked locally; other logs remain visible.
+    let expectedLogs: ReturnType<typeof expectTestLogs>;
+    beforeEach(() => {
+        expectedLogs = expectTestLogs({
+            'error': ["Could not release plugin recovery filesystem lock"],
+        });
+    });
+    afterEach(() => expectedLogs.restore());
+
 });

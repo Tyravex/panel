@@ -1,3 +1,4 @@
+import { expectTestLogs } from '@/test/helpers/expected-test-log';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Reflector } from '@nestjs/core';
@@ -129,4 +130,13 @@ describe('Nodes HTTP security', () => {
 
         expect(disconnectNode).not.toHaveBeenCalled();
     });
+    // Expected fault-injection logs are checked locally; other logs remain visible.
+    let expectedLogs: ReturnType<typeof expectTestLogs>;
+    beforeEach(() => {
+        expectedLogs = expectTestLogs({
+            'error': ["Database unavailable"],
+        });
+    });
+    afterEach(() => expectedLogs.restore());
+
 });

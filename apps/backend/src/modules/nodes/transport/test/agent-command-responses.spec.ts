@@ -176,11 +176,6 @@ describe('Agent command responses over WebSocket', () => {
             assignments: unknown[];
         };
 
-        console.log('Agent handshake', {
-            welcome: welcomeMessage.payload,
-            snapshot: snapshotMessage.payload,
-        });
-
         expect(snapshotPayload.node_id).toBe(welcomePayload.nodeId);
         expect(snapshotPayload.session_id).toBe(welcomePayload.sessionId);
         expect(snapshotPayload.revision).toBe(1);
@@ -286,13 +281,6 @@ describe('Agent command responses over WebSocket', () => {
         await completeHello(first);
         const second = await connect(OTHER_NODE_ID);
         await completeHello(second);
-
-        console.log('Two-Agent state', {
-            firstReadyState: first.readyState,
-            secondReadyState: second.readyState,
-            firstConnected: transport.isNodeConnected(NODE_ID),
-            secondConnected: transport.isNodeConnected(OTHER_NODE_ID),
-        });
 
         expect(transport.isNodeConnected(NODE_ID)).toBe(true);
         expect(transport.isNodeConnected(OTHER_NODE_ID)).toBe(true);

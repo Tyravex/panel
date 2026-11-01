@@ -104,5 +104,12 @@ jobs:
       - name: Run backend tests
         run: pnpm --filter ./apps/backend test --runInBand
 
+      - name: Backend test summary
+        if: success()
+        shell: bash
+        run: |
+          echo '### Backend Jest: OK' >> "$GITHUB_STEP_SUMMARY"
+          echo 'All selected backend test suites passed. Expected simulated errors are omitted from normal logs.' >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build backend
         run: pnpm --filter ./apps/backend build

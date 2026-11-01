@@ -1,3 +1,4 @@
+import { expectTestLogs } from '@/test/helpers/expected-test-log';
 import { PluginCleanupClaimService } from '../plugin-cleanup-claim.service';
 import { PluginRecoveryCoordinatorService } from '../plugin-recovery-coordinator.service';
 import { PluginRecoveryFilesystemLockService } from '../plugin-recovery-filesystem-lock.service';
@@ -124,4 +125,13 @@ describe('PluginRecoveryCoordinatorService', () => {
             'Plugin recovery completed without a result.',
         );
     });
+    // Expected fault-injection logs are checked locally; other logs remain visible.
+    let expectedLogs: ReturnType<typeof expectTestLogs>;
+    beforeEach(() => {
+        expectedLogs = expectTestLogs({
+            'warn': ["Plugin recovery skipped: another process holds the filesystem lock"],
+        });
+    });
+    afterEach(() => expectedLogs.restore());
+
 });

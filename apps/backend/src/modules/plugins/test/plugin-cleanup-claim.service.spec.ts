@@ -1,3 +1,4 @@
+import { expectTestLogs } from '@/test/helpers/expected-test-log';
 import {
     lstat,
     mkdir,
@@ -437,4 +438,15 @@ describe('PluginCleanupClaimService', () => {
 
         expect(renameMock).toHaveBeenCalledTimes(1);
     });
+    // Expected fault-injection logs are checked locally; other logs remain visible.
+    let expectedLogs: ReturnType<typeof expectTestLogs>;
+    beforeEach(() => {
+        expectedLogs = expectTestLogs({
+            'error': ["Plugin cleanup root is not a regular directory", "Could not claim plugin uninstall"],
+            'warn': ["Plugin storage root is unavailable"],
+            'log': ["Claimed completed plugin uninstall"],
+        });
+    });
+    afterEach(() => expectedLogs.restore());
+
 });

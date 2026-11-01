@@ -1,3 +1,4 @@
+import { expectTestLogs } from '@/test/helpers/expected-test-log';
 import {
     lstat,
     readdir,
@@ -418,4 +419,15 @@ describe('PluginUninstallationCleanupService', () => {
 
         expect(rmMock).toHaveBeenCalledTimes(1);
     });
+    // Expected fault-injection logs are checked locally; other logs remain visible.
+    let expectedLogs: ReturnType<typeof expectTestLogs>;
+    beforeEach(() => {
+        expectedLogs = expectTestLogs({
+            'error': ["Could not clean plugin uninstall"],
+            'warn': ["Plugin storage root is unavailable", "Could not read plugin cleanup directory"],
+            'log': ["Removed completed plugin cleanup operation"],
+        });
+    });
+    afterEach(() => expectedLogs.restore());
+
 });

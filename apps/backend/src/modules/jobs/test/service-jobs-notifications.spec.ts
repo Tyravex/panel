@@ -1,3 +1,4 @@
+import { expectTestLogs } from '@/test/helpers/expected-test-log';
 import { ConflictException } from '@nestjs/common';
 import { JobType } from '@prisma/client';
 
@@ -198,4 +199,13 @@ describe('ServiceJobsService installation notifications', () => {
         expect(createNotification).toHaveBeenCalledTimes(1);
         expect(sendToUser).toHaveBeenCalledTimes(1);
     });
+    // Expected fault-injection logs are checked locally; other logs remain visible.
+    let expectedLogs: ReturnType<typeof expectTestLogs>;
+    beforeEach(() => {
+        expectedLogs = expectTestLogs({
+            'warn': ["Failed to save installation notification", "Failed to deliver installation notification"],
+        });
+    });
+    afterEach(() => expectedLogs.restore());
+
 });

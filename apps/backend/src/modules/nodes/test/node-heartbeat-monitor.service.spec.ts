@@ -1,4 +1,5 @@
 import { PrismaService } from '@/prisma/prisma.service';
+import { captureExpectedLog } from '@/test/helpers/expected-test-log';
 import { NodeHeartbeatMonitorService } from '../services/node-heartbeat-monitor.service';
 
 describe('NodeHeartbeatMonitorService', () => {
@@ -102,14 +103,26 @@ describe('NodeHeartbeatMonitorService', () => {
   });
 
   it('continues checking after a database error', async () => {
-    prisma.node.updateMany
-      .mockRejectedValueOnce(new Error('Database temporarily unavailable'))
-      .mockResolvedValue({ count: 0 });
+    const log = captureExpectedLog(
+      'error',
+      'Failed to check stale node heartbeats',
+      'heartbeat database recovery',
+    );
 
-    monitor.onModuleInit();
+    try {
+      prisma.node.updateMany
+        .mockRejectedValueOnce(new Error('Database temporarily unavailable'))
+        .mockResolvedValue({ count: 0 });
 
-    await jest.advanceTimersByTimeAsync(60_000);
+      monitor.onModuleInit();
 
-    expect(prisma.node.updateMany).toHaveBeenCalledTimes(2);
+      await jest.advanceTimersByTimeAsync(60_000);
+
+      expect(prisma.node.updateMany).toHaveBeenCalledTimes(2);
+      log.verify();
+      log.report();
+    } finally {
+      log.restore();
+    }
   });
 });

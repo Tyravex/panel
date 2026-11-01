@@ -1,3 +1,4 @@
+import { expectTestLogs } from '@/test/helpers/expected-test-log';
 import { randomUUID } from 'node:crypto';
 import {
     lstat,
@@ -396,4 +397,14 @@ describe('Plugin cleanup integration', () => {
 
         expect(rmMock).not.toHaveBeenCalled();
     });
+    // Expected fault-injection logs are checked locally; other logs remain visible.
+    let expectedLogs: ReturnType<typeof expectTestLogs>;
+    beforeEach(() => {
+        expectedLogs = expectTestLogs({
+            'error': ["Could not clean plugin uninstall"],
+            'log': ["Claimed completed plugin uninstall", "Removed completed plugin cleanup operation"],
+        });
+    });
+    afterEach(() => expectedLogs.restore());
+
 });
