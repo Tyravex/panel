@@ -1,18 +1,12 @@
 import { readPluginJson } from './plugin-json-reader';
 import { resolvePluginStoragePath } from './plugin-storage-path';
 import {
+    getLanguageTranslationPaths,
     validateLanguagePluginManifest,
     type LanguagePluginManifest,
 } from './language-plugin-manifest';
-import {
-    validateLanguagePluginTranslations,
-    type LanguagePluginTranslations,
-} from './language-plugin-translations';
-
-export interface LoadedLanguagePlugin {
-    manifest: LanguagePluginManifest;
-    translations: LanguagePluginTranslations;
-}
+import { mergeLanguageTranslationFiles } from './language-plugin-translation-merge';
+import type { LanguagePluginTranslations } from './language-plugin-translations';
 
 /**
  * Loads and validates a language plugin from local storage.
@@ -22,32 +16,25 @@ export interface LoadedLanguagePlugin {
  *
  * This function does not verify plugin provenance or signatures.
  */
+export interface LoadedLanguagePlugin {
+    manifest: LanguagePluginManifest;
+    translations: LanguagePluginTranslations;
+}
+
 export const loadLanguagePlugin = async (
     storagePath: string,
 ): Promise<LoadedLanguagePlugin> => {
-    // Ensure the plugin directory is inside managed storage.
     resolvePluginStoragePath(storagePath);
-
-    const manifestData = await readPluginJson(
-        `${storagePath}/manifest.json`,
-    );
-
+    const manifestData = await readPluginJson(`${storagePath}/manifest.json`);
     if (!validateLanguagePluginManifest(manifestData)) {
         throw new Error('Invalid language plugin manifest.');
     }
-
-    const translationPath = manifestData.translations.path.slice(2);
-
-    const translationsData = await readPluginJson(
-        `${storagePath}/${translationPath}`,
-    );
-
-    if (!validateLanguagePluginTranslations(translationsData)) {
-        throw new Error('Invalid language plugin translations.');
-    }
-
+    const paths = getLanguageTranslationPaths(manifestData);
+    const resources = await Promise.all(paths.map((path) =>
+        readPluginJson(`${storagePath}/${path.slice(2)}`),
+    ));
     return {
         manifest: manifestData,
-        translations: translationsData,
+        translations: mergeLanguageTranslationFiles(resources),
     };
 };

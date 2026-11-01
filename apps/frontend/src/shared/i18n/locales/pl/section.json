@@ -1,0 +1,14 @@
+{
+  "section": {
+    "administrationDescription": "Zarządzaj infrastrukturą Tyravex.",
+    "administrationOverview": "Przegląd administracji",
+    "breadcrumb": "Tyravex / Administracja",
+    "moduleInDevelopment": "Moduł w trakcie tworzenia",
+    "nodesDescription": "Zarządzanie węzłami zostanie podłączone do istniejącego backendu na późniejszym etapie.",
+    "nodesTitle": "Węzły",
+    "notAvailableYet": "Ten ekran nie umożliwia jeszcze zarządzania danymi.",
+    "openUserManagement": "Otwórz zarządzanie użytkownikami",
+    "selectSidebar": "Wybierz sekcję z bocznego menu administracyjnego.",
+    "workspace": "Panel administracyjny"
+  }
+}

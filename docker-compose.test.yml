@@ -1,0 +1,21 @@
+name: tyravex-integration-tests
+
+services:
+  postgres-test:
+    image: postgres:15
+    restart: "no"
+    environment:
+      POSTGRES_USER: tyravex_test
+      POSTGRES_PASSWORD: tyravex_test_local_only
+      POSTGRES_DB: tyravex_integration
+    ports:
+      - "127.0.0.1:55433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U tyravex_test -d tyravex_integration
+      interval: 2s
+      timeout: 3s
+      retries: 20

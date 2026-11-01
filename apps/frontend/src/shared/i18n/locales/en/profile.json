@@ -1,0 +1,20 @@
+{
+  "profile": {
+    "accountDetails": "Account details",
+    "description": "View and update your account information.",
+    "email": "Email address",
+    "firstName": "First name",
+    "firstNamePlaceholder": "Enter your first name",
+    "invalidName": "Enter a valid name of up to 80 characters.",
+    "lastName": "Last name",
+    "lastNamePlaceholder": "Enter your last name",
+    "optionalNamesHint": "Both fields are optional. Leave them empty to remove saved values.",
+    "readOnlyHint": "Username and email address are currently read-only.",
+    "save": "Save changes",
+    "saved": "Your profile has been updated.",
+    "saveError": "Could not update your profile. Please try again.",
+    "saving": "Saving changes...",
+    "title": "Profile",
+    "username": "Username"
+  }
+}

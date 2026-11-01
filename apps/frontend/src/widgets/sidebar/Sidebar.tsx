@@ -19,6 +19,7 @@ import {
   UserRound,
   Users,
   Wrench,
+  Store,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -104,6 +105,12 @@ const adminSections: Section[] = [
         path: "/admin/plugins",
         label: "Plugins",
         icon: Blocks,
+        permission: "plugin:manage",
+      },
+      {
+        path: "/admin/plugins/marketplace",
+        label: "Marketplace",
+        icon: Store,
         permission: "plugin:manage",
       },
     ],
@@ -260,7 +267,10 @@ export const Sidebar = ({
       <NavLink
         key={item.path}
         to={item.path}
-        end={item.path === "/admin"}
+        end={
+          item.path === "/admin" ||
+          item.path === "/admin/plugins"
+        }
         onClick={onNavigate}
         className={linkClass}
       >

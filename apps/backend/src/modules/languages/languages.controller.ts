@@ -15,7 +15,7 @@ export class LanguagesController {
   constructor(
     private readonly languagesService: LanguagesService,
     private readonly pluginsService: PluginsService,
-  ) {}
+  ) { }
 
   /**
    * Returns enabled languages available on this instance.
@@ -23,6 +23,20 @@ export class LanguagesController {
   @Get()
   async findEnabled() {
     return this.languagesService.findEnabled();
+  }
+
+  /**
+   * Returns languages for frontend language selectors.
+   *
+   * Disabled language plugins remain visible with
+   * enabled: false, but cannot be selected.
+   *
+   * This static route must be declared before
+   * parameterized language routes.
+   */
+  @Get('available-options')
+  async findAvailableOptions() {
+    return this.languagesService.findAvailableOptions();
   }
 
   /**
@@ -35,9 +49,10 @@ export class LanguagesController {
     @Param('code') code: string,
   ) {
     try {
-      const plugin = await this.pluginsService.loadEnabledLanguagePlugin(
-        code,
-      );
+      const plugin =
+        await this.pluginsService.loadEnabledLanguagePlugin(
+          code,
+        );
 
       if (!plugin) {
         throw new NotFoundException(

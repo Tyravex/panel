@@ -84,15 +84,23 @@ export class PluginLifecycleService {
             }
 
             if (plugin.type === 'LANGUAGE') {
-                await tx.language.updateMany({
-                    where: {
-                        pluginId: id,
-                        isBuiltIn: false,
-                    },
-                    data: {
-                        isEnabled: targetStatus === 'INSTALLED',
-                    },
-                });
+                const updatedLanguages =
+                    await tx.language.updateMany({
+                        where: {
+                            pluginId: id,
+                            isBuiltIn: false,
+                        },
+                        data: {
+                            isEnabled:
+                                targetStatus === 'INSTALLED',
+                        },
+                    });
+
+                if (updatedLanguages.count !== 1) {
+                    throw new ConflictException(
+                        'Plugin language registration is missing or inconsistent.',
+                    );
+                }
             }
 
             await tx.adminAuditLog.create({

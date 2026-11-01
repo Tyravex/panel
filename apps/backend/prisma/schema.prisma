@@ -577,3 +577,27 @@ model Plugin {
 
   @@index([type, status])
 }
+
+// =============================================================================
+// Marketplace plugin repositories
+// =============================================================================
+
+enum PluginRepositoryStatus {
+  ENABLED
+  DISABLED
+}
+
+model PluginRepository {
+  id String @id @default(cuid())
+
+  name String
+  url  String @unique
+
+  isOfficial Boolean                @default(false)
+  status     PluginRepositoryStatus @default(DISABLED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}

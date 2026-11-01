@@ -40,6 +40,15 @@ interface PluginRecord {
     sourceRepository: null;
 }
 
+interface LanguageRecord {
+    code: string;
+    name: string;
+    pluginId: string;
+    isBuiltIn: boolean;
+    isEnabled: boolean;
+    isFallback: boolean;
+}
+
 const CRC_TABLE = new Uint32Array(256);
 
 for (let index = 0; index < 256; index += 1) {
@@ -91,7 +100,7 @@ function createZip(
         local.writeUInt32LE(0x04034b50, 0);
         local.writeUInt16LE(20, 4);
         local.writeUInt16LE(0x0800, 6);
-        local.writeUInt16LE(0, 8);
+        local.writeUInt32LE(0, 8);
         local.writeUInt32LE(checksum, 14);
         local.writeUInt32LE(data.length, 18);
         local.writeUInt32LE(data.length, 22);
@@ -146,7 +155,10 @@ function createZip(
     ]);
 }
 
-function createLanguageZip(id: string): Buffer {
+function createLanguageZip(
+    id: string,
+    languageCode = 'fr',
+): Buffer {
     return createZip({
         'manifest.json': JSON.stringify({
             schemaVersion: 1,
@@ -154,7 +166,7 @@ function createLanguageZip(id: string): Buffer {
             type: 'language',
             version: '1.0.0',
             language: {
-                code: 'fr',
+                code: languageCode,
                 name: 'French',
                 nativeName: 'Français',
             },
@@ -177,74 +189,160 @@ describe('Plugin installation integration', () => {
     let previousStorageRoot: string | undefined;
 
     const records = new Map<string, PluginRecord>();
+    const languages = new Map<string, LanguageRecord>();
+
+    const pluginCreate = jest.fn(
+        async ({ data }: { data: PluginRecord }) => {
+            if (records.has(data.id)) {
+                throw { code: 'P2002' };
+            }
+
+            const record = { ...data };
+            records.set(data.id, record);
+
+            return record;
+        },
+    );
+
+    const pluginUpdateMany = jest.fn(
+        async ({
+            where,
+            data,
+        }: {
+            where: Partial<PluginRecord>;
+            data: Partial<PluginRecord>;
+        }) => {
+            const record = records.get(where.id ?? '');
+
+            if (
+                !record ||
+                Object.entries(where).some(
+                    ([key, value]) =>
+                        record[key as keyof PluginRecord] !==
+                        value,
+                )
+            ) {
+                return { count: 0 };
+            }
+
+            Object.assign(record, data);
+
+            return { count: 1 };
+        },
+    );
+
+    const pluginDeleteMany = jest.fn(
+        async ({
+            where,
+        }: {
+            where: Partial<PluginRecord>;
+        }) => {
+            const record = records.get(where.id ?? '');
+
+            if (
+                !record ||
+                Object.entries(where).some(
+                    ([key, value]) =>
+                        record[key as keyof PluginRecord] !==
+                        value,
+                )
+            ) {
+                return { count: 0 };
+            }
+
+            records.delete(record.id);
+
+            return { count: 1 };
+        },
+    );
+
+    const languageCreate = jest.fn(
+        async ({ data }: { data: LanguageRecord }) => {
+            if (
+                languages.has(data.code) ||
+                Array.from(languages.values()).some(
+                    (language) =>
+                        language.pluginId === data.pluginId,
+                )
+            ) {
+                throw { code: 'P2002' };
+            }
+
+            const record = { ...data };
+            languages.set(data.code, record);
+
+            return record;
+        },
+    );
 
     const prismaMock = {
         plugin: {
-            create: jest.fn(
-                async ({ data }: { data: PluginRecord }) => {
-                    if (records.has(data.id)) {
-                        throw { code: 'P2002' };
-                    }
-
-                    const record = { ...data };
-                    records.set(data.id, record);
-
-                    return record;
-                },
-            ),
-
-            updateMany: jest.fn(
-                async ({
-                    where,
-                    data,
-                }: {
-                    where: Partial<PluginRecord>;
-                    data: Partial<PluginRecord>;
-                }) => {
-                    const record = records.get(where.id ?? '');
-
-                    if (
-                        !record ||
-                        Object.entries(where).some(
-                            ([key, value]) =>
-                                record[key as keyof PluginRecord] !==
-                                value,
-                        )
-                    ) {
-                        return { count: 0 };
-                    }
-
-                    Object.assign(record, data);
-
-                    return { count: 1 };
-                },
-            ),
-
-            deleteMany: jest.fn(
-                async ({
-                    where,
-                }: {
-                    where: Partial<PluginRecord>;
-                }) => {
-                    const record = records.get(where.id ?? '');
-
-                    if (
-                        !record ||
-                        Object.entries(where).some(
-                            ([key, value]) =>
-                                record[key as keyof PluginRecord] !==
-                                value,
-                        )
-                    ) {
-                        return { count: 0 };
-                    }
-
-                    records.delete(record.id);
-
-                    return { count: 1 };
-                },
-            ),
+            create: pluginCreate,
+            updateMany: pluginUpdateMany,
+            deleteMany: pluginDeleteMany,
         },
+
+        language: {
+            create: languageCreate,
+        },
+
+        $transaction: jest.fn(
+            async <T>(
+                callback: (
+                    tx: {
+                        plugin: {
+                            updateMany: typeof pluginUpdateMany;
+                        };
+                        language: {
+                            create: typeof languageCreate;
+                        };
+                    },
+                ) => Promise<T>,
+            ): Promise<T> => {
+                const pluginSnapshot = new Map(
+                    Array.from(records.entries()).map(
+                        ([id, record]) => [
+                            id,
+                            { ...record },
+                        ] as const,
+                    ),
+                );
+
+                const languageSnapshot = new Map(
+                    Array.from(languages.entries()).map(
+                        ([code, record]) => [
+                            code,
+                            { ...record },
+                        ] as const,
+                    ),
+                );
+
+                try {
+                    return await callback({
+                        plugin: {
+                            updateMany: pluginUpdateMany,
+                        },
+                        language: {
+                            create: languageCreate,
+                        },
+                    });
+                } catch (error) {
+                    records.clear();
+
+                    for (const [id, record] of pluginSnapshot) {
+                        records.set(id, record);
+                    }
+
+                    languages.clear();
+
+                    for (const [code, record] of languageSnapshot) {
+                        languages.set(code, record);
+                    }
+
+                    throw error;
+                }
+            },
+        ),
     };
 
     beforeAll(async () => {
@@ -296,6 +394,7 @@ describe('Plugin installation integration', () => {
 
     beforeEach(() => {
         records.clear();
+        languages.clear();
         jest.clearAllMocks();
     });
 
@@ -326,6 +425,15 @@ describe('Plugin installation integration', () => {
         expect(record?.storagePath).toMatch(
             /\/package$/,
         );
+
+        expect(languages.get('fr')).toEqual({
+            code: 'fr',
+            name: 'French',
+            pluginId: id,
+            isBuiltIn: false,
+            isEnabled: true,
+            isFallback: false,
+        });
 
         const packageDirectory = join(
             storageRoot,
@@ -364,6 +472,10 @@ describe('Plugin installation integration', () => {
             1,
         );
 
+        expect(prismaMock.$transaction).toHaveBeenCalledTimes(
+            1,
+        );
+
         expect(
             prismaMock.plugin.updateMany,
         ).toHaveBeenCalledWith(
@@ -371,6 +483,17 @@ describe('Plugin installation integration', () => {
                 data: { status: 'INSTALLED' },
             }),
         );
+
+        expect(prismaMock.language.create).toHaveBeenCalledWith({
+            data: {
+                code: 'fr',
+                name: 'French',
+                pluginId: id,
+                isBuiltIn: false,
+                isEnabled: true,
+                isFallback: false,
+            },
+        });
 
         const directories = await readdir(
             storageRoot,
@@ -393,6 +516,8 @@ describe('Plugin installation integration', () => {
 
         expect(response.status).toBe(400);
         expect(records.size).toBe(0);
+        expect(languages.size).toBe(0);
+
         expect(
             prismaMock.plugin.create,
         ).not.toHaveBeenCalled();
@@ -422,14 +547,76 @@ describe('Plugin installation integration', () => {
         expect(records.get(id)?.status).toBe(
             'INSTALLED',
         );
+        expect(languages.get('fr')?.pluginId).toBe(id);
 
         expect(
             prismaMock.plugin.create,
         ).toHaveBeenCalledTimes(2);
 
+        expect(
+            prismaMock.language.create,
+        ).toHaveBeenCalledTimes(1);
+
         const directories = await readdir(
             storageRoot,
         );
+
+        expect(
+            directories.some((name) =>
+                name.startsWith('.staging-'),
+            ),
+        ).toBe(false);
+    });
+
+    it('returns HTTP 409 when the language code is already registered', async () => {
+        const existingId = `integration.${randomUUID()}`;
+        const conflictingId = `integration.${randomUUID()}`;
+
+        const first = await request(
+            app.getHttpServer(),
+        )
+            .post('/admin/plugins/install')
+            .set('Content-Type', 'application/zip')
+            .send(createLanguageZip(existingId));
+
+        expect(first.status).toBe(201);
+
+        const second = await request(
+            app.getHttpServer(),
+        )
+            .post('/admin/plugins/install')
+            .set('Content-Type', 'application/zip')
+            .send(createLanguageZip(conflictingId));
+
+        expect(second.status).toBe(409);
+
+        expect(records.get(existingId)?.status).toBe(
+            'INSTALLED',
+        );
+
+        expect(records.has(conflictingId)).toBe(false);
+
+        expect(languages.get('fr')?.pluginId).toBe(
+            existingId,
+        );
+
+        expect(languages.size).toBe(1);
+
+        const directories = await readdir(
+            storageRoot,
+        );
+
+        expect(
+            directories.some((name) =>
+                name.startsWith(`${existingId}-`),
+            ),
+        ).toBe(true);
+
+        expect(
+            directories.some((name) =>
+                name.startsWith(`${conflictingId}-`),
+            ),
+        ).toBe(false);
 
         expect(
             directories.some((name) =>

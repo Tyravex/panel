@@ -1,0 +1,117 @@
+{
+  "adminPlugins": {
+    "title": "Plugins",
+    "description": "Manage extensions registered in Tyravex.",
+    "refresh": "Refresh",
+    "loading": "Loading plugins...",
+    "emptyTitle": "No installed plugins",
+    "emptyDescription": "No plugins were found in the registry.",
+    "name": "Identifier",
+    "type": "Type",
+    "version": "Version",
+    "status": "Status",
+    "errorTitle": "Unable to load plugins",
+    "errorDescription": "Check the backend connection and try again.",
+    "types": {
+      "BILLING": "Billing",
+      "INTEGRATION": "Integration",
+      "LANGUAGE": "Language",
+      "NOTIFICATION": "Notification",
+      "OTHER": "Other",
+      "THEME": "Theme"
+    },
+    "statuses": {
+      "DISABLED": "Disabled",
+      "FAILED": "Failed",
+      "INSTALLED": "Active",
+      "INSTALLING": "Installing",
+      "UNINSTALLING": "Uninstalling",
+      "UPDATING": "Updating"
+    },
+    "categories": {
+      "all": "All plugins",
+      "count_one": "{{count}} plugin",
+      "count_other": "{{count}} plugins",
+      "navigationLabel": "Plugin categories"
+    },
+    "stats": {
+      "active": "Active",
+      "disabled": "Disabled",
+      "navigationLabel": "Plugin statistics",
+      "total": "Total plugins",
+      "installing": "Installing",
+      "updating": "Updating",
+      "failed": "Failed"
+    },
+    "install": {
+      "cancel": "Cancel",
+      "close": "Close",
+      "description": "Upload a compatible Tyravex language plugin ZIP package.",
+      "errors": {
+        "conflict": "Plugin is already installed.",
+        "empty": "The ZIP package is empty.",
+        "forbidden": "Insufficient permissions.",
+        "generic": "Plugin installation failed.",
+        "invalid": "Invalid plugin package.",
+        "selectZip": "Select a ZIP package.",
+        "tooLarge": "Plugin package exceeds the 20 MiB limit.",
+        "unauthorized": "Authentication required.",
+        "unsupported": "Only ZIP packages are supported."
+      },
+      "installing": "Installing...",
+      "limit": "Maximum package size: 20 MiB",
+      "open": "Install plugin",
+      "selectFile": "Choose a ZIP package",
+      "submit": "Install plugin",
+      "success": "Plugin \"{{id}}\" installed successfully.",
+      "title": "Install plugin"
+    },
+    "actions": {
+      "header": "Actions",
+      "open": "Open plugin actions",
+      "details": "Details",
+      "enable": "Enable",
+      "disable": "Disable",
+      "uninstall": "Uninstall"
+    },
+    "toggle": {
+      "enableTitle": "Enable plugin?",
+      "disableTitle": "Disable plugin?",
+      "enableDescription": "The plugin will be reactivated. If it provides a language, that language will become available in the panel.",
+      "disableDescription": "The plugin will be disabled. If it provides a language, that language will no longer be selectable.",
+      "cancel": "Cancel",
+      "processing": "Processing...",
+      "errors": {
+        "generic": "Could not change the plugin status.",
+        "unauthorized": "Your session has expired. Please sign in again.",
+        "forbidden": "You do not have permission to manage plugins.",
+        "notFound": "Plugin not found.",
+        "conflict": "The plugin status has changed or this operation is currently unavailable. Refresh the list."
+      }
+    },
+    "uninstall": {
+      "title": "Uninstall plugin?",
+      "warning": "This action cannot be undone. The plugin will be removed from the Tyravex registry, and its files will be deleted from disk.",
+      "description": "To confirm uninstallation, enter the exact plugin identifier shown below.",
+      "confirmLabel": "Confirm plugin identifier",
+      "confirmPlaceholder": "Enter the full plugin identifier",
+      "confirm": "Uninstall plugin",
+      "processing": "Uninstalling...",
+      "cancel": "Cancel",
+      "close": "Close",
+      "cleanupPending": "The plugin has been removed from the registry, but its files could not be fully deleted. Server-side cleanup must still be completed.",
+      "errors": {
+        "badRequest": "The plugin identifier confirmation is invalid.",
+        "unauthorized": "Your session has expired. Please sign in again.",
+        "forbidden": "You do not have permission to uninstall plugins.",
+        "notFound": "Plugin not found. Refresh the list.",
+        "conflict": "The plugin is being processed or its current status does not allow uninstallation. Refresh the list.",
+        "generic": "Could not uninstall the plugin. Please try again."
+      }
+    },
+    "updates": {
+      "available": "Update available",
+      "failed": "Update failed"
+    }
+  }
+}

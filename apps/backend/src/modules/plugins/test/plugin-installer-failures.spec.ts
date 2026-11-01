@@ -66,6 +66,10 @@ describe('Plugin installer failure handling', () => {
       updateMany: jest.fn(),
       deleteMany: jest.fn(),
     },
+    language: {
+      create: jest.fn(),
+    },
+    $transaction: jest.fn(),
   };
 
   let installer: PluginInstallerService;
@@ -90,6 +94,13 @@ describe('Plugin installer failure handling', () => {
     prisma.plugin.create.mockResolvedValue({});
     prisma.plugin.updateMany.mockResolvedValue({ count: 1 });
     prisma.plugin.deleteMany.mockResolvedValue({ count: 1 });
+    prisma.language.create.mockResolvedValue({});
+
+    prisma.$transaction.mockImplementation(
+      async (callback: (tx: typeof prisma) => Promise<unknown>) => {
+        return callback(prisma);
+      },
+    );
 
     stageMock.mockImplementation(async () => {
       const stagingPath = await fs.mkdtemp(

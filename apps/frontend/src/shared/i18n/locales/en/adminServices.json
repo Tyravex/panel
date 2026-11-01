@@ -1,0 +1,65 @@
+{
+  "adminServices": {
+    "administration": "Administration",
+    "allServices": "All services ({{count}})",
+    "categories": {
+      "discord_bot": "Discord bot",
+      "other": "Other service",
+      "server": "Server",
+      "telegram_bot": "Telegram bot"
+    },
+    "category": "Category",
+    "changeOwner": "Change owner",
+    "columns": {
+      "actions": "Actions",
+      "category": "Category",
+      "node": "Node",
+      "owner": "Owner",
+      "service": "Service",
+      "status": "Status"
+    },
+    "confirmOwner": "Change the owner of service “{{name}}”?",
+    "createdNotice": "Service draft created. The container has not been started.",
+    "createDraft": "Create draft",
+    "createService": "Create service",
+    "createTitle": "New service",
+    "description": "Manage service drafts and their owners.",
+    "draftDescription": "Creating a service only saves a draft (DRAFT). It does not reserve resources or start Docker.",
+    "empty": "No services found.",
+    "loading": "Loading services...",
+    "name": "Name",
+    "nodeOptional": "Node (optional)",
+    "nodesLoading": "Loading nodes...",
+    "nodesUnavailable": "Unable to load nodes: {{message}}",
+    "ownerOptional": "Owner (optional)",
+    "ownerPicker": {
+      "empty": "No active users match this search.",
+      "error": "Unable to load users. The user:read permission is required.",
+      "loading": "Loading users...",
+      "noOwner": "No owner",
+      "page": "Page {{page}} of {{pages}}",
+      "searchLabel": "Search users by name or email",
+      "searchPlaceholder": "Search by name or email...",
+      "selected": "Selected: {{name}}",
+      "selectLabel": "Select service owner",
+      "userId": "User #{{id}}"
+    },
+    "ownerUpdated": "Service owner updated.",
+    "refresh": "Refresh",
+    "resources": {
+      "cpuPercent": "CPU (%)",
+      "diskMb": "Disk (MB)",
+      "memoryMb": "RAM (MB)"
+    },
+    "searchLabel": "Search services",
+    "title": "Services",
+    "unassigned": "Unassigned",
+    "unexpectedError": "The operation could not be completed.",
+    "validation": {
+      "cpuPercent": "CPU: enter an integer from 1 to 100000.",
+      "diskMb": "Disk: enter an integer from 1 to 10485760.",
+      "memoryMb": "RAM: enter an integer from 1 to 1048576.",
+      "name": "Name must be between 1 and 100 characters."
+    }
+  }
+}

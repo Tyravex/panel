@@ -1,0 +1,6 @@
+{
+  "logout": {
+    "warningDescription": "Wylogowano Cię lokalnie, ale sesja na serwerze może nadal być aktywna. Spróbuj ponownie później.",
+    "warningTitle": "Nie udało się potwierdzić wylogowania na serwerze"
+  }
+}

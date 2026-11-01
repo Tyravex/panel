@@ -1,0 +1,45 @@
+{
+  "adminAudit": {
+    "action": "Działanie",
+    "actions": {
+      "ROLE_ASSIGNED": "Przypisano rolę",
+      "ROLE_CREATED": "Utworzono rolę",
+      "ROLE_DELETED": "Usunięto rolę",
+      "ROLE_REVOKED": "Odebrano rolę",
+      "ROLE_UPDATED": "Zaktualizowano rolę",
+      "USER_CREATED": "Utworzono użytkownika",
+      "USER_DISABLED": "Dezaktywowano użytkownika",
+      "USER_ENABLED": "Aktywowano użytkownika",
+      "USER_UPDATED": "Zaktualizowano użytkownika"
+    },
+    "activityHistory": "Historia aktywności",
+    "actorId": "ID administratora",
+    "administrator": "Administrator",
+    "allActions": "Wszystkie działania",
+    "anyAdministrator": "Dowolny administrator",
+    "apply": "Zastosuj",
+    "breadcrumb": "Tyravex / Administracja / System",
+    "clearFilters": "Wyczyść filtry",
+    "description": "Przeglądaj działania administratorów i zmiany ról.",
+    "details": "Szczegóły",
+    "empty": "Brak wpisów odpowiadających wybranym filtrom.",
+    "entriesCount_few": "{{count}} wpisy",
+    "entriesCount_many": "{{count}} wpisów",
+    "entriesCount_one": "{{count}} wpis",
+    "entriesCount_other": "{{count}} wpisu",
+    "hide": "Ukryj",
+    "invalidActorId": "ID administratora musi być dodatnią liczbą całkowitą.",
+    "loadError": "Nie udało się załadować dziennika audytu.",
+    "loading": "Ładowanie dziennika audytu...",
+    "pageOf": "Strona {{page}} z {{pages}}",
+    "target": "Obiekt",
+    "targets": {
+      "ROLE": "Rola",
+      "USER": "Użytkownik"
+    },
+    "time": "Czas",
+    "title": "Dziennik audytu",
+    "unknownActor": "Usunięty / nieznany",
+    "view": "Pokaż"
+  }
+}

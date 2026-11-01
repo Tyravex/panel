@@ -1,0 +1,25 @@
+{
+  "adminSettings": {
+    "comingSoon": "Ta sekcja ustawień będzie dostępna w przyszłości.",
+    "description": "Zarządzaj konfiguracją panelu.",
+    "disabled": "Rejestracja jest wyłączona.",
+    "enabled": "Rejestracja jest włączona.",
+    "infoTitle": "Wskazówka",
+    "loadError": "Nie udało się pobrać ustawień rejestracji.",
+    "loading": "Ładowanie ustawień...",
+    "registrationDescription": "Zezwalaj nowym użytkownikom na samodzielne tworzenie kont.",
+    "registrationInfo": "Po wyłączeniu rejestracji tylko administratorzy będą mogli tworzyć nowe konta użytkowników.",
+    "registrationTitle": "Rejestracja użytkowników",
+    "saveError": "Nie udało się zapisać ustawień rejestracji.",
+    "saveSuccess": "Ustawienia rejestracji zostały zapisane.",
+    "saving": "Zapisywanie zmian...",
+    "tabs": {
+      "navigationLabel": "Sekcje ustawień administratora",
+      "notifications": "Powiadomienia",
+      "security": "Bezpieczeństwo",
+      "system": "System",
+      "users": "Użytkownicy"
+    },
+    "title": "Ustawienia administratora"
+  }
+}

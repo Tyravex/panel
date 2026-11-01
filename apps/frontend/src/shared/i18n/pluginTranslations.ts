@@ -2,7 +2,7 @@ import i18n from '@/shared/i18n';
 
 export type PluginTranslations = Record<string, unknown>;
 
-const BUILT_IN_LANGUAGES = new Set(['en', 'pl', 'de']);
+const BUILT_IN_LANGUAGES = new Set(['en', 'pl']);
 
 const MAX_TRANSLATIONS_SIZE = 1024 * 1024;
 const MAX_NESTING_DEPTH = 20;

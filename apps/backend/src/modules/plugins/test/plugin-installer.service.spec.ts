@@ -48,6 +48,10 @@ describe('PluginInstallerService', () => {
             updateMany: jest.fn(),
             deleteMany: jest.fn(),
         },
+        language: {
+            create: jest.fn(),
+        },
+        $transaction: jest.fn(),
     };
 
     beforeEach(async () => {
@@ -67,6 +71,13 @@ describe('PluginInstallerService', () => {
         prisma.plugin.create.mockResolvedValue({});
         prisma.plugin.updateMany.mockResolvedValue({ count: 1 });
         prisma.plugin.deleteMany.mockResolvedValue({ count: 1 });
+        prisma.language.create.mockResolvedValue({});
+
+        prisma.$transaction.mockImplementation(
+            async (callback: (tx: typeof prisma) => Promise<unknown>) => {
+                return callback(prisma);
+            },
+        );
 
         stageMock.mockImplementation(async () => {
             const stagingPath = await mkdtemp(
@@ -130,6 +141,19 @@ describe('PluginInstallerService', () => {
                 ),
             }),
         });
+
+        expect(prisma.language.create).toHaveBeenCalledWith({
+            data: {
+                code: 'fr',
+                name: 'French',
+                pluginId: 'example.language',
+                isBuiltIn: false,
+                isEnabled: true,
+                isFallback: false,
+            },
+        });
+
+        expect(prisma.$transaction).toHaveBeenCalledTimes(1);
 
         const storagePath =
             prisma.plugin.create.mock.calls[0][0].data.storagePath;

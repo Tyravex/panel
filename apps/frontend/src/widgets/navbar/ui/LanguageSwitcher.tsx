@@ -1,23 +1,29 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   AlertCircle,
   Check,
   ChevronDown,
   Languages,
-} from "lucide-react";
-import { useTranslation } from "react-i18next";
+  Lock,
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-import type { Language } from "@/features/auth/api/getLanguages";
+import type { LanguageOption } from '@/features/auth/api/getLanguageOptions';
 import {
   fallbackLanguage,
-  getAvailableLanguages,
-} from "@/shared/i18n/availableLanguages";
-import { useUser } from "@/shared/store/user";
+  getAvailableLanguageOptions,
+} from '@/shared/i18n/availableLanguages';
+import { useUser } from '@/shared/store/user';
 
 const countryByLanguage: Record<string, string> = {
-  en: "gb",
-  pl: "pl",
-  de: "de",
+  en: 'gb',
+  pl: 'pl',
+  de: 'de',
+};
+
+const fallbackOption: LanguageOption = {
+  ...fallbackLanguage,
+  enabled: true,
 };
 
 export const LanguageSwitcher = () => {
@@ -25,36 +31,37 @@ export const LanguageSwitcher = () => {
 
   const language = useUser((state) => state.activeLanguage);
   const updateLanguage = useUser((state) => state.updateLanguage);
+  const syncActiveLanguage = useUser(
+    (state) => state.syncActiveLanguage,
+  );
 
-  const [languages, setLanguages] = useState<Language[]>([
-    fallbackLanguage,
+  const [languages, setLanguages] = useState<LanguageOption[]>([
+    fallbackOption,
   ]);
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [hasLoadError, setHasLoadError] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const savingRef = useRef(false);
-  const mountedRef = useRef(true);
+  const mountedRef = useRef(false);
   const loadVersionRef = useRef(0);
   const listId = useId();
 
-  useEffect(() => {
-    mountedRef.current = true;
-
-    return () => {
-      mountedRef.current = false;
-      loadVersionRef.current++;
-    };
-  }, []);
+  const disabledLabel = t('language.pluginDisabled', {
+    defaultValue: 'Plugin disabled',
+  });
 
   const loadLanguages = async () => {
     const loadVersion = ++loadVersionRef.current;
 
+    setIsLoading(true);
+
     try {
-      const available = await getAvailableLanguages();
+      const available = await getAvailableLanguageOptions();
 
       if (
         !mountedRef.current ||
@@ -65,29 +72,50 @@ export const LanguageSwitcher = () => {
 
       setLanguages(available);
       setHasLoadError(false);
-    } catch {
-      if (
-        !mountedRef.current ||
-        loadVersion !== loadVersionRef.current
-      ) {
-        return;
-      }
 
-      setLanguages([fallbackLanguage]);
-      setHasLoadError(true);
+      void syncActiveLanguage().catch((error) => {
+        console.error(
+          'Failed to synchronize active language:',
+          error,
+        );
+      });
+    } catch (error) {
+      console.error('Failed to load language options:', error);
+
+      if (
+        mountedRef.current &&
+        loadVersion === loadVersionRef.current
+      ) {
+        setLanguages([fallbackOption]);
+        setHasLoadError(true);
+      }
+    } finally {
+      if (
+        mountedRef.current &&
+        loadVersion === loadVersionRef.current
+      ) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
+    mountedRef.current = true;
+
     void loadLanguages();
+
+    return () => {
+      mountedRef.current = false;
+      loadVersionRef.current++;
+    };
   }, []);
 
   const currentLanguage =
-    languages.find((item) => item.code === language) ??
-    fallbackLanguage;
+    languages.find(
+      (item) => item.code === language && item.enabled,
+    ) ?? fallbackOption;
 
-  const currentCountry =
-    countryByLanguage[currentLanguage.code];
+  const currentCountry = countryByLanguage[currentLanguage.code];
 
   useEffect(() => {
     if (!isOpen) return;
@@ -102,31 +130,36 @@ export const LanguageSwitcher = () => {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         event.stopPropagation();
         setIsOpen(false);
         triggerRef.current?.focus();
       }
     };
 
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
 
   const selectLanguage = async (code: string) => {
-    if (savingRef.current) {
+    if (savingRef.current || isLoading) {
       return;
     }
 
-    if (
-      code === language ||
-      !languages.some((item) => item.code === code)
-    ) {
+    const option = languages.find(
+      (item) => item.code === code,
+    );
+
+    if (!option || !option.enabled) {
+      return;
+    }
+
+    if (code === language) {
       setIsOpen(false);
       return;
     }
@@ -159,8 +192,8 @@ export const LanguageSwitcher = () => {
     <div ref={containerRef} className="relative">
       <p className="mb-2 flex items-center gap-2 px-1 text-xs font-medium text-text-secondary">
         <Languages size={14} aria-hidden="true" />
-        {t("Navbar.ProfileDropdown.language", {
-          defaultValue: "Language",
+        {t('Navbar.ProfileDropdown.language', {
+          defaultValue: 'Language',
         })}
       </p>
 
@@ -181,6 +214,7 @@ export const LanguageSwitcher = () => {
         disabled={isSaving}
         aria-expanded={isOpen}
         aria-controls={isOpen ? listId : undefined}
+        aria-busy={isLoading}
         className="flex w-full items-center justify-between gap-3 rounded-xl border border-border-subtle bg-background/60 px-3 py-2.5 text-sm text-text-primary transition-colors hover:bg-white/5 disabled:cursor-wait disabled:opacity-60"
       >
         <span className="flex items-center gap-3">
@@ -197,9 +231,9 @@ export const LanguageSwitcher = () => {
           size={16}
           aria-hidden="true"
           className={[
-            "text-text-secondary transition-transform",
-            isOpen ? "rotate-180" : "",
-          ].join(" ")}
+            'text-text-secondary transition-transform',
+            isOpen ? 'rotate-180' : '',
+          ].join(' ')}
         />
       </button>
 
@@ -209,9 +243,9 @@ export const LanguageSwitcher = () => {
           className="mt-2 overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-lg"
         >
           {languages.map((item) => {
+            const isDisabled = !item.enabled;
             const isSelected =
-              item.code === currentLanguage.code;
-
+              item.enabled && item.code === language;
             const country = countryByLanguage[item.code];
 
             return (
@@ -220,27 +254,56 @@ export const LanguageSwitcher = () => {
                 type="button"
                 onClick={() => void selectLanguage(item.code)}
                 aria-pressed={isSelected}
-                disabled={isSaving}
+                aria-label={
+                  isDisabled
+                    ? `${item.name} — ${disabledLabel}`
+                    : item.name
+                }
+                disabled={isSaving || isLoading || isDisabled}
+                title={isDisabled ? disabledLabel : undefined}
                 className={[
-                  "flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm transition-colors disabled:opacity-60",
-                  isSelected
-                    ? "bg-primary/10 text-primary"
-                    : "text-text-secondary hover:bg-white/5 hover:text-text-primary",
-                ].join(" ")}
+                  'flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm transition-colors',
+                  isDisabled
+                    ? 'cursor-not-allowed opacity-45'
+                    : isSaving || isLoading
+                      ? 'cursor-wait opacity-60'
+                      : isSelected
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-text-secondary hover:bg-white/5 hover:text-text-primary',
+                ].join(' ')}
               >
-                <span className="flex items-center gap-3">
+                <span className="flex min-w-0 items-center gap-3">
                   {country && (
                     <span
-                      className={`fi fi-${country} rounded-sm`}
+                      className={`fi fi-${country} shrink-0 rounded-sm`}
                       aria-hidden="true"
                     />
                   )}
-                  <span>{item.name}</span>
+
+                  <span className="flex min-w-0 flex-col text-left">
+                    <span>{item.name}</span>
+
+                    {isDisabled && (
+                      <span className="text-xs text-text-secondary">
+                        {disabledLabel}
+                      </span>
+                    )}
+                  </span>
                 </span>
 
-                {isSelected && (
-                  <Check size={16} aria-hidden="true" />
-                )}
+                {isDisabled ? (
+                  <Lock
+                    size={15}
+                    aria-hidden="true"
+                    className="shrink-0 text-text-secondary"
+                  />
+                ) : isSelected ? (
+                  <Check
+                    size={16}
+                    aria-hidden="true"
+                    className="shrink-0"
+                  />
+                ) : null}
               </button>
             );
           })}
@@ -258,9 +321,9 @@ export const LanguageSwitcher = () => {
             aria-hidden="true"
           />
           <span>
-            {t("language.loadError", {
+            {t('language.loadError', {
               defaultValue:
-                "Could not load available languages. Please try again.",
+                'Could not load available languages. Please try again.',
             })}
           </span>
         </p>
@@ -277,9 +340,9 @@ export const LanguageSwitcher = () => {
             aria-hidden="true"
           />
           <span>
-            {t("language.saveError", {
+            {t('language.saveError', {
               defaultValue:
-                "Could not save the language preference. Please try again.",
+                'Could not save the language preference. Please try again.',
             })}
           </span>
         </p>

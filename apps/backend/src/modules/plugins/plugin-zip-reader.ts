@@ -10,11 +10,10 @@ import {
 } from './plugin-package-policy';
 import {
   validateLanguagePluginManifest,
+  getLanguageTranslationPaths,
   type LanguagePluginManifest,
 } from './language-plugin-manifest';
-import {
-  validateLanguagePluginTranslations,
-} from './language-plugin-translations';
+import { mergeLanguageTranslationFiles } from './language-plugin-translation-merge';
 import {
   validatePluginZipLocalHeader,
 } from './plugin-zip-headers';
@@ -176,7 +175,7 @@ const collectEntries = (
           entry.uncompressedSize < 0 ||
           entry.compressedSize < 0 ||
           entry.uncompressedSize >
-            PLUGIN_PACKAGE_LIMITS.maxFileBytes ||
+          PLUGIN_PACKAGE_LIMITS.maxFileBytes ||
           (isDirectory &&
             (entry.uncompressedSize !== 0 ||
               entry.compressedSize !== 0))
@@ -357,7 +356,7 @@ export const inspectPluginZip = async (
     !Buffer.isBuffer(buffer) ||
     buffer.length === 0 ||
     buffer.length >
-      PLUGIN_PACKAGE_LIMITS.maxArchiveBytes
+    PLUGIN_PACKAGE_LIMITS.maxArchiveBytes
   ) {
     throw invalidZip();
   }
@@ -423,65 +422,41 @@ export const inspectPluginZip = async (
       throw invalidZip();
     }
 
-    const translationPath =
-      manifestData.translations.path.slice(2);
-
-    const translationEntry =
-      collected.zipEntries.find(
-        (entry) =>
-          entry.fileName === translationPath &&
-          !entry.fileName.endsWith('/'),
-      );
-
-    if (!translationEntry) {
+    const translationPaths = getLanguageTranslationPaths(manifestData)
+      .map((path) => path.slice(2));
+    const referencedPaths = new Set(translationPaths);
+    const availableFiles = new Set(
+      collected.zipEntries.filter((entry) => !entry.fileName.endsWith('/'))
+        .map((entry) => entry.fileName),
+    );
+    if (translationPaths.some((path) => !availableFiles.has(path))) {
       throw invalidZip();
     }
 
-    // Verify all remaining entries, including files
-    // that are not referenced by the manifest.
-    let translationBuffer: Buffer | null = null;
-
+    // Verify every entry and retain only the referenced JSON resources.
+    const translationData = new Map<string, unknown>();
     for (const entry of collected.zipEntries) {
-      if (
-        entry.fileName.endsWith('/') ||
-        entry === manifestEntry
-      ) {
+      if (entry.fileName.endsWith('/') || entry === manifestEntry) {
         continue;
       }
-
-      const isTranslation =
-        entry === translationEntry;
-
+      const isTranslation = referencedPaths.has(entry.fileName);
       const data = await readEntry(
         zipFile,
         entry,
-        isTranslation
-          ? MAX_JSON_BYTES
-          : PLUGIN_PACKAGE_LIMITS.maxFileBytes,
+        isTranslation ? MAX_JSON_BYTES : PLUGIN_PACKAGE_LIMITS.maxFileBytes,
         countBytes,
         isTranslation,
       );
-
       if (isTranslation) {
-        translationBuffer = data;
+        if (!data) throw invalidZip();
+        translationData.set(entry.fileName, parseJson(data));
       }
     }
 
-    if (!translationBuffer) {
-      throw invalidZip();
-    }
-
-    const translationData = parseJson(
-      translationBuffer,
-    );
-
-    if (
-      !validateLanguagePluginTranslations(
-        translationData,
-      )
-    ) {
-      throw invalidZip();
-    }
+    mergeLanguageTranslationFiles(translationPaths.map((path) => {
+      if (!translationData.has(path)) throw invalidZip();
+      return translationData.get(path);
+    }));
 
     return {
       manifest: manifestData,

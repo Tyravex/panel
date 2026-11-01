@@ -1,0 +1,119 @@
+{
+  "adminPlugins": {
+    "title": "Pluginy",
+    "description": "Zarządzaj rozszerzeniami zarejestrowanymi w Tyravex.",
+    "refresh": "Odśwież",
+    "loading": "Ładowanie pluginów...",
+    "emptyTitle": "Brak zainstalowanych pluginów",
+    "emptyDescription": "Nie znaleziono żadnych pluginów w rejestrze.",
+    "name": "Identyfikator",
+    "type": "Typ",
+    "version": "Wersja",
+    "status": "Status",
+    "errorTitle": "Nie udało się pobrać pluginów",
+    "errorDescription": "Sprawdź połączenie z backendem i spróbuj ponownie.",
+    "types": {
+      "BILLING": "Płatności",
+      "INTEGRATION": "Integracja",
+      "LANGUAGE": "Język",
+      "NOTIFICATION": "Powiadomienia",
+      "OTHER": "Inny",
+      "THEME": "Motyw"
+    },
+    "statuses": {
+      "DISABLED": "Wyłączony",
+      "FAILED": "Błąd",
+      "INSTALLED": "Aktywny",
+      "INSTALLING": "Instalowanie",
+      "UNINSTALLING": "Odinstalowywanie",
+      "UPDATING": "Aktualizowanie"
+    },
+    "categories": {
+      "all": "Wszystkie pluginy",
+      "count_few": "{{count}} pluginy",
+      "count_many": "{{count}} pluginów",
+      "count_one": "{{count}} plugin",
+      "count_other": "{{count}} pluginu",
+      "navigationLabel": "Kategorie pluginów"
+    },
+    "stats": {
+      "active": "Aktywne",
+      "disabled": "Wyłączone",
+      "navigationLabel": "Statystyki pluginów",
+      "total": "Wszystkie pluginy",
+      "installing": "Instalowanie",
+      "updating": "Aktualizowanie",
+      "failed": "Błędy"
+    },
+    "install": {
+      "cancel": "Anuluj",
+      "close": "Zamknij",
+      "description": "Prześlij zgodną paczkę ZIP z pluginem językowym Tyravex.",
+      "errors": {
+        "conflict": "Plugin jest już zainstalowany.",
+        "empty": "Paczka ZIP jest pusta.",
+        "forbidden": "Brak wymaganych uprawnień.",
+        "generic": "Nie udało się zainstalować pluginu.",
+        "invalid": "Nieprawidłowa paczka pluginu.",
+        "selectZip": "Wybierz paczkę ZIP.",
+        "tooLarge": "Paczka przekracza limit 20 MiB.",
+        "unauthorized": "Wymagane logowanie.",
+        "unsupported": "Obsługiwane są tylko paczki ZIP."
+      },
+      "installing": "Instalowanie...",
+      "limit": "Maksymalny rozmiar paczki: 20 MiB",
+      "open": "Zainstaluj plugin",
+      "selectFile": "Wybierz paczkę ZIP",
+      "submit": "Zainstaluj plugin",
+      "success": "Plugin „{{id}}” został zainstalowany.",
+      "title": "Instalacja pluginu"
+    },
+    "actions": {
+      "header": "Akcje",
+      "open": "Otwórz menu akcji pluginu",
+      "details": "Szczegóły",
+      "enable": "Włącz",
+      "disable": "Wyłącz",
+      "uninstall": "Odinstaluj"
+    },
+    "toggle": {
+      "enableTitle": "Włączyć plugin?",
+      "disableTitle": "Wyłączyć plugin?",
+      "enableDescription": "Plugin zostanie ponownie aktywowany. Jeśli dostarcza język, zostanie on udostępniony w panelu.",
+      "disableDescription": "Plugin zostanie wyłączony. Jeśli dostarcza język, nie będzie on dostępny do wyboru.",
+      "cancel": "Anuluj",
+      "processing": "Przetwarzanie...",
+      "errors": {
+        "generic": "Nie udało się zmienić stanu pluginu.",
+        "unauthorized": "Sesja wygasła. Zaloguj się ponownie.",
+        "forbidden": "Nie masz uprawnień do zarządzania pluginami.",
+        "notFound": "Plugin nie został znaleziony.",
+        "conflict": "Stan pluginu zmienił się lub operacja nie jest teraz dozwolona. Odśwież listę."
+      }
+    },
+    "uninstall": {
+      "title": "Odinstalować plugin?",
+      "warning": "Ta operacja jest nieodwracalna. Plugin zostanie usunięty z rejestru Tyravex, a jego pliki zostaną usunięte z dysku.",
+      "description": "Aby potwierdzić odinstalowanie, wpisz dokładnie poniższy identyfikator pluginu.",
+      "confirmLabel": "Potwierdź identyfikator pluginu",
+      "confirmPlaceholder": "Wpisz pełny identyfikator pluginu",
+      "confirm": "Odinstaluj plugin",
+      "processing": "Odinstalowywanie...",
+      "cancel": "Anuluj",
+      "close": "Zamknij",
+      "cleanupPending": "Plugin został usunięty z rejestru, ale nie udało się jeszcze zakończyć usuwania jego plików. Konieczne jest dokończenie czyszczenia na serwerze.",
+      "errors": {
+        "badRequest": "Nieprawidłowe potwierdzenie identyfikatora pluginu.",
+        "unauthorized": "Sesja wygasła. Zaloguj się ponownie.",
+        "forbidden": "Nie masz uprawnień do odinstalowywania pluginów.",
+        "notFound": "Plugin nie został znaleziony. Odśwież listę.",
+        "conflict": "Plugin jest aktualnie przetwarzany lub jego stan nie pozwala na odinstalowanie. Odśwież listę.",
+        "generic": "Nie udało się odinstalować pluginu. Spróbuj ponownie."
+      }
+    },
+    "updates": {
+      "available": "Dostępna aktualizacja",
+      "failed": "Aktualizacja nieudana"
+    }
+  }
+}

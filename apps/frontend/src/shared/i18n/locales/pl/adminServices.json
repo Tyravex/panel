@@ -1,0 +1,65 @@
+{
+  "adminServices": {
+    "administration": "Administracja",
+    "allServices": "Wszystkie usługi ({{count}})",
+    "categories": {
+      "discord_bot": "Bot Discord",
+      "other": "Inna usługa",
+      "server": "Serwer",
+      "telegram_bot": "Bot Telegram"
+    },
+    "category": "Kategoria",
+    "changeOwner": "Zmień właściciela",
+    "columns": {
+      "actions": "Akcje",
+      "category": "Kategoria",
+      "node": "Node",
+      "owner": "Właściciel",
+      "service": "Usługa",
+      "status": "Status"
+    },
+    "confirmOwner": "Zmienić właściciela usługi „{{name}}”?",
+    "createdNotice": "Utworzono szkic usługi. Kontener nie został jeszcze uruchomiony.",
+    "createDraft": "Utwórz szkic",
+    "createService": "Utwórz usługę",
+    "createTitle": "Nowa usługa",
+    "description": "Zarządzaj szkicami usług i ich właścicielami.",
+    "draftDescription": "Utworzenie zapisuje tylko szkic (DRAFT). Nie rezerwuje zasobów ani nie uruchamia Dockera.",
+    "empty": "Nie znaleziono usług.",
+    "loading": "Ładowanie usług...",
+    "name": "Nazwa",
+    "nodeOptional": "Node (opcjonalnie)",
+    "nodesLoading": "Ładowanie węzłów...",
+    "nodesUnavailable": "Nie można pobrać węzłów: {{message}}",
+    "ownerOptional": "Właściciel (opcjonalnie)",
+    "ownerPicker": {
+      "empty": "Brak aktywnych użytkowników dla tego wyszukiwania.",
+      "error": "Nie udało się pobrać użytkowników. Wymagane uprawnienie user:read.",
+      "loading": "Ładowanie użytkowników...",
+      "noOwner": "Bez właściciela",
+      "page": "Strona {{page}} z {{pages}}",
+      "searchLabel": "Szukaj użytkownika po nazwie lub e-mailu",
+      "searchPlaceholder": "Szukaj po nazwie lub e-mailu...",
+      "selected": "Wybrano: {{name}}",
+      "selectLabel": "Wybierz właściciela usługi",
+      "userId": "Użytkownik #{{id}}"
+    },
+    "ownerUpdated": "Właściciel usługi został zaktualizowany.",
+    "refresh": "Odśwież",
+    "resources": {
+      "cpuPercent": "CPU (%)",
+      "diskMb": "Dysk (MB)",
+      "memoryMb": "RAM (MB)"
+    },
+    "searchLabel": "Szukaj usług",
+    "title": "Usługi",
+    "unassigned": "Nieprzypisany",
+    "unexpectedError": "Nie udało się wykonać operacji.",
+    "validation": {
+      "cpuPercent": "CPU: wpisz liczbę całkowitą od 1 do 100000.",
+      "diskMb": "Dysk: wpisz liczbę całkowitą od 1 do 10485760.",
+      "memoryMb": "RAM: wpisz liczbę całkowitą od 1 do 1048576.",
+      "name": "Nazwa musi mieć od 1 do 100 znaków."
+    }
+  }
+}

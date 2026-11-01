@@ -8,6 +8,12 @@ import { raw } from 'express';
 
 import { PrismaModule } from '@/prisma/prisma.module';
 
+import { MarketplaceController } from './marketplace/marketplace.controller';
+import { MarketplaceRegistryService } from './marketplace/marketplace-registry.service';
+import { MarketplaceRepositoriesController } from './marketplace/marketplace-repositories.controller';
+import { MarketplaceRepositoriesService } from './marketplace/marketplace-repositories.service';
+import { MarketplaceCommunityRegistryService } from './marketplace/marketplace-community-registry.service';
+
 import { PluginInstallerService } from './plugin-installer.service';
 import { PluginsController } from './plugins.controller';
 import { PluginsService } from './plugins.service';
@@ -28,23 +34,35 @@ export const MAX_PLUGIN_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 @Module({
   imports: [PrismaModule],
+
   controllers: [
+    MarketplaceController,
+    MarketplaceRepositoriesController,
+
     PluginsController,
     PluginLifecycleController,
     PluginUninstallerController,
   ],
+
   providers: [
+    MarketplaceRegistryService,
+    MarketplaceRepositoriesService,
+    MarketplaceCommunityRegistryService,
+
     PluginsService,
     PluginInstallerService,
     PluginLifecycleService,
     PluginUninstallerService,
+
     PluginUninstallationRecovery,
     PluginUninstallationCleanupService,
+
     PluginRecoveryLockService,
     PluginCleanupClaimService,
     PluginRecoveryFilesystemLockService,
     PluginRecoveryCoordinatorService,
   ],
+
   exports: [
     PluginsService,
     PluginInstallerService,

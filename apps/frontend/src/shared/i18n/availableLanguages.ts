@@ -1,9 +1,10 @@
 import i18n from '@/shared/i18n';
 
+import type { Language } from '@/features/auth/api/getLanguages';
 import {
-  getLanguages,
-  type Language,
-} from '@/features/auth/api/getLanguages';
+  getLanguageOptions,
+  type LanguageOption,
+} from '@/features/auth/api/getLanguageOptions';
 
 import { getPluginTranslations } from './getPluginTranslations';
 import {
@@ -17,172 +18,148 @@ export const fallbackLanguage: Language = {
   name: 'English',
 };
 
-const BUILT_IN_LANGUAGES = new Set(['en', 'pl', 'de']);
-
-const pendingLanguageLoads = new Map<string, Promise<boolean>>();
-const registeredPluginLanguages = new Set<string>();
-
-let pendingLanguageRefresh: Promise<Language[]> | null = null;
-
-export const hasLanguageResources = (
-  languageCode: string,
-): boolean =>
-  i18n.hasResourceBundle(languageCode, 'translation');
-
-/**
- * Loads plugin translations and shares concurrent requests
- * for the same language.
- */
-const loadPluginLanguage = (
-  languageCode: string,
-): Promise<boolean> => {
-  if (!isValidLanguageCode(languageCode)) {
-    return Promise.resolve(false);
-  }
-
-  if (BUILT_IN_LANGUAGES.has(languageCode.toLowerCase())) {
-    return Promise.resolve(hasLanguageResources(languageCode));
-  }
-
-  if (hasLanguageResources(languageCode)) {
-    return Promise.resolve(true);
-  }
-
-  const pending = pendingLanguageLoads.get(languageCode);
-
-  if (pending) {
-    return pending;
-  }
-
-  const loadPromise = (async (): Promise<boolean> => {
-    try {
-      const translations = await getPluginTranslations(languageCode);
-
-      if (!hasLanguageResources(languageCode)) {
-        registerPluginTranslations(languageCode, translations);
-      }
-
-      registeredPluginLanguages.add(languageCode);
-
-      return hasLanguageResources(languageCode);
-    } catch (error) {
-      console.error(
-        `Failed to load language plugin "${languageCode}":`,
-        error,
-      );
-
-      return false;
-    }
-  })();
-
-  pendingLanguageLoads.set(languageCode, loadPromise);
-
-  void loadPromise.then(
-    () => {
-      if (pendingLanguageLoads.get(languageCode) === loadPromise) {
-        pendingLanguageLoads.delete(languageCode);
-      }
-    },
-    () => {
-      if (pendingLanguageLoads.get(languageCode) === loadPromise) {
-        pendingLanguageLoads.delete(languageCode);
-      }
-    },
-  );
-
-  return loadPromise;
+const fallbackOption: LanguageOption = {
+  ...fallbackLanguage,
+  enabled: true,
 };
 
-/**
- * Fetches enabled languages, loads plugin resources and removes
- * resources belonging to plugins that are no longer enabled.
- */
-const refreshAvailableLanguages = async (): Promise<Language[]> => {
-  try {
-    const languages = await getLanguages();
+const BUILT_IN_LANGUAGES = new Set(['en', 'pl']);
 
-    const enabledCodes = new Set(
-      languages.map((language) => language.code),
-    );
+type LanguageSnapshot = {
+  languages: Language[];
+  options: LanguageOption[];
+};
 
-    for (const code of registeredPluginLanguages) {
-      if (!enabledCodes.has(code)) {
-        unregisterPluginTranslations(code);
-        registeredPluginLanguages.delete(code);
-      }
+const registeredPluginLanguages = new Set<string>();
+let pendingRefresh: Promise<LanguageSnapshot> | null = null;
+
+export const hasLanguageResources = (code: string): boolean =>
+  i18n.hasResourceBundle(code, 'translation');
+
+const fallbackSnapshot = (): LanguageSnapshot => ({
+  languages: [fallbackLanguage],
+  options: [fallbackOption],
+});
+
+const removeUnavailableResources = (enabledCodes: Set<string>): void => {
+  for (const code of registeredPluginLanguages) {
+    if (!enabledCodes.has(code)) {
+      unregisterPluginTranslations(code);
+      registeredPluginLanguages.delete(code);
     }
+  }
+};
 
-    const pluginLanguages = languages.filter(
-      (language) =>
-        !BUILT_IN_LANGUAGES.has(language.code.toLowerCase()),
+const refreshSnapshot = async (): Promise<LanguageSnapshot> => {
+  try {
+    const initialOptions = await getLanguageOptions();
+    const initialEnabledCodes = new Set(
+      initialOptions.filter((option) => option.enabled).map((option) => option.code),
     );
 
-    await Promise.all(
-      pluginLanguages.map((language) =>
-        loadPluginLanguage(language.code),
-      ),
+    // Stop using previously registered resources for disabled plugins immediately.
+    removeUnavailableResources(initialEnabledCodes);
+
+    const candidates = initialOptions.filter(
+      (option) =>
+        option.enabled &&
+        isValidLanguageCode(option.code) &&
+        !BUILT_IN_LANGUAGES.has(option.code.toLowerCase()) &&
+        !registeredPluginLanguages.has(option.code),
     );
 
-    const supported = languages.filter((language) => {
-      if (!hasLanguageResources(language.code)) {
-        return false;
+    // Fetch translations into memory first. Do not register them yet.
+    const translations = await Promise.all(
+      candidates.map(async (option) => {
+        try {
+          return await getPluginTranslations(option.code);
+        } catch (error) {
+          console.error(`Failed to load language plugin "${option.code}":`, error);
+          return null;
+        }
+      }),
+    );
+
+    // Recheck plugin status AFTER translations finish. This closes the race where
+    // a plugin is disabled while its translations are in flight.
+    const latestOptions = await getLanguageOptions();
+    const enabledCodes = new Set(
+      latestOptions.filter((option) => option.enabled).map((option) => option.code),
+    );
+    removeUnavailableResources(enabledCodes);
+
+    candidates.forEach((option, index) => {
+      if (!enabledCodes.has(option.code) || translations[index] === null) {
+        return;
       }
-
-      return (
-        BUILT_IN_LANGUAGES.has(language.code.toLowerCase()) ||
-        registeredPluginLanguages.has(language.code)
-      );
+      try {
+        if (!hasLanguageResources(option.code)) {
+          registerPluginTranslations(option.code, translations[index]!);
+        }
+        registeredPluginLanguages.add(option.code);
+      } catch (error) {
+        console.error(`Failed to register language plugin "${option.code}":`, error);
+      }
     });
 
-    return supported.some((language) => language.code === 'en')
-      ? supported
-      : [fallbackLanguage, ...supported];
+    const options: LanguageOption[] = latestOptions
+      .filter(
+        (option) =>
+          isValidLanguageCode(option.code) &&
+          typeof option.name === 'string' &&
+          typeof option.enabled === 'boolean',
+      )
+      .map((option) => ({
+        ...option,
+        enabled:
+          option.enabled &&
+          hasLanguageResources(option.code) &&
+          (BUILT_IN_LANGUAGES.has(option.code.toLowerCase()) ||
+            registeredPluginLanguages.has(option.code)),
+      }));
+
+    if (!options.some((option) => option.code === 'en')) {
+      options.unshift(fallbackOption);
+    }
+
+    return {
+      options,
+      languages: options
+        .filter((option) => option.enabled)
+        .map(({ code, name }) => ({ code, name })),
+    };
   } catch (error) {
     console.error('Failed to refresh available languages:', error);
-
-    // Preserve previously loaded resources on backend failure.
-    return [fallbackLanguage];
+    return fallbackSnapshot();
   }
 };
 
-/**
- * Returns enabled languages with available translation resources.
- * Concurrent callers share the same refresh operation.
- */
-export const getAvailableLanguages = (): Promise<Language[]> => {
-  if (pendingLanguageRefresh) {
-    return pendingLanguageRefresh;
-  }
+const getSnapshot = (): Promise<LanguageSnapshot> => {
+  if (pendingRefresh) return pendingRefresh;
 
-  const refreshPromise = refreshAvailableLanguages();
-
-  pendingLanguageRefresh = refreshPromise;
-
-  void refreshPromise.then(
+  const refresh = refreshSnapshot();
+  pendingRefresh = refresh;
+  void refresh.then(
     () => {
-      if (pendingLanguageRefresh === refreshPromise) {
-        pendingLanguageRefresh = null;
-      }
+      if (pendingRefresh === refresh) pendingRefresh = null;
     },
     () => {
-      if (pendingLanguageRefresh === refreshPromise) {
-        pendingLanguageRefresh = null;
-      }
+      if (pendingRefresh === refresh) pendingRefresh = null;
     },
   );
-
-  return refreshPromise;
+  return refresh;
 };
 
-/**
- * Resolves the active language without overwriting the preference.
- */
+export const getAvailableLanguages = async (): Promise<Language[]> =>
+  (await getSnapshot()).languages;
+
+export const getAvailableLanguageOptions = async (): Promise<LanguageOption[]> =>
+  (await getSnapshot()).options;
+
 export const resolveActiveLanguage = (
   preferredLanguage: string,
   availableLanguages: Language[],
 ): string =>
-  availableLanguages.some(
-    (language) => language.code === preferredLanguage,
-  )
+  availableLanguages.some((language) => language.code === preferredLanguage)
     ? preferredLanguage
     : 'en';

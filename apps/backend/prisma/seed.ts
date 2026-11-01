@@ -43,11 +43,6 @@ const builtInLanguages = [
     name: 'Polski',
     isFallback: false,
   },
-  {
-    code: 'de',
-    name: 'Deutsch',
-    isFallback: false,
-  },
 ] as const;
 
 const serviceCategories = [

@@ -1,0 +1,19 @@
+{
+  "navigation": {
+    "adminPanel": "Panel administracyjny",
+    "auditlogs": "Dziennik audytu",
+    "jobs": "Zadania",
+    "maintenance": "Konserwacja",
+    "nodes": "Węzły",
+    "overview": "Przegląd",
+    "plugins": "Pluginy",
+    "profile": "Profil",
+    "rolespermissions": "Role i uprawnienia",
+    "security": "Bezpieczeństwo",
+    "servers": "Serwery",
+    "services": "Usługi",
+    "settings": "Ustawienia",
+    "userPanel": "Panel użytkownika",
+    "users": "Użytkownicy"
+  }
+}

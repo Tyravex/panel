@@ -84,23 +84,46 @@ export class PluginInstallerService {
             // Publish inside the directory owned by this attempt.
             await rename(staged.stagingPath, destination);
 
-            const updated = await this.prisma.plugin.updateMany({
-                where: {
-                    id: manifest.id,
-                    type: 'LANGUAGE',
-                    version: manifest.version,
-                    status: 'INSTALLING',
-                    storagePath,
-                },
-                data: {
-                    status: 'INSTALLED',
-                },
-            });
+            try {
+                await this.prisma.$transaction(async (tx) => {
+                    const updated = await tx.plugin.updateMany({
+                        where: {
+                            id: manifest.id,
+                            type: 'LANGUAGE',
+                            version: manifest.version,
+                            status: 'INSTALLING',
+                            storagePath,
+                        },
+                        data: {
+                            status: 'INSTALLED',
+                        },
+                    });
 
-            if (updated.count !== 1) {
-                throw new Error(
-                    'Plugin reservation was modified during installation.',
-                );
+                    if (updated.count !== 1) {
+                        throw new Error(
+                            'Plugin reservation was modified during installation.',
+                        );
+                    }
+
+                    await tx.language.create({
+                        data: {
+                            code: manifest.language.code,
+                            name: manifest.language.name,
+                            pluginId: manifest.id,
+                            isBuiltIn: false,
+                            isEnabled: true,
+                            isFallback: false,
+                        },
+                    });
+                });
+            } catch (error) {
+                if (this.isUniqueConflict(error)) {
+                    throw new ConflictException(
+                        'Language code is already registered.',
+                    );
+                }
+
+                throw error;
             }
 
             return {

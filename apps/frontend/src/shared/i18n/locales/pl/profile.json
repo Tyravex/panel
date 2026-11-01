@@ -1,0 +1,20 @@
+{
+  "profile": {
+    "accountDetails": "Dane konta",
+    "description": "Zarządzaj danymi swojego konta.",
+    "email": "Adres e-mail",
+    "firstName": "Imię",
+    "firstNamePlaceholder": "Wpisz imię",
+    "invalidName": "Podaj poprawne imię i nazwisko.",
+    "lastName": "Nazwisko",
+    "lastNamePlaceholder": "Wpisz nazwisko",
+    "optionalNamesHint": "Imię i nazwisko są opcjonalne.",
+    "readOnlyHint": "Tych danych nie można zmienić tutaj.",
+    "save": "Zapisz zmiany",
+    "saved": "Zmiany zostały zapisane.",
+    "saveError": "Nie udało się zapisać zmian.",
+    "saving": "Zapisywanie...",
+    "title": "Mój profil",
+    "username": "Nazwa użytkownika"
+  }
+}

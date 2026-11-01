@@ -1,0 +1,32 @@
+{
+  "adminRoles": {
+    "breadcrumb": "Tyravex / Administration / RBAC",
+    "cannotUndo": "This action cannot be undone.",
+    "confirmDelete": "Are you sure you want to delete the role \"{{role}}\"?",
+    "created": "Role created successfully. You can now assign it to users.",
+    "createRole": "Create role",
+    "deleted": "Role deleted.",
+    "deleteRole": "Delete role",
+    "deleteTitle": "Delete role?",
+    "description": "Create, edit and delete roles, or compare their permissions.",
+    "editRole": "Edit role",
+    "existingRoles": "Existing roles",
+    "hideMatrix": "Hide matrix",
+    "loadingPermissions": "Loading permissions...",
+    "noPermissions": "No permissions",
+    "noPermissionsAvailable": "No permissions available in the database.",
+    "permission": "Permission",
+    "permissionMatrix": "Permission matrix",
+    "roleName": "Role name",
+    "roleNamePlaceholder": "e.g. Support Moderator",
+    "saveChanges": "Save changes",
+    "selectedPermissions_one": "Permissions ({{count}} selected)",
+    "selectedPermissions_other": "Permissions ({{count}} selected)",
+    "showMatrix": "Show matrix",
+    "title": "Roles & Permissions",
+    "unassignUsersFirst": "Unassign all users first",
+    "updated": "Role updated successfully.",
+    "usersCount_one": "{{count}} user",
+    "usersCount_other": "{{count}} users"
+  }
+}

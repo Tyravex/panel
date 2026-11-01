@@ -1,0 +1,19 @@
+{
+  "sidebar": {
+    "administration": "Administracja",
+    "administrationNavigation": "Nawigacja administracyjna",
+    "adminPanel": "Panel administratora",
+    "comingLater": "Funkcja dostępna na późniejszym etapie rozwoju",
+    "mainNavigation": "Nawigacja główna",
+    "sections": {
+      "account": "Konto",
+      "infrastructure": "Infrastruktura",
+      "management": "Zarządzanie",
+      "operations": "Operacje",
+      "plugins": "Pluginy",
+      "system": "System"
+    },
+    "soon": "Wkrótce",
+    "userPanel": "Panel użytkownika"
+  }
+}

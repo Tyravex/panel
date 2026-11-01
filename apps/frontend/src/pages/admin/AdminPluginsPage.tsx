@@ -12,9 +12,14 @@ import { PluginToggleModal } from '@/features/plugins/components/PluginToggleMod
 import { PluginUninstallModal } from '@/features/plugins/components/PluginUninstallModal';
 import { PluginsTable } from '@/features/plugins/components/PluginsTable';
 import { usePlugins } from '@/features/plugins/hooks/usePlugins';
+import { useUser } from '@/shared/store/user';
 
 export const AdminPluginsPage = () => {
     const { t } = useTranslation();
+
+    const syncActiveLanguage = useUser(
+        (state) => state.syncActiveLanguage,
+    );
 
     const [category, setCategory] =
         useState<PluginCategory>('ALL');
@@ -33,6 +38,17 @@ export const AdminPluginsPage = () => {
         error,
         refresh,
     } = usePlugins();
+
+    const handlePluginChanged = () => {
+        void refresh();
+
+        void syncActiveLanguage().catch((error) => {
+            console.error(
+                'Failed to synchronize language after plugin change:',
+                error,
+            );
+        });
+    };
 
     const filteredPlugins = useMemo(
         () =>
@@ -196,20 +212,20 @@ export const AdminPluginsPage = () => {
                 onClose={() => setInstallOpen(false)}
                 onInstalled={() => {
                     setCategory('ALL');
-                    refresh();
+                    handlePluginChanged();
                 }}
             />
 
             <PluginToggleModal
                 plugin={togglePlugin}
                 onClose={() => setTogglePlugin(null)}
-                onChanged={refresh}
+                onChanged={handlePluginChanged}
             />
 
             <PluginUninstallModal
                 plugin={uninstallPlugin}
                 onClose={() => setUninstallPlugin(null)}
-                onChanged={refresh}
+                onChanged={handlePluginChanged}
             />
         </div>
     );
