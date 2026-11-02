@@ -1070,6 +1070,9 @@ describe('Agent WebSocket transport', () => {
             .spyOn(console, 'error')
             .mockImplementation(() => undefined);
 
+        let deadlineSetSpy: jest.SpyInstance | undefined;
+        let deadlineClearSpy: jest.SpyInstance | undefined;
+
         try {
             const client = await openClient();
             const capture = captureMessages(client);
@@ -1083,16 +1086,27 @@ describe('Agent WebSocket transport', () => {
                 doNotFake: ['nextTick', 'setImmediate', 'clearImmediate'],
             });
 
+            deadlineSetSpy = jest.spyOn(global, 'setTimeout');
+            deadlineClearSpy = jest.spyOn(global, 'clearTimeout');
+
             const closePromise = once(client, 'close');
             transport.refreshOwnershipSnapshots();
             expect(findAssignedServiceIds).toHaveBeenCalledTimes(2);
+
+            // Track only the ownership deadline timer, not unrelated WS timers.
+            const deadlineCallIndex = deadlineSetSpy.mock.calls.findIndex(
+                (args) => args[1] === 10_000,
+            );
+            expect(deadlineCallIndex).toBeGreaterThanOrEqual(0);
+            const deadlineHandle =
+                deadlineSetSpy.mock.results[deadlineCallIndex].value;
 
             await jest.advanceTimersByTimeAsync(10_001);
             const [code] = await closePromise;
 
             expect(code).toBe(1011);
             expect(transport.isNodeConnected('node-1')).toBe(false);
-            expect(jest.getTimerCount()).toBe(0);
+            expect(deadlineClearSpy).toHaveBeenCalledWith(deadlineHandle);
 
             // Completing the old Prisma read cannot publish a snapshot.
             resolveSlowRead(['service-too-late']);
@@ -1103,6 +1117,10 @@ describe('Agent WebSocket transport', () => {
                 ),
             ).toHaveLength(1);
         } finally {
+            // Finish the pending Prisma mock even if an assertion fails.
+            resolveSlowRead(['service-too-late']);
+            deadlineSetSpy?.mockRestore();
+            deadlineClearSpy?.mockRestore();
             jest.useRealTimers();
             errorSpy.mockRestore();
         }
