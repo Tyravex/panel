@@ -8,7 +8,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import {
   loadLanguagePlugin,
   type LoadedLanguagePlugin,
-} from './language-plugin-loader';
+} from './languages/language-plugin-loader';
 
 @Injectable()
 export class PluginsService {

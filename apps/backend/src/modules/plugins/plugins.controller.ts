@@ -17,8 +17,8 @@ import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { Permissions } from '@/rbac/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
 
-import { mapPluginInstallError } from './plugin-install-error.mapper';
-import { PluginInstallerService } from './plugin-installer.service';
+import { mapPluginInstallError } from './installation/plugin-install-error.mapper';
+import { PluginInstallerService } from './installation/plugin-installer.service';
 import { PluginsService } from './plugins.service';
 
 @Controller('admin/plugins')

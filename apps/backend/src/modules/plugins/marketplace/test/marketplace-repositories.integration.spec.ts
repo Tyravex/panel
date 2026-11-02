@@ -16,6 +16,9 @@ import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
 import { MarketplaceRepositoriesController } from '../marketplace-repositories.controller';
 import { MarketplaceRepositoriesService } from '../marketplace-repositories.service';
 
+import { MarketplaceCommunityRegistryService } from '../marketplace-community-registry.service';
+import { MarketplaceRegistryService } from '../marketplace-registry.service';
+
 describe('MarketplaceRepositoriesController HTTP', () => {
     let app: INestApplication;
 
@@ -75,6 +78,18 @@ describe('MarketplaceRepositoriesController HTTP', () => {
                 {
                     provide: MarketplaceRepositoriesService,
                     useValue: repositoriesService,
+                },
+                {
+                    provide: MarketplaceCommunityRegistryService,
+                    useValue: {
+                        getRegistry: jest.fn(),
+                    },
+                },
+                {
+                    provide: MarketplaceRegistryService,
+                    useValue: {
+                        getOfficialRegistry: jest.fn(),
+                    },
                 },
             ],
         })

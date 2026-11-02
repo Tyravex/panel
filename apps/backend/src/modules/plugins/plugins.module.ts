@@ -14,21 +14,21 @@ import { MarketplaceRepositoriesController } from './marketplace/marketplace-rep
 import { MarketplaceRepositoriesService } from './marketplace/marketplace-repositories.service';
 import { MarketplaceCommunityRegistryService } from './marketplace/marketplace-community-registry.service';
 
-import { PluginInstallerService } from './plugin-installer.service';
+import { PluginInstallerService } from './installation/plugin-installer.service';
 import { PluginsController } from './plugins.controller';
 import { PluginsService } from './plugins.service';
 
-import { PluginLifecycleController } from './plugin-lifecycle.controller';
-import { PluginLifecycleService } from './plugin-lifecycle.service';
+import { PluginLifecycleController } from './lifecycle/plugin-lifecycle.controller';
+import { PluginLifecycleService } from './lifecycle/plugin-lifecycle.service';
 
-import { PluginCleanupClaimService } from './plugin-cleanup-claim.service';
-import { PluginRecoveryCoordinatorService } from './plugin-recovery-coordinator.service';
-import { PluginRecoveryFilesystemLockService } from './plugin-recovery-filesystem-lock.service';
-import { PluginRecoveryLockService } from './plugin-recovery-lock.service';
-import { PluginUninstallationCleanupService } from './plugin-uninstallation-cleanup.service';
-import { PluginUninstallationRecovery } from './plugin-uninstallation-recovery';
-import { PluginUninstallerController } from './plugin-uninstaller.controller';
-import { PluginUninstallerService } from './plugin-uninstaller.service';
+import { PluginCleanupClaimService } from './recovery/plugin-cleanup-claim.service';
+import { PluginRecoveryCoordinatorService } from './recovery/plugin-recovery-coordinator.service';
+import { PluginRecoveryFilesystemLockService } from './recovery/plugin-recovery-filesystem-lock.service';
+import { PluginRecoveryLockService } from './recovery/plugin-recovery-lock.service';
+import { PluginUninstallationCleanupService } from './recovery/plugin-uninstallation-cleanup.service';
+import { PluginUninstallationRecovery } from './recovery/plugin-uninstallation-recovery';
+import { PluginUninstallerController } from './uninstallation/plugin-uninstaller.controller';
+import { PluginUninstallerService } from './uninstallation/plugin-uninstaller.service';
 
 export const MAX_PLUGIN_UPLOAD_BYTES = 20 * 1024 * 1024;
 

@@ -12,7 +12,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
 
 import { PLUGIN_STORAGE_ENV_KEY } from
-    '@/modules/plugins/plugin-storage.config';
+    '@/modules/plugins/storage/plugin-storage.config';
 
 function requireTestDatabaseUrl(value: string | undefined): string {
     if (!value) {

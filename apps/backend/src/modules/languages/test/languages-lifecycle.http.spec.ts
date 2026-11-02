@@ -7,20 +7,20 @@ import request from 'supertest';
 
 import { PrismaService } from '@/prisma/prisma.service';
 import { PluginsService } from '@/modules/plugins/plugins.service';
-import { PluginLifecycleService } from '@/modules/plugins/plugin-lifecycle.service';
+import { PluginLifecycleService } from '@/modules/plugins/lifecycle/plugin-lifecycle.service';
 
 import { LanguagesController } from '../languages.controller';
 import { LanguagesService } from '../languages.service';
 
 jest.mock(
-    '@/modules/plugins/language-plugin-loader',
+    '@/modules/plugins/languages/language-plugin-loader',
     () => ({
         loadLanguagePlugin: jest.fn(),
     }),
 );
 
 import { loadLanguagePlugin } from
-    '@/modules/plugins/language-plugin-loader';
+    '@/modules/plugins/languages/language-plugin-loader';
 
 const loaderMock = jest.mocked(loadLanguagePlugin);
 

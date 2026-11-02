@@ -4,7 +4,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 
-import { PluginInstallerService } from '../plugin-installer.service';
+import { PluginInstallerService } from '../installation/plugin-installer.service';
 import { PluginsController } from '../plugins.controller';
 import { PluginsService } from '../plugins.service';
 

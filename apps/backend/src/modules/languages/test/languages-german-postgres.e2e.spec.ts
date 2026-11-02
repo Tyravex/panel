@@ -9,7 +9,7 @@ import request from 'supertest';
 
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { LanguagesModule } from '@/modules/languages/languages.module';
-import { PLUGIN_STORAGE_ENV_KEY } from '@/modules/plugins/plugin-storage.config';
+import { PLUGIN_STORAGE_ENV_KEY } from '@/modules/plugins/storage/plugin-storage.config';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
 
