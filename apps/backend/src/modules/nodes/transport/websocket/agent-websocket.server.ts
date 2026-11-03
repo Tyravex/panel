@@ -11,6 +11,7 @@ import {
     AgentPendingCommands,
     PendingAgentCommand,
 } from '../commands/agent-pending-commands';
+import { AgentWebSocketSessionMonitor } from '../monitoring/agent-websocket-session-monitor';
 import { OwnershipSnapshotBuilder } from '../ownership/ownership-snapshot.builder';
 import { OwnershipSessionController } from '../ownership/ownership-session.controller';
 import { OwnershipSnapshotSender } from '../ownership/ownership-snapshot-sender';
@@ -23,7 +24,6 @@ import {
     MAX_PENDING_AUTH,
     HELLO_TIMEOUT_MS,
     HEARTBEAT_TIMEOUT_MS,
-    COMMAND_RESPONSE_TIMEOUT_MS,
     PING_INTERVAL_MS,
     OWNERSHIP_REFRESH_INTERVAL_MS,
 } from './agent-websocket.constants';
@@ -40,6 +40,7 @@ export class AgentWebSocketServer {
 
     private readonly messageHandler: AgentWebSocketMessageHandler;
     private readonly commandDispatcher: AgentCommandDispatcher;
+    private readonly sessionMonitor: AgentWebSocketSessionMonitor;
     private readonly auth: AgentWebSocketAuth;
     private readonly sessions = new AgentSessionRegistry();
     private readonly pendingCommands = new AgentPendingCommands();
@@ -153,6 +154,12 @@ export class AgentWebSocketServer {
             this.agentCommandsService,
             (nodeId) => this.isNodeConnected(nodeId),
             () => this.closed,
+        );
+
+        this.sessionMonitor = new AgentWebSocketSessionMonitor(
+            this.sessions,
+            this.pendingCommands,
+            this.agentCommandsService,
         );
 
         this.httpServer.on('upgrade', this.onUpgrade);
@@ -329,42 +336,9 @@ export class AgentWebSocketServer {
     }
 
     // Public temporarily for deterministic transport tests.
-    // Later this can move into a dedicated session monitor.
+    // Delegates session checks to AgentWebSocketSessionMonitor.
     checkSessions(): void {
-        const now = Date.now();
-
-        // Expiration does NOT mean the Agent stopped executing.
-        // A timeout creates an uncertain outcome, not a retry.
-        const expired = this.pendingCommands.expire(
-            now,
-            COMMAND_RESPONSE_TIMEOUT_MS,
-        );
-
-        this.retireCommands(expired);
-
-        for (const session of this.sessions.values()) {
-            const { socket } = session;
-
-            if (socket.readyState !== WebSocket.OPEN) {
-                continue;
-            }
-
-            if (
-                now - session.lastHeartbeat >
-                HEARTBEAT_TIMEOUT_MS
-            ) {
-                socket.terminate();
-                continue;
-            }
-
-            if (session.awaitingPong) {
-                socket.terminate();
-                continue;
-            }
-
-            session.awaitingPong = true;
-            socket.ping();
-        }
+        this.sessionMonitor.checkSessions();
     }
 
     /**
