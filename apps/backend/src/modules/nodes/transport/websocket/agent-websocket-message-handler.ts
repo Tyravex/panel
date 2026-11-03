@@ -4,6 +4,7 @@ import { WebSocket } from 'ws';
 import { NodesService } from '../../nodes.service';
 import { isAgentToPanelMessage } from '../../protocol/agent-direction';
 import { createAgentEnvelope } from '../../protocol/agent-protocol';
+import { AgentCommandResponseHandler } from '../commands/agent-command-response-handler';
 import { AgentCommandsService } from '../commands/agent-commands.service';
 import { AgentPendingCommands } from '../commands/agent-pending-commands';
 import { OwnershipSessionController } from '../ownership/ownership-session.controller';
@@ -11,6 +12,8 @@ import { AgentSessionRegistry } from '../sessions/agent-session-registry';
 import type { AgentSession } from '../sessions/agent-session.types';
 
 export class AgentWebSocketMessageHandler {
+    private readonly commandResponseHandler: AgentCommandResponseHandler;
+
     constructor(
         private readonly nodesService: NodesService,
         private readonly sessions: AgentSessionRegistry,
@@ -21,7 +24,13 @@ export class AgentWebSocketMessageHandler {
         private readonly sendInitialOwnershipSnapshot: (
             session: AgentSession,
         ) => Promise<void>,
-    ) { }
+    ) {
+        this.commandResponseHandler = new AgentCommandResponseHandler(
+            this.sessions,
+            this.pendingCommands,
+            this.agentCommandsService,
+        );
+    }
 
     async processMessage(
         session: AgentSession,
@@ -114,111 +123,11 @@ export class AgentWebSocketMessageHandler {
             message.type === 'command.accepted' ||
             message.type === 'command.result'
         ) {
-            // Ignore responses from a connection that has been replaced.
-            if (
-                !this.sessions.isCurrent(session) ||
-                socket.readyState !== WebSocket.OPEN
-            ) {
-                return;
-            }
-
-            const commandId = message.payload.commandId;
-
-            if (typeof commandId !== 'string') {
-                socket.close(1008, 'Invalid command ID');
-                return;
-            }
-
-            // Responses must match the exact command, node and session.
-            const pending = this.pendingCommands.find(commandId);
-
-            if (
-                !pending ||
-                pending.sessionId !== session.sessionId ||
-                pending.nodeId !== session.nodeId
-            ) {
-                socket.close(1008, 'Unexpected command response');
-                return;
-            }
-
-            if (message.type === 'command.accepted') {
-                if (this.agentCommandsService) {
-                    // Persist before updating in-memory acknowledgement.
-                    const persisted =
-                        await this.agentCommandsService.markAccepted(
-                            commandId,
-                            session.sessionId,
-                        );
-
-                    if (!persisted) {
-                        socket.close(
-                            1008,
-                            'Unexpected command acceptance',
-                        );
-                        return;
-                    }
-                }
-
-                if (
-                    !this.sessions.isCurrent(session) ||
-                    socket.readyState !== WebSocket.OPEN
-                ) {
-                    return;
-                }
-
-                const status = this.pendingCommands.accept(
-                    commandId,
-                    session.sessionId,
-                );
-
-                if (status !== 'accepted') {
-                    socket.close(
-                        1008,
-                        'Unexpected command acceptance',
-                    );
-                }
-
-                return;
-            }
-
-            const { success, errorCode } = message.payload;
-
-            if (
-                typeof success !== 'boolean' ||
-                (
-                    errorCode !== undefined &&
-                    typeof errorCode !== 'string'
-                )
-            ) {
-                socket.close(1008, 'Invalid command result');
-                return;
-            }
-
-            if (this.agentCommandsService) {
-                // Only structured status and sanitized error codes
-                // are stored. Agent message/result may contain secrets.
-                const persisted =
-                    await this.agentCommandsService.markResult(
-                        commandId,
-                        session.sessionId,
-                        success,
-                        errorCode,
-                    );
-
-                if (!persisted) {
-                    socket.close(1008, 'Unexpected command result');
-                    return;
-                }
-            }
-
-            // A result may arrive without command.accepted.
-            // Remove memory only after the database transition.
-            this.pendingCommands.complete(
-                commandId,
-                session.sessionId,
+            await this.commandResponseHandler.handle(
+                session,
+                message,
             );
 
-            // Job state synchronization is a separate phase.
             return;
         }
 
