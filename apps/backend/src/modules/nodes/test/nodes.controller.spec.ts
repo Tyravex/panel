@@ -2,7 +2,7 @@ import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
 import { PERMISSIONS_KEY } from '@/rbac/decorators/permissions.decorator';
-import { AgentWebSocketLifecycle } from '../transport/agent-websocket.lifecycle';
+import { AgentWebSocketLifecycle } from '../transport/websocket/agent-websocket.lifecycle';
 import { NodesController } from '../nodes.controller';
 
 describe('NodesController authorization', () => {

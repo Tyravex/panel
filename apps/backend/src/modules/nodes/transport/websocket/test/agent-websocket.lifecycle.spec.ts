@@ -3,8 +3,8 @@ import { once } from 'node:events';
 import { AddressInfo } from 'node:net';
 import { WebSocket } from 'ws';
 
-import { NodesService } from '../../nodes.service';
-import { AgentCommandsService } from '../agent-commands.service';
+import { NodesService } from '../../../nodes.service';
+import { AgentCommandsService } from '../../commands/agent-commands.service';
 import { AgentWebSocketLifecycle } from '../agent-websocket.lifecycle';
 
 describe('AgentWebSocketLifecycle', () => {

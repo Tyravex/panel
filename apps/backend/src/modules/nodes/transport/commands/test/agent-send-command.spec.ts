@@ -2,9 +2,9 @@ import { createServer, Server as HttpServer } from 'node:http';
 import { AddressInfo } from 'node:net';
 import { WebSocket, type RawData } from 'ws';
 
-import { NodesService } from '../../nodes.service';
-import { createAgentEnvelope } from '../../protocol/agent-protocol';
-import { AgentWebSocketServer } from '../agent-websocket.server';
+import { NodesService } from '../../../nodes.service';
+import { createAgentEnvelope } from '../../../protocol/agent-protocol';
+import { AgentWebSocketServer } from '../../websocket/agent-websocket.server';
 
 const NODE_ID = 'send-test-node';
 const OTHER_NODE_ID = 'other-test-node';

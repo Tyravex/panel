@@ -1,4 +1,4 @@
-import { NodesService } from '../../nodes.service';
+import { NodesService } from '../../../nodes.service';
 import { OwnershipSnapshotBuilder } from '../ownership-snapshot.builder';
 import {
     OwnershipSession,

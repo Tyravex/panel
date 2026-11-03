@@ -3,8 +3,8 @@ import { AddressInfo } from 'node:net';
 import { once } from 'node:events';
 import { WebSocket } from 'ws';
 
-import { NodesService } from '../../nodes.service';
-import { createAgentEnvelope } from '../../protocol/agent-protocol';
+import { NodesService } from '../../../nodes.service';
+import { createAgentEnvelope } from '../../../protocol/agent-protocol';
 import { AgentWebSocketServer } from '../agent-websocket.server';
 
 describe('Agent WebSocket transport', () => {

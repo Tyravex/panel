@@ -1,7 +1,7 @@
 import {
     OwnershipSnapshot,
     serializeOwnershipSnapshot,
-} from '../protocol/ownership-contract';
+} from '../../protocol/ownership-contract';
 import { OwnershipSnapshotBuilder } from './ownership-snapshot.builder';
 
 export interface OwnershipSession {

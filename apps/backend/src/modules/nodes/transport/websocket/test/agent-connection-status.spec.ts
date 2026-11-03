@@ -3,8 +3,8 @@ import { AddressInfo } from 'node:net';
 import { WebSocket, type RawData } from 'ws';
 
 import { AgentWebSocketServer } from '../agent-websocket.server';
-import { NodesService } from '../../nodes.service';
-import { createAgentEnvelope } from '../../protocol/agent-protocol';
+import { NodesService } from '../../../nodes.service';
+import { createAgentEnvelope } from '../../../protocol/agent-protocol';
 
 const NODE_ID = 'connection-test-node';
 const TOKEN = 'connection-test-token';

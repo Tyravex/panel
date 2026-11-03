@@ -6,7 +6,7 @@ import { AddressInfo } from 'node:net';
 import { once } from 'node:events';
 
 import { NodesService } from '../nodes.service';
-import { AgentWebSocketServer } from '../transport/agent-websocket.server';
+import { AgentWebSocketServer } from '../transport/websocket/agent-websocket.server';
 
 // Requires the local Agent repository and Go toolchain.
 // This test is excluded from the ordinary backend test command.

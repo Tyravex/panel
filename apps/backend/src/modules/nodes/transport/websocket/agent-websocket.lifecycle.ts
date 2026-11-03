@@ -4,9 +4,9 @@ import {
 } from '@nestjs/common';
 import { Server as HttpServer } from 'node:http';
 
-import { NodesService } from '../nodes.service';
-import { AgentCommandPayload } from '../protocol/agent-protocol';
-import { AgentCommandsService } from './agent-commands.service';
+import { NodesService } from '../../nodes.service';
+import { AgentCommandPayload } from '../../protocol/agent-protocol';
+import { AgentCommandsService } from '../commands/agent-commands.service';
 import { AgentWebSocketServer } from './agent-websocket.server';
 
 @Injectable()

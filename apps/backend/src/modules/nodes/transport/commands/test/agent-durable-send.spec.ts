@@ -2,10 +2,10 @@ import { createServer, Server as HttpServer } from 'node:http';
 import { AddressInfo } from 'node:net';
 import { WebSocket, type RawData } from 'ws';
 
-import { NodesService } from '../../nodes.service';
-import { createAgentEnvelope } from '../../protocol/agent-protocol';
+import { NodesService } from '../../../nodes.service';
+import { createAgentEnvelope } from '../../../protocol/agent-protocol';
 import { AgentCommandsService } from '../agent-commands.service';
-import { AgentWebSocketServer } from '../agent-websocket.server';
+import { AgentWebSocketServer } from '../../websocket/agent-websocket.server';
 
 const NODE_ID = 'durable-test-node';
 const TOKEN = 'durable-test-token';

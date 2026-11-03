@@ -13,7 +13,7 @@ import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { Permissions } from '@/rbac/decorators/permissions.decorator';
 import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
 
-import { AgentWebSocketLifecycle } from './transport/agent-websocket.lifecycle';
+import { AgentWebSocketLifecycle } from './transport/websocket/agent-websocket.lifecycle';
 import { CreateNodeDto } from './dto/create-node.dto';
 import { NodesService } from './nodes.service';
 

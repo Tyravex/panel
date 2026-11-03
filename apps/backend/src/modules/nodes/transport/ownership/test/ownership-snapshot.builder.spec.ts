@@ -1,9 +1,9 @@
-import { NodesService } from '../../nodes.service';
+import { NodesService } from '../../../nodes.service';
 import { OwnershipSnapshotBuilder } from '../ownership-snapshot.builder';
 import {
     serializeOwnershipSnapshot,
     validateOwnershipSnapshot,
-} from '../../protocol/ownership-contract';
+} from '../../../protocol/ownership-contract';
 
 describe('OwnershipSnapshotBuilder', () => {
     const findAssignedServiceIds = jest.fn();

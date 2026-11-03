@@ -5,7 +5,7 @@ import { Reflector } from '@nestjs/core';
 import request from 'supertest';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
-import { AgentWebSocketLifecycle } from '../transport/agent-websocket.lifecycle';
+import { AgentWebSocketLifecycle } from '../transport/websocket/agent-websocket.lifecycle';
 import { NodesController } from '../nodes.controller';
 import { NodesService } from '../nodes.service';
 

@@ -6,8 +6,8 @@ import { AppModule } from './app.module';
 import { getCorsOrigins } from './cors-origins';
 import { validateJwtEnvironment } from './env-validation';
 import { getRuntimeConfig } from './runtime-config';
-import { AgentWebSocketLifecycle } from './modules/nodes/transport/agent-websocket.lifecycle';
-import { AgentCommandRecoveryService } from './modules/nodes/transport/agent-command-recovery.service';
+import { AgentWebSocketLifecycle } from './modules/nodes/transport/websocket/agent-websocket.lifecycle';
+import { AgentCommandRecoveryService } from './modules/nodes/transport/commands/agent-command-recovery.service';
 
 async function bootstrap(): Promise<void> {
   // Validate critical secrets before initializing NestJS.

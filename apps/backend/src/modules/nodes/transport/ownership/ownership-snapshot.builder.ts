@@ -1,4 +1,4 @@
-import { NodesService } from '../nodes.service';
+import { NodesService } from '../../nodes.service';
 import {
     MAX_OWNERSHIP_ASSIGNMENTS,
     OwnershipSnapshot,
@@ -6,7 +6,7 @@ import {
     validateOwnershipSnapshot,
     validServiceId,
     validSessionId,
-} from '../protocol/ownership-contract';
+} from '../../protocol/ownership-contract';
 
 export class OwnershipSnapshotBuilder {
     constructor(

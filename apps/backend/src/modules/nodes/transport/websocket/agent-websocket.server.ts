@@ -3,20 +3,20 @@ import { IncomingMessage, Server as HttpServer } from 'node:http';
 import { Socket } from 'node:net';
 import { WebSocket, WebSocketServer } from 'ws';
 
-import { NodesService } from '../nodes.service';
-import { isAgentToPanelMessage } from '../protocol/agent-direction';
+import { NodesService } from '../../nodes.service';
+import { isAgentToPanelMessage } from '../../protocol/agent-direction';
 import {
     AgentCommandPayload,
     createAgentEnvelope,
-} from '../protocol/agent-protocol';
-import { isValidAgentPayload } from '../protocol/agent-payload';
-import { AgentCommandsService } from './agent-commands.service';
+} from '../../protocol/agent-protocol';
+import { isValidAgentPayload } from '../../protocol/agent-payload';
+import { AgentCommandsService } from '../commands/agent-commands.service';
 import {
     AgentPendingCommands,
     PendingAgentCommand,
-} from './agent-pending-commands';
-import { OwnershipSnapshotBuilder } from './ownership-snapshot.builder';
-import { OwnershipSessionController } from './ownership-session.controller';
+} from '../commands/agent-pending-commands';
+import { OwnershipSnapshotBuilder } from '../ownership/ownership-snapshot.builder';
+import { OwnershipSessionController } from '../ownership/ownership-session.controller';
 
 const WS_PATH = '/agent/v1/ws';
 

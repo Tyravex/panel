@@ -4,8 +4,8 @@ import { WebSocket, type RawData } from 'ws';
 
 import { NodesService } from '../../nodes.service';
 import { createAgentEnvelope } from '../../protocol/agent-protocol';
-import { AgentCommandsService } from '../agent-commands.service';
-import { AgentWebSocketServer } from '../agent-websocket.server';
+import { AgentCommandsService } from '../commands/agent-commands.service';
+import { AgentWebSocketServer } from '../websocket/agent-websocket.server';
 
 const NODE_ID = 'race-node-1';
 const SERVICE_ID = 'race-service-1';

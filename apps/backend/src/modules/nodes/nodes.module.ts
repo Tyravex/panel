@@ -1,13 +1,13 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { NodesController, NodesHeartbeatController } from './nodes.controller';
 import { NodesService } from './nodes.service';
 import { NodeTokenService } from './node-token.service';
 import { NodeHeartbeatMonitorService } from './services/node-heartbeat-monitor.service';
-import { AgentCommandsService } from './transport/agent-commands.service';
-import { AgentCommandRecoveryService } from './transport/agent-command-recovery.service';
-import { AgentWebSocketLifecycle } from './transport/agent-websocket.lifecycle';
+import { AgentCommandsService } from './transport/commands/agent-commands.service';
+import { AgentCommandRecoveryService } from './transport/commands/agent-command-recovery.service';
+import { AgentWebSocketLifecycle } from './transport/websocket/agent-websocket.lifecycle';
 
 @Module({
   controllers: [

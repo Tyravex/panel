@@ -1,7 +1,7 @@
 import { AgentCommandStatus } from '@prisma/client';
 
-import { PrismaService } from '../../../prisma/prisma.service';
-import { AgentCommandsService } from './agent-commands.service';
+import { PrismaService } from '../../../../prisma/prisma.service';
+import { AgentCommandsService } from '../commands/agent-commands.service';
 
 /**
  * Minimal database contract for recovering commands whose execution
