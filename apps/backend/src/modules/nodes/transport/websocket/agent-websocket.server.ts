@@ -21,18 +21,18 @@ import { OwnershipSessionController } from '../ownership/ownership-session.contr
 import type { AgentSession } from '../sessions/agent-session.types';
 import { AgentSessionRegistry } from '../sessions/agent-session-registry';
 
-const WS_PATH = '/agent/v1/ws';
-
-const MAX_MESSAGE_BYTES = 16 * 1024;
-const MAX_PENDING_AUTH = 64;
-
-const AUTH_TIMEOUT_MS = 10_000;
-const HELLO_TIMEOUT_MS = 10_000;
-const HEARTBEAT_TIMEOUT_MS = 90_000;
-const COMMAND_RESPONSE_TIMEOUT_MS = 120_000;
-const PING_INTERVAL_MS = 30_000;
-const OWNERSHIP_REFRESH_INTERVAL_MS = 30_000;
-const OWNERSHIP_BUILD_TIMEOUT_MS = 10_000;
+import {
+    WS_PATH,
+    MAX_MESSAGE_BYTES,
+    MAX_PENDING_AUTH,
+    AUTH_TIMEOUT_MS,
+    HELLO_TIMEOUT_MS,
+    HEARTBEAT_TIMEOUT_MS,
+    COMMAND_RESPONSE_TIMEOUT_MS,
+    PING_INTERVAL_MS,
+    OWNERSHIP_REFRESH_INTERVAL_MS,
+    OWNERSHIP_BUILD_TIMEOUT_MS,
+} from './agent-websocket.constants';
 
 type Session = AgentSession;
 
