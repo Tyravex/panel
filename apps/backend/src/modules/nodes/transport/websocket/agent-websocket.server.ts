@@ -13,6 +13,7 @@ import {
 } from '../commands/agent-pending-commands';
 import { OwnershipSnapshotBuilder } from '../ownership/ownership-snapshot.builder';
 import { OwnershipSessionController } from '../ownership/ownership-session.controller';
+import { OwnershipSnapshotSender } from '../ownership/ownership-snapshot-sender';
 import { AgentSessionRegistry } from '../sessions/agent-session-registry';
 import type { AgentSession } from '../sessions/agent-session.types';
 import { AgentWebSocketAuth } from './agent-websocket-auth';
@@ -25,7 +26,6 @@ import {
     COMMAND_RESPONSE_TIMEOUT_MS,
     PING_INTERVAL_MS,
     OWNERSHIP_REFRESH_INTERVAL_MS,
-    OWNERSHIP_BUILD_TIMEOUT_MS,
 } from './agent-websocket.constants';
 import { AgentWebSocketMessageHandler } from './agent-websocket-message-handler';
 
@@ -45,6 +45,7 @@ export class AgentWebSocketServer {
     private readonly pendingCommands = new AgentPendingCommands();
     private readonly pendingSockets = new Set<Socket>();
     private readonly ownershipSessions: OwnershipSessionController;
+    private readonly ownershipSnapshotSender: OwnershipSnapshotSender;
 
     private readonly heartbeatTimer: NodeJS.Timeout;
     private readonly ownershipRefreshTimer: NodeJS.Timeout;
@@ -116,6 +117,12 @@ export class AgentWebSocketServer {
             new OwnershipSnapshotBuilder(this.nodesService),
         );
 
+        this.ownershipSnapshotSender = new OwnershipSnapshotSender(
+            this.sessions,
+            this.ownershipSessions,
+            () => this.closed,
+        );
+
         this.auth = new AgentWebSocketAuth(
             this.nodesService,
             this.wss,
@@ -136,7 +143,8 @@ export class AgentWebSocketServer {
             this.pendingCommands,
             this.agentCommandsService,
             () => this.closed,
-            (session) => this.sendInitialOwnershipSnapshot(session),
+            (session) =>
+                this.ownershipSnapshotSender.sendInitialOwnershipSnapshot(session),
         );
 
         this.commandDispatcher = new AgentCommandDispatcher(
@@ -273,92 +281,7 @@ export class AgentWebSocketServer {
 
     // Public temporarily for deterministic ownership refresh tests.
     refreshOwnershipSnapshots(): void {
-        if (this.closed) {
-            return;
-        }
-
-        for (const session of this.sessions.values()) {
-            if (
-                !session.ready ||
-                session.socket.readyState !== WebSocket.OPEN ||
-                !this.ownershipSessions.isActive(session)
-            ) {
-                continue;
-            }
-
-            void this.sendInitialOwnershipSnapshot(session);
-        }
-    }
-
-    private async sendInitialOwnershipSnapshot(
-        session: Session,
-    ): Promise<void> {
-        if (session.ownershipRefreshPending) {
-            return;
-        }
-
-        session.ownershipRefreshPending = true;
-
-        try {
-            let timeout: NodeJS.Timeout | undefined;
-
-            // Promise.race does not cancel Prisma. A late result must never
-            // escape the session fence or be sent after the deadline.
-            const build = this.ownershipSessions.build(session);
-            const deadline = new Promise<never>((_resolve, reject) => {
-                timeout = setTimeout(() => {
-                    reject(new Error('Ownership snapshot build timed out'));
-                }, OWNERSHIP_BUILD_TIMEOUT_MS);
-                timeout.unref();
-            });
-
-            let message: string | null;
-            try {
-                message = await Promise.race([build, deadline]);
-            } finally {
-                if (timeout) {
-                    clearTimeout(timeout);
-                }
-            }
-
-            if (message === null) {
-                return;
-            }
-
-            // No await between the session fence and the socket send.
-            if (
-                this.closed ||
-                !this.sessions.isCurrent(session) ||
-                !this.ownershipSessions.isActive(session) ||
-                !session.ready ||
-                session.socket.readyState !== WebSocket.OPEN
-            ) {
-                return;
-            }
-
-            session.socket.send(message);
-        } catch (error: unknown) {
-            // An old session must not close a replacement connection.
-            if (
-                this.closed ||
-                !this.sessions.isCurrent(session) ||
-                !this.ownershipSessions.isActive(session)
-            ) {
-                return;
-            }
-
-            console.error('Failed to prepare ownership snapshot', {
-                nodeId: session.nodeId,
-                error,
-            });
-
-            // Never substitute a database failure with empty rights.
-            if (session.socket.readyState === WebSocket.OPEN) {
-                session.socket.close(1011, 'Ownership unavailable');
-            }
-        } finally {
-            session.ownershipRefreshPending = false;
-        }
+        this.ownershipSnapshotSender.refreshOwnershipSnapshots();
     }
 
     /**
