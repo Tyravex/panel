@@ -18,6 +18,9 @@ import {
 import { OwnershipSnapshotBuilder } from '../ownership/ownership-snapshot.builder';
 import { OwnershipSessionController } from '../ownership/ownership-session.controller';
 
+import type { AgentSession } from '../sessions/agent-session.types';
+import { AgentSessionRegistry } from '../sessions/agent-session-registry';
+
 const WS_PATH = '/agent/v1/ws';
 
 const MAX_MESSAGE_BYTES = 16 * 1024;
@@ -31,18 +34,7 @@ const PING_INTERVAL_MS = 30_000;
 const OWNERSHIP_REFRESH_INTERVAL_MS = 30_000;
 const OWNERSHIP_BUILD_TIMEOUT_MS = 10_000;
 
-type Session = {
-    sessionId: string;
-    nodeId: string;
-    token: string;
-    socket: WebSocket;
-    ready: boolean;
-    processing: boolean;
-    lastHeartbeat: number;
-    awaitingPong: boolean;
-    helloTimer: NodeJS.Timeout;
-    ownershipRefreshPending: boolean;
-};
+type Session = AgentSession;
 
 export class AgentWebSocketServer {
     private readonly wss = new WebSocketServer({
@@ -51,7 +43,7 @@ export class AgentWebSocketServer {
         perMessageDeflate: false,
     });
 
-    private readonly sessions = new Map<string, Session>();
+    private readonly sessions = new AgentSessionRegistry();
     private readonly pendingCommands = new AgentPendingCommands();
     private readonly pendingSockets = new Set<Socket>();
     private readonly ownershipSessions: OwnershipSessionController;
@@ -294,7 +286,7 @@ export class AgentWebSocketServer {
 
         session.helloTimer.unref();
 
-        this.sessions.set(nodeId, session);
+        this.sessions.set(session);
 
         socket.on('pong', () => {
             session.awaitingPong = false;
@@ -333,9 +325,7 @@ export class AgentWebSocketServer {
             this.ownershipSessions.revoke(session);
             this.retireSessionCommands(session.sessionId);
 
-            if (this.sessions.get(nodeId) === session) {
-                this.sessions.delete(nodeId);
-            }
+            this.sessions.deleteIfCurrent(session);
         });
 
         socket.on('error', () => {
@@ -371,7 +361,7 @@ export class AgentWebSocketServer {
 
             if (
                 this.closed ||
-                this.sessions.get(session.nodeId) !== session ||
+                !this.sessions.isCurrent(session) ||
                 socket.readyState !== WebSocket.OPEN
             ) {
                 return;
@@ -418,7 +408,7 @@ export class AgentWebSocketServer {
 
             if (
                 socket.readyState !== WebSocket.OPEN ||
-                this.sessions.get(session.nodeId) !== session
+                !this.sessions.isCurrent(session)
             ) {
                 return;
             }
@@ -440,7 +430,7 @@ export class AgentWebSocketServer {
         ) {
             // Ignore responses from a connection that has been replaced.
             if (
-                this.sessions.get(session.nodeId) !== session ||
+                !this.sessions.isCurrent(session) ||
                 socket.readyState !== WebSocket.OPEN
             ) {
                 return;
@@ -484,7 +474,7 @@ export class AgentWebSocketServer {
                 }
 
                 if (
-                    this.sessions.get(session.nodeId) !== session ||
+                    !this.sessions.isCurrent(session) ||
                     socket.readyState !== WebSocket.OPEN
                 ) {
                     return;
@@ -606,7 +596,7 @@ export class AgentWebSocketServer {
             // No await between the session fence and the socket send.
             if (
                 this.closed ||
-                this.sessions.get(session.nodeId) !== session ||
+                !this.sessions.isCurrent(session) ||
                 !this.ownershipSessions.isActive(session) ||
                 !session.ready ||
                 session.socket.readyState !== WebSocket.OPEN
@@ -619,7 +609,7 @@ export class AgentWebSocketServer {
             // An old session must not close a replacement connection.
             if (
                 this.closed ||
-                this.sessions.get(session.nodeId) !== session ||
+                !this.sessions.isCurrent(session) ||
                 !this.ownershipSessions.isActive(session)
             ) {
                 return;
@@ -985,7 +975,7 @@ export class AgentWebSocketServer {
             this.ownershipSessions.revoke(session);
             this.retireSessionCommands(session.sessionId);
             session.socket.terminate();
-            this.sessions.delete(nodeId);
+            this.sessions.deleteIfCurrent(session);
         }
     }
 
