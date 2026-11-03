@@ -4,12 +4,8 @@ import { Socket } from 'node:net';
 import { WebSocket, WebSocketServer } from 'ws';
 
 import { NodesService } from '../../nodes.service';
-import { isAgentToPanelMessage } from '../../protocol/agent-direction';
-import {
-    AgentCommandPayload,
-    createAgentEnvelope,
-} from '../../protocol/agent-protocol';
-import { isValidAgentPayload } from '../../protocol/agent-payload';
+import { AgentCommandPayload } from '../../protocol/agent-protocol';
+import { AgentCommandDispatcher } from '../commands/agent-command-dispatcher';
 import { AgentCommandsService } from '../commands/agent-commands.service';
 import {
     AgentPendingCommands,
@@ -17,17 +13,13 @@ import {
 } from '../commands/agent-pending-commands';
 import { OwnershipSnapshotBuilder } from '../ownership/ownership-snapshot.builder';
 import { OwnershipSessionController } from '../ownership/ownership-session.controller';
-import { AgentWebSocketAuth } from './agent-websocket-auth';
-
-import type { AgentSession } from '../sessions/agent-session.types';
 import { AgentSessionRegistry } from '../sessions/agent-session-registry';
-import { AgentWebSocketMessageHandler } from './agent-websocket-message-handler';
-
+import type { AgentSession } from '../sessions/agent-session.types';
+import { AgentWebSocketAuth } from './agent-websocket-auth';
 import {
     WS_PATH,
     MAX_MESSAGE_BYTES,
     MAX_PENDING_AUTH,
-    AUTH_TIMEOUT_MS,
     HELLO_TIMEOUT_MS,
     HEARTBEAT_TIMEOUT_MS,
     COMMAND_RESPONSE_TIMEOUT_MS,
@@ -35,6 +27,7 @@ import {
     OWNERSHIP_REFRESH_INTERVAL_MS,
     OWNERSHIP_BUILD_TIMEOUT_MS,
 } from './agent-websocket.constants';
+import { AgentWebSocketMessageHandler } from './agent-websocket-message-handler';
 
 type Session = AgentSession;
 
@@ -46,6 +39,7 @@ export class AgentWebSocketServer {
     });
 
     private readonly messageHandler: AgentWebSocketMessageHandler;
+    private readonly commandDispatcher: AgentCommandDispatcher;
     private readonly auth: AgentWebSocketAuth;
     private readonly sessions = new AgentSessionRegistry();
     private readonly pendingCommands = new AgentPendingCommands();
@@ -143,6 +137,14 @@ export class AgentWebSocketServer {
             this.agentCommandsService,
             () => this.closed,
             (session) => this.sendInitialOwnershipSnapshot(session),
+        );
+
+        this.commandDispatcher = new AgentCommandDispatcher(
+            this.sessions,
+            this.pendingCommands,
+            this.agentCommandsService,
+            (nodeId) => this.isNodeConnected(nodeId),
+            () => this.closed,
         );
 
         this.httpServer.on('upgrade', this.onUpgrade);
@@ -444,223 +446,27 @@ export class AgentWebSocketServer {
 
     /**
      * Legacy in-memory transport method.
-     *
-     * It remains available for existing transport tests, but is
-     * disabled when durable command tracking is configured.
-     *
-     * Do not use this method for real INSTALL dispatching.
+     * Disabled when durable command tracking is configured.
      */
     sendCommand(
         nodeId: string,
         command: AgentCommandPayload,
     ): boolean {
-        // Never permit the legacy path to bypass durable claimSend().
-        if (this.agentCommandsService) {
-            return false;
-        }
-
-        if (!this.isNodeConnected(nodeId)) {
-            return false;
-        }
-
-        if (!isValidAgentPayload('command.execute', command)) {
-            return false;
-        }
-
-        const session = this.sessions.get(nodeId);
-
-        if (
-            !session ||
-            !session.ready ||
-            session.socket.readyState !== WebSocket.OPEN
-        ) {
-            return false;
-        }
-
-        if (
-            command.operation === 'service.install' &&
-            command.parameters.nodeId !== nodeId
-        ) {
-            return false;
-        }
-
-        const registered = this.pendingCommands.register({
-            commandId: command.commandId,
-            nodeId,
-            serviceId: command.serviceId,
-            operation: command.operation,
-            sessionId: session.sessionId,
-            createdAt: Date.now(),
-        });
-
-        if (!registered) {
-            return false;
-        }
-
-        try {
-            const envelope = createAgentEnvelope(
-                'command.execute',
-                {
-                    commandId: command.commandId,
-                    operation: command.operation,
-                    serviceId: command.serviceId,
-                    parameters: command.parameters,
-                },
-                randomUUID(),
-            );
-
-            session.socket.send(JSON.stringify(envelope));
-
-            return true;
-        } catch {
-            this.pendingCommands.remove(
-                command.commandId,
-                session.sessionId,
-            );
-
-            return false;
-        }
+        return this.commandDispatcher.sendCommand(nodeId, command);
     }
 
     /**
      * Sends a command whose identity already exists in PostgreSQL.
-     *
      * The durable claim is committed before socket.send().
-     * A claimed command is never automatically sent a second time,
-     * even if the socket operation fails or the backend restarts.
-     *
-     * true means a WebSocket send was attempted, not that the
-     * Agent accepted or completed the operation.
      */
     async sendDurableCommand(
         nodeId: string,
         command: AgentCommandPayload,
     ): Promise<boolean> {
-        if (!this.agentCommandsService) {
-            return false;
-        }
-
-        if (!this.isNodeConnected(nodeId)) {
-            return false;
-        }
-
-        if (!isValidAgentPayload('command.execute', command)) {
-            return false;
-        }
-
-        const session = this.sessions.get(nodeId);
-
-        if (
-            !session ||
-            !session.ready ||
-            session.socket.readyState !== WebSocket.OPEN
-        ) {
-            return false;
-        }
-
-        if (
-            command.operation === 'service.install' &&
-            command.parameters.nodeId !== nodeId
-        ) {
-            return false;
-        }
-
-        // The protocol commandId must be the database primary key.
-        // This prevents a valid claim from authorizing a different
-        // operation, service or node.
-        const stored =
-            await this.agentCommandsService.findById(
-                command.commandId,
-            );
-
-        if (
-            !stored ||
-            stored.nodeId !== nodeId ||
-            stored.serviceId !== command.serviceId ||
-            stored.operation !== command.operation
-        ) {
-            return false;
-        }
-
-        // Check memory before claiming the only transport attempt.
-        // This is an optimization, not the durable uniqueness guard.
-        if (this.pendingCommands.find(command.commandId)) {
-            return false;
-        }
-
-        // Atomically claim the command in PostgreSQL BEFORE sending.
-        // If this fails, the socket must not be used.
-        const claimed =
-            await this.agentCommandsService.claimSend(
-                command.commandId,
-                session.sessionId,
-            );
-
-        if (!claimed) {
-            return false;
-        }
-
-        // The claim is durable. From here, any uncertainty must be
-        // represented as UNKNOWN, never as a new PREPARED attempt.
-        if (
-            this.sessions.get(nodeId) !== session ||
-            session.socket.readyState !== WebSocket.OPEN ||
-            !session.ready ||
-            this.closed
-        ) {
-            await this.agentCommandsService.markUnknown(
-                command.commandId,
-            );
-
-            return false;
-        }
-
-        const registered = this.pendingCommands.register({
-            commandId: command.commandId,
+        return this.commandDispatcher.sendDurableCommand(
             nodeId,
-            serviceId: command.serviceId,
-            operation: command.operation,
-            sessionId: session.sessionId,
-            createdAt: Date.now(),
-        });
-
-        if (!registered) {
-            await this.agentCommandsService.markUnknown(
-                command.commandId,
-            );
-
-            return false;
-        }
-
-        try {
-            const envelope = createAgentEnvelope(
-                'command.execute',
-                {
-                    commandId: command.commandId,
-                    operation: command.operation,
-                    serviceId: command.serviceId,
-                    parameters: command.parameters,
-                },
-                randomUUID(),
-            );
-
-            session.socket.send(JSON.stringify(envelope));
-
-            // This only confirms a synchronous send attempt.
-            // Agent acceptance is persisted by processMessage().
-            return true;
-        } catch {
-            this.pendingCommands.remove(
-                command.commandId,
-                session.sessionId,
-            );
-
-            await this.agentCommandsService.markUnknown(
-                command.commandId,
-            );
-
-            return false;
-        }
+            command,
+        );
     }
 
     isNodeConnected(nodeId: string): boolean {
