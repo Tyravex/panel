@@ -1,7 +1,7 @@
 import { WebSocket } from 'ws';
 
+import { AgentCommandRetirement } from '../commands/agent-command-retirement';
 import { AgentPendingCommands } from '../commands/agent-pending-commands';
-import { AgentCommandsService } from '../commands/agent-commands.service';
 import { AgentSessionRegistry } from '../sessions/agent-session-registry';
 import {
     COMMAND_RESPONSE_TIMEOUT_MS,
@@ -12,8 +12,7 @@ export class AgentWebSocketSessionMonitor {
     constructor(
         private readonly sessions: AgentSessionRegistry,
         private readonly pendingCommands: AgentPendingCommands,
-        private readonly agentCommandsService:
-            AgentCommandsService | undefined,
+        private readonly commandRetirement: AgentCommandRetirement,
     ) { }
 
     checkSessions(): void {
@@ -26,7 +25,7 @@ export class AgentWebSocketSessionMonitor {
             COMMAND_RESPONSE_TIMEOUT_MS,
         );
 
-        this.retireCommands(expired);
+        this.commandRetirement.retireCommands(expired);
 
         for (const session of this.sessions.values()) {
             const { socket } = session;
@@ -50,28 +49,6 @@ export class AgentWebSocketSessionMonitor {
 
             session.awaitingPong = true;
             socket.ping();
-        }
-    }
-
-    private retireCommands(
-        commands: ReturnType<AgentPendingCommands['expire']>,
-    ): void {
-        if (!this.agentCommandsService) {
-            return;
-        }
-
-        for (const command of commands) {
-            void this.agentCommandsService
-                .markUnknown(command.commandId)
-                .catch((error: unknown) => {
-                    console.error(
-                        'Failed to mark Agent command UNKNOWN',
-                        {
-                            commandId: command.commandId,
-                            error,
-                        },
-                    );
-                });
         }
     }
 }

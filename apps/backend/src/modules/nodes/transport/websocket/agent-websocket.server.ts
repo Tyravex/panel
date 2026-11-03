@@ -6,11 +6,9 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { NodesService } from '../../nodes.service';
 import { AgentCommandPayload } from '../../protocol/agent-protocol';
 import { AgentCommandDispatcher } from '../commands/agent-command-dispatcher';
+import { AgentCommandRetirement } from '../commands/agent-command-retirement';
 import { AgentCommandsService } from '../commands/agent-commands.service';
-import {
-    AgentPendingCommands,
-    PendingAgentCommand,
-} from '../commands/agent-pending-commands';
+import { AgentPendingCommands } from '../commands/agent-pending-commands';
 import { AgentWebSocketSessionMonitor } from '../monitoring/agent-websocket-session-monitor';
 import { OwnershipSnapshotBuilder } from '../ownership/ownership-snapshot.builder';
 import { OwnershipSessionController } from '../ownership/ownership-session.controller';
@@ -40,16 +38,20 @@ export class AgentWebSocketServer {
 
     private readonly messageHandler: AgentWebSocketMessageHandler;
     private readonly commandDispatcher: AgentCommandDispatcher;
+    private readonly commandRetirement: AgentCommandRetirement;
     private readonly sessionMonitor: AgentWebSocketSessionMonitor;
     private readonly auth: AgentWebSocketAuth;
+
     private readonly sessions = new AgentSessionRegistry();
     private readonly pendingCommands = new AgentPendingCommands();
     private readonly pendingSockets = new Set<Socket>();
+
     private readonly ownershipSessions: OwnershipSessionController;
     private readonly ownershipSnapshotSender: OwnershipSnapshotSender;
 
     private readonly heartbeatTimer: NodeJS.Timeout;
     private readonly ownershipRefreshTimer: NodeJS.Timeout;
+
     private closed = false;
 
     private readonly onUpgrade = (
@@ -156,10 +158,15 @@ export class AgentWebSocketServer {
             () => this.closed,
         );
 
+        this.commandRetirement = new AgentCommandRetirement(
+            this.pendingCommands,
+            this.agentCommandsService,
+        );
+
         this.sessionMonitor = new AgentWebSocketSessionMonitor(
             this.sessions,
             this.pendingCommands,
-            this.agentCommandsService,
+            this.commandRetirement,
         );
 
         this.httpServer.on('upgrade', this.onUpgrade);
@@ -216,7 +223,9 @@ export class AgentWebSocketServer {
 
         if (previous) {
             this.ownershipSessions.revoke(previous);
-            this.retireSessionCommands(previous.sessionId);
+            this.commandRetirement.retireSessionCommands(
+                previous.sessionId,
+            );
             previous.socket.terminate();
         }
 
@@ -276,7 +285,9 @@ export class AgentWebSocketServer {
             clearTimeout(session.helloTimer);
 
             this.ownershipSessions.revoke(session);
-            this.retireSessionCommands(session.sessionId);
+            this.commandRetirement.retireSessionCommands(
+                session.sessionId,
+            );
 
             this.sessions.deleteIfCurrent(session);
         });
@@ -289,50 +300,6 @@ export class AgentWebSocketServer {
     // Public temporarily for deterministic ownership refresh tests.
     refreshOwnershipSnapshots(): void {
         this.ownershipSnapshotSender.refreshOwnershipSnapshots();
-    }
-
-    /**
-     * Marks uncertain command outcomes without retrying them.
-     *
-     * The database transition is conditional: COMPLETED and FAILED
-     * cannot be overwritten by UNKNOWN.
-     *
-     * A failed database write must be reconciled later by a
-     * database-backed recovery worker.
-     */
-    private retireCommands(
-        commands: PendingAgentCommand[],
-    ): void {
-        if (!this.agentCommandsService) {
-            return;
-        }
-
-        for (const command of commands) {
-            void this.agentCommandsService
-                .markUnknown(command.commandId)
-                .catch((error: unknown) => {
-                    console.error(
-                        'Failed to mark Agent command UNKNOWN',
-                        {
-                            commandId: command.commandId,
-                            error,
-                        },
-                    );
-                });
-        }
-    }
-
-    /**
-     * Removes all in-memory commands from a disconnected session.
-     *
-     * Losing a WebSocket connection is not evidence that the
-     * Agent stopped or failed the operation.
-     */
-    private retireSessionCommands(sessionId: string): void {
-        const removed =
-            this.pendingCommands.drainSession(sessionId);
-
-        this.retireCommands(removed);
     }
 
     // Public temporarily for deterministic transport tests.
@@ -349,7 +316,10 @@ export class AgentWebSocketServer {
         nodeId: string,
         command: AgentCommandPayload,
     ): boolean {
-        return this.commandDispatcher.sendCommand(nodeId, command);
+        return this.commandDispatcher.sendCommand(
+            nodeId,
+            command,
+        );
     }
 
     /**
@@ -386,7 +356,9 @@ export class AgentWebSocketServer {
 
         if (session) {
             this.ownershipSessions.revoke(session);
-            this.retireSessionCommands(session.sessionId);
+            this.commandRetirement.retireSessionCommands(
+                session.sessionId,
+            );
             session.socket.terminate();
             this.sessions.deleteIfCurrent(session);
         }
@@ -419,7 +391,9 @@ export class AgentWebSocketServer {
             clearTimeout(session.helloTimer);
 
             this.ownershipSessions.revoke(session);
-            this.retireSessionCommands(session.sessionId);
+            this.commandRetirement.retireSessionCommands(
+                session.sessionId,
+            );
 
             session.socket.terminate();
         }

@@ -3,6 +3,7 @@ import { WebSocket } from 'ws';
 import { AgentCommandsService } from '../../commands/agent-commands.service';
 import { AgentPendingCommands } from '../../commands/agent-pending-commands';
 import { AgentSessionRegistry } from '../../sessions/agent-session-registry';
+import { AgentCommandRetirement } from '../../commands/agent-command-retirement';
 import type { AgentSession } from '../../sessions/agent-session.types';
 import {
     COMMAND_RESPONSE_TIMEOUT_MS,
@@ -43,10 +44,15 @@ function createFixture() {
         markUnknown,
     } as unknown as AgentCommandsService;
 
+    const commandRetirement = new AgentCommandRetirement(
+        pendingCommands,
+        agentCommandsService,
+    );
+
     const monitor = new AgentWebSocketSessionMonitor(
         sessions,
         pendingCommands,
-        agentCommandsService,
+        commandRetirement,
     );
 
     return {
@@ -200,10 +206,15 @@ describe('AgentWebSocketSessionMonitor', () => {
             NOW - COMMAND_RESPONSE_TIMEOUT_MS,
         );
 
+        const commandRetirement = new AgentCommandRetirement(
+            pendingCommands,
+            undefined,
+        );
+
         const monitor = new AgentWebSocketSessionMonitor(
             sessions,
             pendingCommands,
-            undefined,
+            commandRetirement,
         );
 
         expect(() => monitor.checkSessions()).not.toThrow();
