@@ -17,6 +17,7 @@ import {
 } from '../commands/agent-pending-commands';
 import { OwnershipSnapshotBuilder } from '../ownership/ownership-snapshot.builder';
 import { OwnershipSessionController } from '../ownership/ownership-session.controller';
+import { AgentWebSocketAuth } from './agent-websocket-auth';
 
 import type { AgentSession } from '../sessions/agent-session.types';
 import { AgentSessionRegistry } from '../sessions/agent-session-registry';
@@ -43,6 +44,7 @@ export class AgentWebSocketServer {
         perMessageDeflate: false,
     });
 
+    private readonly auth: AgentWebSocketAuth;
     private readonly sessions = new AgentSessionRegistry();
     private readonly pendingCommands = new AgentPendingCommands();
     private readonly pendingSockets = new Set<Socket>();
@@ -82,7 +84,7 @@ export class AgentWebSocketServer {
 
         this.pendingSockets.add(socket);
 
-        void this.authenticateAndUpgrade(
+        void this.auth.authenticateAndUpgrade(
             request,
             socket,
             head,
@@ -116,6 +118,19 @@ export class AgentWebSocketServer {
     ) {
         this.ownershipSessions = new OwnershipSessionController(
             new OwnershipSnapshotBuilder(this.nodesService),
+        );
+
+        this.auth = new AgentWebSocketAuth(
+            this.nodesService,
+            this.wss,
+            this.pendingSockets,
+            () => this.closed,
+            (socket, status, reason) => {
+                this.reject(socket, status, reason);
+            },
+            (nodeId, token, socket) => {
+                this.acceptConnection(nodeId, token, socket);
+            },
         );
 
         this.httpServer.on('upgrade', this.onUpgrade);
@@ -156,97 +171,6 @@ export class AgentWebSocketServer {
             'Content-Length: 0\r\n' +
             '\r\n',
         );
-    }
-
-    private async authenticateAndUpgrade(
-        request: IncomingMessage,
-        socket: Socket,
-        head: Buffer,
-    ): Promise<void> {
-        let authTimer: NodeJS.Timeout | undefined;
-        let onSocketClose: (() => void) | undefined;
-
-        const onSocketError = () => undefined;
-        socket.on('error', onSocketError);
-
-        try {
-            const nodeId = request.headers['x-node-id'];
-            const authorization = request.headers.authorization;
-
-            if (
-                typeof nodeId !== 'string' ||
-                nodeId.length === 0 ||
-                nodeId.length > 128 ||
-                typeof authorization !== 'string' ||
-                !/^Bearer [^\s]+$/.test(authorization)
-            ) {
-                this.reject(socket, 401, 'Unauthorized');
-                return;
-            }
-
-            const token = authorization.slice(7);
-
-            const disconnected = new Promise<null>((resolve) => {
-                onSocketClose = () => resolve(null);
-                socket.once('close', onSocketClose);
-
-                if (socket.destroyed) {
-                    resolve(null);
-                }
-            });
-
-            const timedOut = new Promise<null>((resolve) => {
-                authTimer = setTimeout(() => {
-                    socket.destroy();
-                    resolve(null);
-                }, AUTH_TIMEOUT_MS);
-
-                authTimer.unref();
-            });
-
-            const authenticated = await Promise.race([
-                this.nodesService.authenticateNode(nodeId, token),
-                disconnected,
-                timedOut,
-            ]);
-
-            if (
-                !authenticated ||
-                this.closed ||
-                socket.destroyed ||
-                !socket.writable
-            ) {
-                if (!socket.destroyed) {
-                    this.reject(socket, 401, 'Unauthorized');
-                }
-
-                return;
-            }
-
-            this.wss.handleUpgrade(
-                request,
-                socket,
-                head,
-                (ws) => {
-                    this.acceptConnection(
-                        authenticated.id,
-                        token,
-                        ws,
-                    );
-                },
-            );
-        } finally {
-            if (authTimer) {
-                clearTimeout(authTimer);
-            }
-
-            if (onSocketClose) {
-                socket.off('close', onSocketClose);
-            }
-
-            socket.off('error', onSocketError);
-            this.pendingSockets.delete(socket);
-        }
     }
 
     private acceptConnection(
