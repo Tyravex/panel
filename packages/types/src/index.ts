@@ -18,3 +18,10 @@ export type {
   MarketplacePluginUpdate,
   MarketplaceUpdatesResponse,
 } from './marketplace';
+
+export type {
+  EggSourceType,
+  EggApprovalStatus,
+  EggLibraryItem,
+  SetEggApprovalRequest,
+} from './eggs.types';

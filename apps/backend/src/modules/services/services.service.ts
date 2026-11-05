@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '@/prisma/prisma.service';
+import { assertEggApproved } from '../eggs/egg-approval.policy';
 import { validateEggManifest } from '../eggs/egg-manifest.validator';
 
 import { CreateServiceDto } from './dto/create-service.dto';
@@ -77,6 +78,7 @@ export class ServicesService {
     return this.prisma.egg.findMany({
       where: {
         isEnabled: true,
+        approvalStatus: 'APPROVED',
         repository: {
           status: 'ENABLED',
         },
@@ -173,6 +175,7 @@ export class ServicesService {
           name: true,
           version: true,
           isEnabled: true,
+          approvalStatus: true,
           manifest: true,
           repository: {
             select: {
@@ -185,6 +188,9 @@ export class ServicesService {
       if (!egg) {
         throw new NotFoundException('Egg not found');
       }
+
+      // Reject unapproved definitions before they can be assigned or installed.
+      assertEggApproved(egg.approvalStatus);
 
       if (
         !egg.isEnabled ||
@@ -337,6 +343,7 @@ export class ServicesService {
           key: true,
           version: true,
           isEnabled: true,
+          approvalStatus: true,
           manifest: true,
           repository: {
             select: { status: true },
@@ -347,6 +354,9 @@ export class ServicesService {
       if (!egg) {
         throw new NotFoundException('Egg not found');
       }
+
+      // Reject unapproved definitions before they can be assigned or installed.
+      assertEggApproved(egg.approvalStatus);
 
       if (
         !egg.isEnabled ||

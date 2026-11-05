@@ -39,6 +39,9 @@ model User {
   serviceMemberships ServiceMember[]
   jobs               Job[]
 
+  // User-owned custom Eggs remain separate from administrative permissions.
+  ownedEggs Egg[] @relation("EggOwner")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -251,6 +254,22 @@ enum EggRepositoryStatus {
   DISABLED
 }
 
+// Identifies the origin of an Egg independently of its approval status.
+// Only trusted administrative workflows may assign OFFICIAL.
+enum EggSourceType {
+  OFFICIAL
+  COMMUNITY
+  CUSTOM
+}
+
+// Administrative review status of an imported Egg.
+// Approval alone does not enable installation or deployment.
+enum EggApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // Repository registry. ENABLED alone does not approve every contained Egg.
 model EggRepository {
   id String @id @default(cuid())
@@ -287,6 +306,20 @@ model Egg {
   repositoryId String
   repository   EggRepository @relation(fields: [repositoryId], references: [id], onDelete: Restrict)
 
+  // Provenance is independent of deployment availability.
+  // Existing records default to COMMUNITY unless migrated explicitly.
+  sourceType EggSourceType @default(COMMUNITY)
+
+  // Custom Eggs may belong to an individual Panel user.
+  // Null preserves compatibility with catalog-managed definitions.
+  ownerId Int?
+  owner   User? @relation("EggOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  // New definitions require administrative review by default.
+  // Approval does not automatically enable an Egg.
+  approvalStatus EggApprovalStatus @default(PENDING)
+  approvedAt     DateTime?
+
   // Administrator approval is required before an Egg can be selected.
   isEnabled Boolean @default(false)
 
@@ -298,6 +331,9 @@ model Egg {
   // Different versions of the same Egg can coexist in one repository.
   @@unique([repositoryId, key, version])
   @@index([repositoryId, isEnabled])
+  // Support provenance filtering and review queues.
+  @@index([sourceType, approvalStatus])
+  @@index([ownerId, createdAt])
 }
 
 // =============================================================================
@@ -406,7 +442,6 @@ model Job {
   service   Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
 
   // Commands issued to an Agent for this job.
-  // A Job may retain command history; INSTALL command uniqueness is enforced by key.
   agentCommands AgentCommand[]
 
   // Legacy queue dispatch metadata; not proof that an Agent executed work.

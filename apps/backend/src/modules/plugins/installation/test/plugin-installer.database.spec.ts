@@ -1,3 +1,4 @@
+import { requireIntegrationDatabase } from '@/test/test-database.guard';
 import { ConflictException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import {
@@ -15,33 +16,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { PluginInstallerService } from '../plugin-installer.service';
 import { PLUGIN_STORAGE_ENV_KEY } from '../../storage/plugin-storage.config';
 
-function validateTestDatabaseUrl(value: string | undefined): string {
-    if (!value) {
-        throw new Error(
-            'TEST_DATABASE_URL is required for database integration tests.',
-        );
-    }
-
-    const url = new URL(value);
-
-    if (
-        url.protocol !== 'postgresql:' ||
-        !['127.0.0.1', 'localhost'].includes(url.hostname) ||
-        url.port !== '55433' ||
-        url.pathname !== '/tyravex_integration' ||
-        url.username !== 'tyravex_test'
-    ) {
-        throw new Error(
-            'Refusing to use a database outside the isolated Tyravex test environment.',
-        );
-    }
-
-    return value;
-}
-
-const safeDatabaseUrl = validateTestDatabaseUrl(
-    process.env.TEST_DATABASE_URL,
-);
+const safeDatabaseUrl = requireIntegrationDatabase();
 
 const CRC_TABLE = new Uint32Array(256);
 

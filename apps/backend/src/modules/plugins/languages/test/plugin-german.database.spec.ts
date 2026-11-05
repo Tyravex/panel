@@ -1,3 +1,4 @@
+import { requireIntegrationDatabase } from '@/test/test-database.guard';
 import { randomUUID } from 'node:crypto';
 import { mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -9,27 +10,7 @@ import { PluginInstallerService } from '../../installation/plugin-installer.serv
 import { PLUGIN_STORAGE_ENV_KEY } from '../../storage/plugin-storage.config';
 import { inspectPluginZip } from '../../package/plugin-zip-reader';
 
-function validateTestDatabaseUrl(value: string | undefined): string {
-    if (!value) {
-        throw new Error('TEST_DATABASE_URL is required for database integration tests.');
-    }
-
-    const url = new URL(value);
-    if (
-        url.protocol !== 'postgresql:' ||
-        !['127.0.0.1', 'localhost'].includes(url.hostname) ||
-        url.port !== '55433' ||
-        url.pathname !== '/tyravex_integration' ||
-        url.username !== 'tyravex_test' ||
-        url.searchParams.get('schema') !== 'public'
-    ) {
-        throw new Error('Refusing to use a database outside the isolated Tyravex test environment.');
-    }
-
-    return value;
-}
-
-const safeDatabaseUrl = validateTestDatabaseUrl(process.env.TEST_DATABASE_URL);
+const safeDatabaseUrl = requireIntegrationDatabase();
 const pluginId = 'tyravex.language.german';
 const languageCode = 'de';
 const archivePath = resolve(

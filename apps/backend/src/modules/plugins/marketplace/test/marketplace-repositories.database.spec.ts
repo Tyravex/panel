@@ -1,33 +1,8 @@
+import { requireIntegrationDatabase } from '@/test/test-database.guard';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-function requireMarketplaceTestDatabase(): string {
-    const value = process.env.TEST_DATABASE_URL;
-
-    if (!value) {
-        throw new Error(
-            'TEST_DATABASE_URL is required for Marketplace database tests.',
-        );
-    }
-
-    const url = new URL(value);
-
-    if (
-        url.protocol !== 'postgresql:' ||
-        !['127.0.0.1', 'localhost'].includes(url.hostname) ||
-        url.port !== '55433' ||
-        url.pathname !== '/tyravex_integration' ||
-        url.username !== 'tyravex_test'
-    ) {
-        throw new Error(
-            'Refusing to use a database outside the isolated Tyravex test environment.',
-        );
-    }
-
-    return value;
-}
-
-const databaseUrl = requireMarketplaceTestDatabase();
+const databaseUrl = requireIntegrationDatabase();
 
 describe('Marketplace repositories PostgreSQL', () => {
     let prisma: PrismaClient;

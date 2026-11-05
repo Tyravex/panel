@@ -1,48 +1,10 @@
+import { requireIntegrationDatabase } from '@/test/test-database.guard';
 import { ConflictException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { PluginLifecycleService } from '../plugin-lifecycle.service';
 
-const TEST_DATABASE_NAME = 'tyravex_integration';
-const TEST_DATABASE_PORT = '55433';
-const TEST_DATABASE_HOSTS = ['127.0.0.1', 'localhost'];
+const safeDatabaseUrl = requireIntegrationDatabase();
 
-const testDatabaseUrl = process.env.TEST_DATABASE_URL;
-
-function validateTestDatabaseUrl(value: string | undefined): string {
-    if (!value) {
-        throw new Error(
-            'TEST_DATABASE_URL is required for database integration tests.',
-        );
-    }
-
-    let url: URL;
-
-    try {
-        url = new URL(value);
-    } catch {
-        throw new Error('TEST_DATABASE_URL is not a valid URL.');
-    }
-
-    if (
-        !['postgresql:', 'postgres:'].includes(url.protocol) ||
-        !TEST_DATABASE_HOSTS.includes(url.hostname) ||
-        url.port !== TEST_DATABASE_PORT ||
-        url.pathname !== `/${TEST_DATABASE_NAME}` ||
-        url.username !== 'tyravex_test'
-    ) {
-        throw new Error(
-            'Refusing to run tests outside the isolated Tyravex integration database.',
-        );
-    }
-
-    return value;
-}
-
-const safeDatabaseUrl = validateTestDatabaseUrl(testDatabaseUrl);
-
-// PrismaService reads DATABASE_URL when it is constructed.
-// Override it only inside this Jest process.
-process.env.DATABASE_URL = safeDatabaseUrl;
 
 describe('Plugin lifecycle PostgreSQL integration', () => {
     let prisma: PrismaService;

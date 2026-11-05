@@ -26,45 +26,32 @@ describe('RbacService PostgreSQL concurrency', () => {
     });
 
     it('preserves one Owner during concurrent revocations', async () => {
-        const ownerRole = await prisma.role.findUniqueOrThrow({
-            where: { name: 'Owner' },
+        const { randomUUID } = await import('node:crypto');
+        const ownerRole = await prisma.role.upsert({
+            where: { name: 'Owner' }, create: { name: 'Owner' }, update: {},
         });
-
-        const users = await prisma.user.findMany({
-            where: {
-                username: { in: ['rbac_test_owner_1', 'rbac_test_owner_2'] },
-            },
-            orderBy: { id: 'asc' },
-        });
-        expect(users).toHaveLength(2);
-
-        // Restore both assignments before the concurrency test.
-        for (const user of users) {
-            await prisma.userRole.upsert({
-                where: {
-                    userId_roleId: { userId: user.id, roleId: ownerRole.id },
-                },
-                update: {},
-                create: { userId: user.id, roleId: ownerRole.id },
-            });
+        const existingOwners = await prisma.userRole.count({ where: { roleId: ownerRole.id } });
+        if (existingOwners !== 0) {
+            throw new Error('Owner concurrency test requires a fresh integration DB with no pre-existing Owner assignments.');
         }
-
-        const results = await Promise.allSettled(
-            users.map((user) => service.revokeRole(user.id, ownerRole.id)),
-        );
-
-        const successful = results.filter((result) => result.status === 'fulfilled');
-        const rejected = results.filter((result) => result.status === 'rejected');
-
-        expect(successful).toHaveLength(1);
-        expect(rejected).toHaveLength(1);
-        expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(
-            BadRequestException,
-        );
-
-        const remainingOwners = await prisma.userRole.count({
-            where: { roleId: ownerRole.id },
-        });
-        expect(remainingOwners).toBe(1);
+        const suffix = randomUUID();
+        const users = await Promise.all([1, 2].map(i => prisma.user.create({
+            data: { username: `rbac-owner-${i}-${suffix}`, email: `rbac-owner-${i}-${suffix}@example.invalid`, password: 'test-only' },
+        })));
+        try {
+            for (const user of users) {
+                await prisma.userRole.create({ data: { userId: user.id, roleId: ownerRole.id } });
+            }
+            const results = await Promise.allSettled(users.map(user => service.revokeRole(user.id, ownerRole.id)));
+            expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+            const rejected = results.filter(result => result.status === 'rejected');
+            expect(rejected).toHaveLength(1);
+            expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(BadRequestException);
+            expect(await prisma.userRole.count({ where: { roleId: ownerRole.id } })).toBe(1);
+        } finally {
+            await prisma.adminAuditLog.deleteMany({ where: { actorId: { in: users.map(u => u.id) } } });
+            await prisma.userRole.deleteMany({ where: { userId: { in: users.map(u => u.id) } } });
+            await prisma.user.deleteMany({ where: { id: { in: users.map(u => u.id) } } });
+        }
     });
 });
