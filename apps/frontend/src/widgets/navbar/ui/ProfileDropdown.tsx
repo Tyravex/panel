@@ -55,6 +55,10 @@ export const ProfileDropdown = () => {
   const initials = (user?.username || "U")
     .slice(0, 2)
     .toUpperCase();
+  const role = user?.roles?.[0];
+  const roleLabel = role
+    ? ({ Owner: "Owner", Admin: "Administrator", Administrator: "Administrator", User: "Użytkownik" } as Record<string, string>)[role] ?? role
+    : "Użytkownik";
 
   return (
     <div ref={containerRef} className="relative">
@@ -74,8 +78,13 @@ export const ProfileDropdown = () => {
           {initials}
         </span>
 
-        <span className="hidden max-w-32 truncate text-sm font-medium text-text-primary sm:block">
-          {user?.username || "User"}
+        <span className="hidden min-w-0 max-w-32 flex-col items-start sm:flex">
+          <span className="w-full truncate text-sm font-medium text-text-primary">
+            {user?.username || "User"}
+          </span>
+          <span className="w-full truncate text-xs text-text-secondary">
+            {roleLabel}
+          </span>
         </span>
 
         <ChevronDown
