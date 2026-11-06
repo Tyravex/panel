@@ -14,6 +14,19 @@
       "system": "System"
     },
     "soon": "Wkrótce",
-    "userPanel": "Panel użytkownika"
+    "userPanel": "Panel użytkownika",
+    "userNavigation": {
+      "overview": "Przegląd",
+      "services": "Wszystkie usługi",
+      "projects": "Projekty i grupy",
+      "shared": "Współdzielone ze mną"
+    },
+    "favorites": {
+      "title": "Ulubione usługi",
+      "loading": "Ładowanie…",
+      "empty": "Brak ulubionych usług. Przypinanie będzie dostępne po podłączeniu funkcji ulubionych.",
+      "showLess": "Pokaż mniej",
+      "showAll": "Pokaż wszystkie ({{count}})"
+    }
   }
 }

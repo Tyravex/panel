@@ -14,6 +14,19 @@
       "system": "System"
     },
     "soon": "Soon",
-    "userPanel": "User panel"
+    "userPanel": "User panel",
+    "userNavigation": {
+      "overview": "Overview",
+      "services": "All services",
+      "projects": "Projects & groups",
+      "shared": "Shared with me"
+    },
+    "favorites": {
+      "title": "Favorite services",
+      "loading": "Loading…",
+      "empty": "No favorite services yet. Pinning will be available after the favorites feature is connected.",
+      "showLess": "Show less",
+      "showAll": "Show all ({{count}})"
+    }
   }
 }
