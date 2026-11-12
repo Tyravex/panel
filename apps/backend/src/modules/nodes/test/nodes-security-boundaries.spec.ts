@@ -84,6 +84,8 @@ describe('NodesService security boundaries', () => {
         tokenHash: 'hashed-token',
         regionId: null,
         locationId: null,
+        manualAllocationEnabled: true,
+        automaticAllocationEnabled: false,
       },
       select: {
         id: true,
@@ -92,6 +94,8 @@ describe('NodesService security boundaries', () => {
         regionId: true,
         locationId: true,
         createdAt: true,
+        manualAllocationEnabled: true,
+        automaticAllocationEnabled: true,
       },
     });
 
@@ -192,6 +196,8 @@ describe('NodesService security boundaries', () => {
           tokenHash: 'hashed-token',
           regionId: 'region-1',
           locationId: 'location-1',
+          manualAllocationEnabled: true,
+          automaticAllocationEnabled: false,
         },
       }),
     );

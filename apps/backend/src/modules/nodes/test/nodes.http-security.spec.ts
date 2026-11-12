@@ -99,7 +99,7 @@ describe('Nodes HTTP security', () => {
             .send({ name: 'Node' }).expect(201);
         expect(response.headers['cache-control']).toBe('no-store');
         expect(response.body.token).toBe('new-token');
-        expect(createNode).toHaveBeenCalledWith('Node');
+        expect(createNode).toHaveBeenCalledWith({ name: 'Node' });
     });
 
     it('blocks token rotation without permission', async () => {
