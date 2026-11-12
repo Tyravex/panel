@@ -6,7 +6,6 @@ import { ProtectedRoute } from "./ProtectedRoute";
 import { AdminRoute } from "./AdminRoute";
 import { AdminPermissionRoute } from "./AdminPermissionRoute";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
-import { ServerDetailsPage } from "@/pages/dashboard/ServerDetailsPage";
 import { ServiceDetailsPage } from "@/pages/dashboard/ServiceDetailsPage";
 import { AdminRolesPage } from "@/pages/admin/AdminRolesPage";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
@@ -17,6 +16,10 @@ import { AdminMarketplacePage } from '@/pages/admin/AdminMarketplacePage';
 import { AdminPluginDetailsPage } from "@/pages/admin/AdminPluginDetailsPage";
 import { AdminSettingsPage } from "@/pages/admin/AdminSettingsPage";
 import { AdminNodesPage } from "@/pages/admin/AdminNodesPage";
+import { AdminNodeCreatePage } from "@/pages/admin/AdminNodeCreatePage";
+import { AdminNodeDetailsPage } from "@/pages/admin/AdminNodeDetailsPage";
+import { AdminRegionsPage } from "@/pages/admin/AdminRegionsPage";
+import { AdminLocationsPage } from "@/pages/admin/AdminLocationsPage";
 import { AdminServicesPage } from "@/pages/admin/AdminServicesPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
@@ -44,7 +47,6 @@ export const AppRoutes = () => {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/servers/:id" element={<ServerDetailsPage />} />
         <Route path="/services/:id" element={<ServiceDetailsPage />} />
 
         <Route
@@ -137,7 +139,28 @@ export const AppRoutes = () => {
         />
 
         <Route
-          path="/admin/nodes"
+          path="/admin/regions"
+          element={
+            <AdminRoute>
+              <AdminPermissionRoute permission="node:manage">
+                <AdminRegionsPage />
+              </AdminPermissionRoute>
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/locations"
+          element={
+            <AdminRoute>
+              <AdminPermissionRoute permission="node:manage">
+                <AdminLocationsPage />
+              </AdminPermissionRoute>
+            </AdminRoute>
+          }
+        />
+
+        <Route path="/admin/nodes"
           element={
             <AdminRoute>
               <AdminPermissionRoute permission="node:manage">
@@ -147,6 +170,26 @@ export const AppRoutes = () => {
           }
         />
 
+        <Route
+          path="/admin/nodes/new"
+          element={
+            <AdminRoute>
+              <AdminPermissionRoute permission="node:manage">
+                <AdminNodeCreatePage />
+              </AdminPermissionRoute>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/nodes/:id"
+          element={
+            <AdminRoute>
+              <AdminPermissionRoute permission="node:manage">
+                <AdminNodeDetailsPage />
+              </AdminPermissionRoute>
+            </AdminRoute>
+          }
+        />
         <Route
           path="/admin/services"
           element={

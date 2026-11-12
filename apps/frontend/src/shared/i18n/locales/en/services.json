@@ -1,0 +1,103 @@
+{
+  "services": {
+    "installation": {
+      "title": "Service Installation Center",
+      "serviceLabel": "Service",
+      "status": {
+        "draft": {
+          "title": "Service is waiting for installation",
+          "description": "The service has been created, but its environment has not been installed yet."
+        },
+        "pending": {
+          "title": "Waiting for installation",
+          "description": "The installation job is waiting to be processed."
+        },
+        "installing": {
+          "title": "Installation in progress",
+          "description": "The service environment is being prepared. Management remains locked."
+        },
+        "failed": {
+          "title": "Installation failed",
+          "description": "An error occurred during installation. Check the job details below."
+        },
+        "installed": {
+          "title": "Installation completed",
+          "description": "The service is ready to manage."
+        },
+        "unknown": {
+          "title": "Checking installation status",
+          "description": "The current installation status could not be determined."
+        }
+      },
+      "steps": {
+        "title": "Installation steps",
+        "current": "Current step",
+        "preparation": {
+          "title": "Preparation",
+          "description": "Service configuration"
+        },
+        "queue": {
+          "title": "Waiting",
+          "description": "Job assignment"
+        },
+        "installation": {
+          "title": "Installation",
+          "description": "Environment preparation"
+        },
+        "completed": {
+          "title": "Completed",
+          "description": "Management panel activation"
+        }
+      },
+      "locked": {
+        "badge": "Panel locked",
+        "title": "Service management is unavailable",
+        "description": "Console, files, settings and other modules will become available after installation completes successfully."
+      },
+      "job": {
+        "title": "Installation job",
+        "description": "Current status of the job submitted to the Tyravex installation system.",
+        "loading": "Checking installation job...",
+        "loadError": "Unable to load the current installation job. Creating another job remains disabled.",
+        "noActiveJob": "No active installation job.",
+        "progress": "Installation progress",
+        "progressSource": "Progress is provided by the current backend installation job.",
+        "status": {
+          "pending": "Waiting for installation",
+          "dispatching": "Preparing installation",
+          "queued": "Queued for installation",
+          "running": "Installation in progress"
+        }
+      },
+      "actions": {
+        "start": "Start installation",
+        "retry": "Retry installation",
+        "requesting": "Requesting installation...",
+        "alreadyRequested": "Installation already requested",
+        "checkAgain": "Check again"
+      },
+      "errors": {
+        "installationFailed": "Installation failed. Retrying is only available when the backend allows creating a new job.",
+        "requestFailed": "Unable to request installation."
+      },
+      "notifications": {
+        "requested": {
+          "description": "The installation job is waiting for execution.",
+          "title": "Installation requested"
+        },
+        "alreadyRequested": {
+          "description": "An active installation job already exists.",
+          "title": "Installation already requested"
+        },
+        "requestFailed": {
+          "description": "Please try again later.",
+          "title": "Unable to request installation"
+        }
+      }
+    },
+    "details": {
+      "installationStatusLabel": "Installation status",
+      "informationTitle": "Service information"
+    }
+  }
+}

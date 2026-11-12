@@ -11,6 +11,8 @@ import { UsersModule } from '@/modules/users/users.module';
 
 // Infrastructure
 import { NodesModule } from '@/modules/nodes/nodes.module';
+import { RegionsModule } from '@/modules/regions/regions.module';
+import { LocationsModule } from '@/modules/locations/locations.module';
 import { JobsModule } from '@/modules/jobs/jobs.module';
 import { StatusModule } from '@/modules/status/status.module';
 
@@ -46,6 +48,8 @@ import { AdminAuditModule } from '@/modules/audit/admin-audit.module';
 
     // Infrastructure
     NodesModule,
+    RegionsModule,
+    LocationsModule,
     JobsModule,
     StatusModule,
 

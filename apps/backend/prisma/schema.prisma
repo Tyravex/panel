@@ -132,6 +132,10 @@ model Node {
   name   String
   status NodeStatus @default(OFFLINE)
 
+  // Service allocation methods allowed for this node.
+  manualAllocationEnabled    Boolean @default(true)
+  automaticAllocationEnabled Boolean @default(false)
+
   // Store only a token hash; plaintext Agent tokens must not enter the database.
   tokenHash String @unique
 
@@ -139,9 +143,52 @@ model Node {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
+  regionId String?
+  region   Region? @relation(fields: [regionId], references: [id], onDelete: Restrict)
+
+  locationId String?
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: Restrict)
+
   services Service[]
 
   @@index([status])
+  @@index([regionId])
+  @@index([locationId])
+}
+
+model Region {
+  id          String  @id @default(cuid())
+  name        String
+  code        String  @unique
+  description String?
+
+  locations Location[]
+  nodes     Node[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Location {
+  id   String @id @default(cuid())
+  name String
+  code String
+
+  continent String
+  country   String
+  state     String?
+  city      String?
+
+  regionId String
+  region   Region @relation(fields: [regionId], references: [id], onDelete: Restrict)
+
+  nodes Node[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([regionId, code])
+  @@index([regionId])
 }
 
 // =============================================================================

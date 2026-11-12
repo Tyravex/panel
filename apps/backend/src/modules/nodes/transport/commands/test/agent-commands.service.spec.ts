@@ -34,6 +34,8 @@ describe('AgentCommandsService', () => {
     };
 
     const database = {
+        $queryRaw: jest.fn(),
+        $transaction: jest.fn(),
         job: {
             findUnique: jest.fn(),
         },
@@ -47,6 +49,11 @@ describe('AgentCommandsService', () => {
     beforeEach(() => {
         jest.resetAllMocks();
 
+        database.$queryRaw.mockResolvedValue([{ id: input.nodeId }]);
+        database.$transaction.mockImplementation(
+            async (callback: (tx: typeof database) => Promise<unknown>) =>
+                callback(database),
+        );
         database.job.findUnique.mockResolvedValue(job);
         database.agentCommand.findUnique.mockResolvedValue(null);
         database.agentCommand.create.mockResolvedValue(command);
@@ -59,6 +66,15 @@ describe('AgentCommandsService', () => {
         );
     });
 
+    it('rejects command preparation when Node no longer exists', async () => {
+        database.$queryRaw.mockResolvedValue([]);
+
+        await expect(
+            service.prepareInstall(input),
+        ).rejects.toThrow('Target Node not found');
+
+        expect(database.agentCommand.create).not.toHaveBeenCalled();
+    });
     it('prepares a durable INSTALL command', async () => {
         const result = await service.prepareInstall(input);
 

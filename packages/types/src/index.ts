@@ -25,3 +25,20 @@ export type {
   EggLibraryItem,
   SetEggApprovalRequest,
 } from './eggs.types';
+
+export type {
+  RegionRecord,
+  CreateRegionRequest,
+  UpdateRegionRequest,
+} from './regions';
+
+export type {
+  LocationRecord,
+  CreateLocationRequest,
+  UpdateLocationRequest,
+} from './locations';
+
+export type {
+  NodeStatus,
+  NodeRecord,
+} from './nodes';

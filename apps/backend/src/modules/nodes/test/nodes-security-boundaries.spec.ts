@@ -6,6 +6,9 @@ import { NodeHeartbeatMonitorService } from '../services/node-heartbeat-monitor.
 
 describe('NodesService security boundaries', () => {
   const create = jest.fn();
+  const regionFindUnique = jest.fn();
+  const locationFindUnique = jest.fn();
+  const transaction = jest.fn();
   const update = jest.fn();
   const findUnique = jest.fn();
   const generateToken = jest.fn();
@@ -18,11 +21,24 @@ describe('NodesService security boundaries', () => {
   beforeEach(() => {
     jest.resetAllMocks();
 
+    transaction.mockImplementation(
+      async (callback: (tx: unknown) => Promise<unknown>) =>
+        callback({
+          node: { create },
+          region: { findUnique: regionFindUnique },
+          $queryRaw: jest.fn().mockResolvedValue([{ id: "location-1" }]),
+          location: { findUnique: locationFindUnique },
+        }),
+    );
+
     generateToken.mockReturnValue('secret-token');
     hashToken.mockReturnValue('hashed-token');
 
     service = new NodesService(
-      { node: { create, update, findUnique } } as unknown as PrismaService,
+      {
+        node: { create, update, findUnique },
+        $transaction: transaction,
+      } as unknown as PrismaService,
       {
         generateToken,
         hashToken,
@@ -60,19 +76,125 @@ describe('NodesService security boundaries', () => {
     });
 
     expect(hashToken).toHaveBeenCalledWith('secret-token');
+    expect(transaction).toHaveBeenCalledTimes(1);
 
     expect(create).toHaveBeenCalledWith({
       data: {
         name: 'Node',
         tokenHash: 'hashed-token',
+        regionId: null,
+        locationId: null,
       },
       select: {
         id: true,
         name: true,
         status: true,
+        regionId: true,
+        locationId: true,
         createdAt: true,
       },
     });
+
+    expect(regionFindUnique).not.toHaveBeenCalled();
+    expect(locationFindUnique).not.toHaveBeenCalled();
+  });
+
+  it('requires a region when creating a node with a location', async () => {
+    await expect(
+      service.createNode({
+        name: 'Node',
+        locationId: 'location-1',
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(create).not.toHaveBeenCalled();
+    expect(generateToken).not.toHaveBeenCalled();
+  });
+
+  it('rejects a region that does not exist', async () => {
+    regionFindUnique.mockResolvedValue(null);
+
+    await expect(
+      service.createNode({
+        name: 'Node',
+        regionId: 'missing-region',
+      }),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a location that does not exist', async () => {
+    regionFindUnique.mockResolvedValue({ id: 'region-1' });
+    locationFindUnique.mockResolvedValue(null);
+
+    await expect(
+      service.createNode({
+        name: 'Node',
+        regionId: 'region-1',
+        locationId: 'missing-location',
+      }),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('rejects a location belonging to another region', async () => {
+    regionFindUnique.mockResolvedValue({ id: 'region-1' });
+    locationFindUnique.mockResolvedValue({
+      regionId: 'region-2',
+    });
+
+    await expect(
+      service.createNode({
+        name: 'Node',
+        regionId: 'region-1',
+        locationId: 'location-2',
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('creates a node with a matching region and location', async () => {
+    regionFindUnique.mockResolvedValue({ id: 'region-1' });
+    locationFindUnique.mockResolvedValue({
+      regionId: 'region-1',
+    });
+
+    create.mockResolvedValue({
+      id: 'node-1',
+      name: 'Node',
+      status: 'OFFLINE',
+      regionId: 'region-1',
+      locationId: 'location-1',
+    });
+
+    await expect(
+      service.createNode({
+        name: 'Node',
+        regionId: 'region-1',
+        locationId: 'location-1',
+      }),
+    ).resolves.toEqual({
+      id: 'node-1',
+      name: 'Node',
+      status: 'OFFLINE',
+      regionId: 'region-1',
+      locationId: 'location-1',
+      token: 'secret-token',
+    });
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          name: 'Node',
+          tokenHash: 'hashed-token',
+          regionId: 'region-1',
+          locationId: 'location-1',
+        },
+      }),
+    );
   });
 
   it('rejects blank node IDs before rotating credentials', async () => {

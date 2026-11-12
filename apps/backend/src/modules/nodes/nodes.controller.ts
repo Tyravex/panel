@@ -1,11 +1,14 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Header,
   Headers,
   Param,
+  Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 
@@ -15,6 +18,7 @@ import { PermissionsGuard } from '@/rbac/guards/permissions.guard';
 
 import { AgentWebSocketLifecycle } from './transport/websocket/agent-websocket.lifecycle';
 import { CreateNodeDto } from './dto/create-node.dto';
+import { UpdateNodeDto } from './dto/update-node.dto';
 import { NodesService } from './nodes.service';
 
 @Controller('nodes')
@@ -34,7 +38,7 @@ export class NodesController {
   @Post()
   @Header('Cache-Control', 'no-store')
   create(@Body() body: CreateNodeDto) {
-    return this.nodesService.createNode(body.name);
+    return this.nodesService.createNode(body);
   }
 
   @Get(':id')
@@ -42,6 +46,26 @@ export class NodesController {
     return this.nodesService.findById(id);
   }
 
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateNodeDto,
+    @Req() req: { user: { id: number } },
+  ) {
+    return this.nodesService.updateNode(id, body, req.user.id);
+  }
+  @Delete(':id')
+  @Header('Cache-Control', 'no-store')
+  async remove(
+    @Param('id') id: string,
+    @Req() req: { user: { id: number } },
+  ) {
+    const result = await this.nodesService.deleteNode(id, req.user.id);
+
+    this.agentWebSocket.disconnectNode(id);
+
+    return result;
+  }
   @Post(':id/rotate-token')
   @Header('Cache-Control', 'no-store')
   async rotateToken(@Param('id') id: string) {

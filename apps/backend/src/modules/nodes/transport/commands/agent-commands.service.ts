@@ -7,7 +7,7 @@ import {
 
 export type AgentCommandDatabase = Pick<
     PrismaClient,
-    'job' | 'agentCommand'
+    'job' | 'agentCommand' | '$transaction'
 >;
 
 export type PrepareInstallCommandInput = {
@@ -40,55 +40,69 @@ export class AgentCommandsService {
         this.assertIdentifier(input.nodeId, 'nodeId');
         this.assertIdentifier(input.serviceId, 'serviceId');
 
-        const job = await this.database.job.findUnique({
-            where: {
-                id: input.jobId,
-            },
-            select: {
-                id: true,
-                type: true,
-                serviceId: true,
-            },
-        });
-
-        if (!job) {
-            throw new Error('INSTALL job not found');
-        }
-
-        if (job.type !== JobType.INSTALL) {
-            throw new Error('Job is not an INSTALL job');
-        }
-
-        if (job.serviceId !== input.serviceId) {
-            throw new Error('Job serviceId mismatch');
-        }
-
-        const jobCommandKey = `install:${job.id}`;
-
-        const existing = await this.database.agentCommand.findUnique({
-            where: {
-                jobCommandKey,
-            },
-        });
-
-        if (existing) {
-            return this.verifyExisting(existing, input);
-        }
-
         try {
-            return await this.database.agentCommand.create({
-                data: {
-                    jobId: job.id,
-                    jobCommandKey,
-                    nodeId: input.nodeId,
-                    serviceId: input.serviceId,
-                    operation: 'service.install',
-                    status: AgentCommandStatus.PREPARED,
-                },
+            return await this.database.$transaction(async (tx) => {
+                // Serialize command creation with Node deletion.
+                const lockedNodes = await tx.$queryRaw<Array<{ id: string }>>`
+                    SELECT "id"
+                    FROM "Node"
+                    WHERE "id" = ${input.nodeId}
+                    FOR UPDATE
+                `;
+
+                if (lockedNodes.length === 0) {
+                    throw new Error('Target Node not found');
+                }
+
+                const job = await tx.job.findUnique({
+                    where: {
+                        id: input.jobId,
+                    },
+                    select: {
+                        id: true,
+                        type: true,
+                        serviceId: true,
+                    },
+                });
+
+                if (!job) {
+                    throw new Error('INSTALL job not found');
+                }
+
+                if (job.type !== JobType.INSTALL) {
+                    throw new Error('Job is not an INSTALL job');
+                }
+
+                if (job.serviceId !== input.serviceId) {
+                    throw new Error('Job serviceId mismatch');
+                }
+
+                const jobCommandKey = `install:${job.id}`;
+
+                const existing = await tx.agentCommand.findUnique({
+                    where: {
+                        jobCommandKey,
+                    },
+                });
+
+                if (existing) {
+                    return this.verifyExisting(existing, input);
+                }
+
+                return tx.agentCommand.create({
+                    data: {
+                        jobId: job.id,
+                        jobCommandKey,
+                        nodeId: input.nodeId,
+                        serviceId: input.serviceId,
+                        operation: 'service.install',
+                        status: AgentCommandStatus.PREPARED,
+                    },
+                });
             });
         } catch (error) {
-            // Concurrent requests may race on jobCommandKey.
-            // The unique database constraint is the final guard.
+            // A failed PostgreSQL transaction cannot be queried again.
+            // Resolve uniqueness conflicts outside that transaction.
             if (
                 error instanceof Prisma.PrismaClientKnownRequestError &&
                 error.code === 'P2002'
@@ -96,22 +110,18 @@ export class AgentCommandsService {
                 const concurrent =
                     await this.database.agentCommand.findUnique({
                         where: {
-                            jobCommandKey,
+                            jobCommandKey: `install:${input.jobId}`,
                         },
                     });
 
                 if (concurrent) {
-                    return this.verifyExisting(
-                        concurrent,
-                        input,
-                    );
+                    return this.verifyExisting(concurrent, input);
                 }
             }
 
             throw error;
         }
     }
-
     /**
      * Claims the only permitted transport attempt.
      *

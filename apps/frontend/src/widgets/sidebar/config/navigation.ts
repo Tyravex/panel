@@ -1,4 +1,4 @@
-import { Activity, Blocks, Boxes, ClipboardList, FolderKanban, LayoutDashboard, ListTodo, Network, Server, Settings, Shield, UserRound, Users, Wrench, Store, LockKeyhole, Share2, ChartNoAxesCombined } from "lucide-react";
+import { Activity, Blocks, Boxes, ClipboardList, FolderKanban, LayoutDashboard, ListTodo, Network, Server, Settings, Shield, UserRound, Users, Wrench, Store, LockKeyhole, Share2, ChartNoAxesCombined, Globe2, MapPin } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export type SidebarItem = { path?: string; label: string; icon: LucideIcon; permission?: string; ownerOnly?: boolean };
@@ -6,28 +6,40 @@ export type SidebarSection = { id: string; label: string; icon: LucideIcon; item
 
 // Preserve existing routes/permissions; disabled items have no path.
 export const adminSections: SidebarSection[] = [
-  { id: "management", label: "Management", icon: Users, items: [
-    { path: "/admin/users", label: "Users", icon: UserRound, permission: "user:read" },
-    { path: "/admin/roles", label: "Roles & Permissions", icon: Shield, permission: "role:manage" },
-  ] },
-  { id: "infrastructure", label: "Infrastructure", icon: Network, items: [
-    { path: "/admin/nodes", label: "Nodes", icon: Network, permission: "node:manage" },
-    { label: "Servers", icon: Server }, // legacy placeholder; Service is canonical
-    { path: "/admin/services", label: "Services", icon: Boxes, permission: "service:manage:any", ownerOnly: true },
-  ] },
-  { id: "operations", label: "Operations", icon: Activity, items: [
-    { label: "Jobs", icon: ListTodo },
-  ] },
-  { id: "plugins", label: "Plugins", icon: Blocks, items: [
-    { path: "/admin/plugins", label: "Plugins", icon: Blocks, permission: "plugin:manage" },
-    { path: "/admin/plugins/marketplace", label: "Marketplace", icon: Store, permission: "plugin:manage" },
-  ] },
-  { id: "system", label: "System", icon: Settings, items: [
-    { path: "/admin/audit", label: "Audit Logs", icon: ClipboardList, permission: "role:manage" },
-    { path: "/admin/settings", label: "Settings", icon: Settings, permission: "user:manage" },
-    { label: "Maintenance", icon: Wrench },
-    { label: "Security", icon: LockKeyhole },
-  ] },
+  {
+    id: "management", label: "Management", icon: Users, items: [
+      { path: "/admin/users", label: "Users", icon: UserRound, permission: "user:read" },
+      { path: "/admin/roles", label: "Roles & Permissions", icon: Shield, permission: "role:manage" },
+    ]
+  },
+  {
+    id: "infrastructure", label: "Infrastructure", icon: Network, items: [
+      { path: "/admin/regions", label: "Regions", icon: Globe2, permission: "node:manage" },
+      { path: "/admin/locations", label: "Locations", icon: MapPin, permission: "node:manage" },
+      { path: "/admin/nodes", label: "Nodes", icon: Network, permission: "node:manage" },
+      { label: "Servers", icon: Server }, // legacy placeholder; Service is canonical
+      { path: "/admin/services", label: "Services", icon: Boxes, permission: "service:manage:any", ownerOnly: true },
+    ]
+  },
+  {
+    id: "operations", label: "Operations", icon: Activity, items: [
+      { label: "Jobs", icon: ListTodo },
+    ]
+  },
+  {
+    id: "plugins", label: "Plugins", icon: Blocks, items: [
+      { path: "/admin/plugins", label: "Plugins", icon: Blocks, permission: "plugin:manage" },
+      { path: "/admin/plugins/marketplace", label: "Marketplace", icon: Store, permission: "plugin:manage" },
+    ]
+  },
+  {
+    id: "system", label: "System", icon: Settings, items: [
+      { path: "/admin/audit", label: "Audit Logs", icon: ClipboardList, permission: "role:manage" },
+      { path: "/admin/settings", label: "Settings", icon: Settings, permission: "user:manage" },
+      { label: "Maintenance", icon: Wrench },
+      { label: "Security", icon: LockKeyhole },
+    ]
+  },
 ];
 
 export const userItems: SidebarItem[] = [
@@ -40,7 +52,9 @@ export const userItems: SidebarItem[] = [
   { label: "Activity history", icon: Activity },
   { label: "Resources", icon: ChartNoAxesCombined },
 ];
-export const accountSection: SidebarSection = { id: "account", label: "Account", icon: UserRound, items: [
-  { path: "/profile", label: "Profile", icon: UserRound },
-  { path: "/settings", label: "Settings", icon: Settings },
-] };
+export const accountSection: SidebarSection = {
+  id: "account", label: "Account", icon: UserRound, items: [
+    { path: "/profile", label: "Profile", icon: UserRound },
+    { path: "/settings", label: "Settings", icon: Settings },
+  ]
+};

@@ -13,6 +13,7 @@
       "language.json",
       "dashboard.json",
       "servers.json",
+      "services.json",
       "common.json",
       "auth.json",
       "profile.json",
@@ -24,6 +25,8 @@
       "logout.json",
       "section.json",
       "layout.json",
+      "adminRegions.json",
+      "adminLocations.json",
       "adminNodes.json",
       "adminServices.json"
     ]

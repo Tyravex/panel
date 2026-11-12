@@ -1,6 +1,7 @@
-import type { UserServer } from "../api/servers.api";
-
-export interface PreviewServer extends UserServer {
+export interface PreviewServer {
+  id: number;
+  name: string;
+  status?: string | null;
   game: string;
   version: string;
   players: number;

@@ -1,0 +1,103 @@
+{
+  "services": {
+    "installation": {
+      "title": "Centrum instalacji usługi",
+      "serviceLabel": "Usługa",
+      "status": {
+        "draft": {
+          "title": "Usługa oczekuje na instalację",
+          "description": "Usługa została utworzona, ale jej środowisko nie jest jeszcze zainstalowane."
+        },
+        "pending": {
+          "title": "Oczekiwanie na instalację",
+          "description": "Zadanie instalacji oczekuje na dalsze przetwarzanie."
+        },
+        "installing": {
+          "title": "Instalacja w toku",
+          "description": "Środowisko usługi jest przygotowywane. Panel zarządzania pozostaje zablokowany."
+        },
+        "failed": {
+          "title": "Instalacja nie powiodła się",
+          "description": "Wystąpił problem podczas instalacji. Sprawdź szczegóły zadania poniżej."
+        },
+        "installed": {
+          "title": "Instalacja zakończona",
+          "description": "Usługa jest gotowa do zarządzania."
+        },
+        "unknown": {
+          "title": "Sprawdzanie stanu instalacji",
+          "description": "Nie udało się określić aktualnego stanu instalacji usługi."
+        }
+      },
+      "steps": {
+        "title": "Etapy instalacji",
+        "current": "Aktualny etap",
+        "preparation": {
+          "title": "Przygotowanie",
+          "description": "Konfiguracja usługi"
+        },
+        "queue": {
+          "title": "Oczekiwanie",
+          "description": "Przydzielenie zadania"
+        },
+        "installation": {
+          "title": "Instalacja",
+          "description": "Przygotowanie środowiska"
+        },
+        "completed": {
+          "title": "Gotowe",
+          "description": "Uruchomienie panelu"
+        }
+      },
+      "locked": {
+        "badge": "Panel zablokowany",
+        "title": "Zarządzanie usługą jest niedostępne",
+        "description": "Konsola, pliki, ustawienia i pozostałe moduły zostaną udostępnione po pomyślnym zakończeniu instalacji."
+      },
+      "job": {
+        "title": "Zadanie instalacji",
+        "description": "Aktualny stan zadania przesyłanego do systemu instalacyjnego Tyravex.",
+        "loading": "Sprawdzanie zadania instalacji...",
+        "loadError": "Nie udało się pobrać aktualnego zadania instalacji. Rozpoczęcie nowego zadania pozostaje zablokowane.",
+        "noActiveJob": "Brak aktywnego zadania instalacji.",
+        "progress": "Postęp instalacji",
+        "progressSource": "Postęp pochodzi z aktualnego zadania instalacyjnego backendu.",
+        "status": {
+          "pending": "Oczekiwanie na instalację",
+          "dispatching": "Przygotowywanie instalacji",
+          "queued": "Zadanie w kolejce",
+          "running": "Instalacja w toku"
+        }
+      },
+      "actions": {
+        "start": "Rozpocznij instalację",
+        "retry": "Ponów instalację",
+        "requesting": "Wysyłanie żądania...",
+        "alreadyRequested": "Instalacja została już zlecona",
+        "checkAgain": "Sprawdź ponownie"
+      },
+      "errors": {
+        "installationFailed": "Instalacja zakończyła się błędem. Ponowienie jest możliwe tylko wtedy, gdy backend zezwala na utworzenie nowego zadania.",
+        "requestFailed": "Nie udało się zlecić instalacji."
+      },
+      "notifications": {
+        "requested": {
+          "description": "Zadanie instalacji oczekuje na wykonanie.",
+          "title": "Zlecono instalację"
+        },
+        "alreadyRequested": {
+          "description": "Aktywne zadanie instalacji już istnieje.",
+          "title": "Instalacja została już zlecona"
+        },
+        "requestFailed": {
+          "description": "Spróbuj ponownie później.",
+          "title": "Nie udało się zlecić instalacji"
+        }
+      }
+    },
+    "details": {
+      "installationStatusLabel": "Status instalacji",
+      "informationTitle": "Informacje o usłudze"
+    }
+  }
+}
