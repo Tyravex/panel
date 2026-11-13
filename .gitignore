@@ -73,3 +73,4 @@ local-data/
 
 # Runtime plugin storage
 /apps/backend/storage/
+.vscode/settings.json

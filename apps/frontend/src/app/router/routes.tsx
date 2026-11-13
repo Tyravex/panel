@@ -7,20 +7,24 @@ import { AdminRoute } from "./AdminRoute";
 import { AdminPermissionRoute } from "./AdminPermissionRoute";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
 import { ServiceDetailsPage } from "@/pages/dashboard/ServiceDetailsPage";
-import { AdminRolesPage } from "@/pages/admin/AdminRolesPage";
-import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
+import { AdminRolesPage } from "@/pages/admin/roles/AdminRolesPage";
+import { AdminUsersPage } from "@/pages/admin/users/AdminUsersPage";
+import { AdminUserCreatePage } from "@/pages/admin/users/AdminUserCreatePage";
+import { AdminUserDetailsPage } from "@/pages/admin/users/AdminUserDetailsPage";
+import { AdminUserEditPage } from "@/pages/admin/users/AdminUserEditPage";
+import { AdminUserRolesPage } from "@/pages/admin/users/AdminUserRolesPage";
 import { AdminSectionPage } from "@/pages/admin/AdminSectionPage";
-import { AdminAuditPage } from "@/pages/admin/AdminAuditPage";
-import { AdminPluginsPage } from "@/pages/admin/AdminPluginsPage";
-import { AdminMarketplacePage } from '@/pages/admin/AdminMarketplacePage';
-import { AdminPluginDetailsPage } from "@/pages/admin/AdminPluginDetailsPage";
-import { AdminSettingsPage } from "@/pages/admin/AdminSettingsPage";
-import { AdminNodesPage } from "@/pages/admin/AdminNodesPage";
-import { AdminNodeCreatePage } from "@/pages/admin/AdminNodeCreatePage";
-import { AdminNodeDetailsPage } from "@/pages/admin/AdminNodeDetailsPage";
-import { AdminRegionsPage } from "@/pages/admin/AdminRegionsPage";
-import { AdminLocationsPage } from "@/pages/admin/AdminLocationsPage";
-import { AdminServicesPage } from "@/pages/admin/AdminServicesPage";
+import { AdminAuditPage } from "@/pages/admin/audit/AdminAuditPage";
+import { AdminPluginsPage } from "@/pages/admin/plugins/AdminPluginsPage";
+import { AdminMarketplacePage } from '@/pages/admin/marketplace/AdminMarketplacePage';
+import { AdminPluginDetailsPage } from "@/pages/admin/plugins/AdminPluginDetailsPage";
+import { AdminSettingsPage } from "@/pages/admin/settings/AdminSettingsPage";
+import { AdminNodesPage } from "@/pages/admin/nodes/AdminNodesPage";
+import { AdminNodeCreatePage } from "@/pages/admin/nodes/AdminNodeCreatePage";
+import { AdminNodeDetailsPage } from "@/pages/admin/nodes/AdminNodeDetailsPage";
+import { AdminRegionsPage } from "@/pages/admin/regions/AdminRegionsPage";
+import { AdminLocationsPage } from "@/pages/admin/locations/AdminLocationsPage";
+import { AdminServicesPage } from "@/pages/admin/services/AdminServicesPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { ProfilePage } from "@/pages/profile/ProfilePage";
@@ -62,16 +66,58 @@ export const AppRoutes = () => {
         />
 
         <Route
-          path="/admin/users"
+          path="/admin/users/new"
           element={
             <AdminRoute>
-              <AdminPermissionRoute permission="user:read">
-                <AdminDashboardPage />
+              <AdminPermissionRoute permission="user:manage">
+                <AdminUserCreatePage />
               </AdminPermissionRoute>
             </AdminRoute>
           }
         />
 
+        <Route
+          path="/admin/users/:id/edit"
+          element={
+            <AdminRoute>
+              <AdminPermissionRoute permission="user:manage">
+                <AdminUserEditPage />
+              </AdminPermissionRoute>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/users/:id/roles"
+          element={
+            <AdminRoute>
+              <AdminPermissionRoute permission="role:manage">
+                <AdminUserRolesPage />
+              </AdminPermissionRoute>
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users/:id"
+          element={
+            <AdminRoute>
+              <AdminPermissionRoute permission="user:read">
+                <AdminUserDetailsPage />
+              </AdminPermissionRoute>
+            </AdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/users"
+          element={
+            <AdminRoute>
+              <AdminPermissionRoute permission="user:read">
+                <AdminUsersPage />
+              </AdminPermissionRoute>
+            </AdminRoute>
+          }
+        />
         <Route
           path="/admin/plugins"
           element={

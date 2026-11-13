@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { api } from '@/shared/api/client';
 import { SurfaceCard } from '@/shared/ui/SurfaceCard';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
@@ -33,7 +34,6 @@ type Props = {
     username: string;
     email: string;
   };
-  onClose: () => void;
   onChanged: () => void;
 };
 
@@ -69,7 +69,6 @@ function getErrorMessage(error: unknown): string {
 
 export const RoleManagementPanel = ({
   user,
-  onClose,
   onChanged,
 }: Props) => {
   const { t } = useTranslation();
@@ -79,7 +78,6 @@ export const RoleManagementPanel = ({
   const [loading, setLoading] = useState(true);
   const [busyRole, setBusyRole] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
 
   // Rola oczekująca na potwierdzenie usunięcia.
   const [pendingRoleRemoval, setPendingRoleRemoval] =
@@ -109,7 +107,6 @@ export const RoleManagementPanel = ({
 
     setLoading(true);
     setError('');
-    setNotice('');
 
     load(controller.signal)
       .catch((reason: unknown) => {
@@ -131,7 +128,6 @@ export const RoleManagementPanel = ({
 
     setBusyRole(role.id);
     setError('');
-    setNotice('');
 
     try {
       const path =
@@ -154,10 +150,12 @@ export const RoleManagementPanel = ({
 
       onChanged();
 
-      setNotice(
-        assigned
-          ? t('adminUsers.roleRemoved')
-          : t('adminUsers.roleAssigned'),
+      toast.success(
+        t(
+          assigned
+            ? 'adminUsers.roleRemoved'
+            : 'adminUsers.roleAssigned',
+        ),
       );
     } catch (reason: unknown) {
       setError(getErrorMessage(reason));
@@ -185,30 +183,7 @@ export const RoleManagementPanel = ({
 
   return (
     <SurfaceCard>
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-primary">
-            {t('adminUsers.rolesBreadcrumb')}
-          </p>
 
-          <h2 className="mt-1 text-xl font-semibold">
-            {user.username}
-          </h2>
-
-          <p className="text-sm text-text-secondary">
-            {user.email} · ID {user.id}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={busyRole !== null}
-          className="rounded-xl border border-border-subtle px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-40"
-        >
-          {t('common.close')}
-        </button>
-      </div>
 
       {loading && (
         <p role="status" className="text-text-secondary">
@@ -225,14 +200,7 @@ export const RoleManagementPanel = ({
         </p>
       )}
 
-      {notice && (
-        <p
-          role="status"
-          className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-300"
-        >
-          {notice}
-        </p>
-      )}
+
 
       {!loading && (
         <div className="space-y-3">

@@ -15,6 +15,12 @@ export class AdminUsersController {
     return this.users.list(page, search, status);
   }
 
+  @Get(':id/services')
+  @Permissions('user:read')
+  getServices(@Param('id', ParseIntPipe) id: number) {
+    return this.users.getServices(id);
+  }
+
   @Get(':id')
   @Permissions('user:read')
   get(@Param('id', ParseIntPipe) id: number) { return this.users.get(id); }

@@ -1,39 +1,15 @@
 import { api } from '@/shared/api/client';
+import type {
+    AdminUser,
+    UsersResponse,
+    AdminUserFormValues,
+} from '@shared/types';
 
-export type AdminUser = {
-    id: number;
-    username: string;
-    email: string;
-    firstName: string | null;
-    lastName: string | null;
-    isActive: boolean;
-    language: string;
-    createdAt: string;
-    roles: Array<{
-        assignedAt: string;
-        role: { id: string; name: string };
-    }>;
-    _count: {
-        servers: number;
-        services: number;
-    };
-};
-
-export type UsersResponse = {
-    items: AdminUser[];
-    total: number;
-    page: number;
-    limit: number;
-    pages: number;
-};
-
-export type AdminUserFormValues = {
-    username: string;
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-};
+export type {
+    AdminUser,
+    UsersResponse,
+    AdminUserFormValues,
+} from '@shared/types';
 
 export const emptyAdminUserForm = (): AdminUserFormValues => ({
     username: '',
@@ -57,6 +33,17 @@ export const getAdminUsers = async (
     return data;
 };
 
+export const getAdminUser = async (
+    id: number,
+    signal?: AbortSignal,
+): Promise<AdminUser> => {
+    const { data } = await api.get<AdminUser>(
+        `/admin/users/${id}`,
+        { signal },
+    );
+
+    return data;
+};
 export const createAdminUser = async (form: AdminUserFormValues) => {
     await api.post('/admin/users', {
         username: form.username,
@@ -84,4 +71,20 @@ export const updateAdminUserStatus = async (
     isActive: boolean,
 ) => {
     await api.patch(`/admin/users/${id}/status`, { isActive });
+};
+export type AdminUserService = {
+  id: string;
+  name: string;
+  access: 'Owner' | 'Member';
+};
+
+export const getAdminUserServices = async (
+  id: number,
+  signal?: AbortSignal,
+): Promise<AdminUserService[]> => {
+  const { data } = await api.get<AdminUserService[]>(
+    `/admin/users/${id}/services`,
+    { signal },
+  );
+  return data;
 };

@@ -15,6 +15,7 @@ describe('AdminUsersController HTTP permissions', () => {
 
     const list = jest.fn();
     const get = jest.fn();
+    const getServices = jest.fn();
     const create = jest.fn();
     const update = jest.fn();
     const setActive = jest.fn();
@@ -51,7 +52,7 @@ describe('AdminUsersController HTTP permissions', () => {
         const moduleRef = await Test.createTestingModule({
             controllers: [AdminUsersController],
             providers: [
-                { provide: AdminUsersService, useValue: { list, get, create, update, setActive } },
+                { provide: AdminUsersService, useValue: { list, get, getServices, create, update, setActive } },
                 {
                     provide: PrismaService,
                     useValue: { user: { findUnique }, session: { findUnique: sessionFindUnique } },
@@ -74,6 +75,7 @@ describe('AdminUsersController HTTP permissions', () => {
         jest.resetAllMocks();
         list.mockResolvedValue({ items: [], total: 0, page: 1, limit: 20, pages: 0 });
         get.mockResolvedValue({ id: 9 });
+        getServices.mockResolvedValue([]);
         create.mockResolvedValue({ id: 9 });
         update.mockResolvedValue({ id: 9 });
         setActive.mockResolvedValue({ id: 9, isActive: false });
@@ -94,6 +96,36 @@ describe('AdminUsersController HTTP permissions', () => {
         await request(app.getHttpServer()).get('/admin/users/9')
             .set('Authorization', `Bearer ${token}`).expect(200);
         expect(get).toHaveBeenCalledWith(9);
+    });
+
+    it('allows user:read to inspect services assigned to an account', async () => {
+        const token = tokenFor(['user:read']);
+
+        await request(app.getHttpServer())
+            .get('/admin/users/9/services')
+            .set('Authorization', `Bearer ${token}`)
+            .expect(200);
+
+        expect(getServices).toHaveBeenCalledWith(9);
+    });
+
+    it('rejects account service lookup without user:read', async () => {
+        const token = tokenFor([]);
+
+        await request(app.getHttpServer())
+            .get('/admin/users/9/services')
+            .set('Authorization', `Bearer ${token}`)
+            .expect(403);
+
+        expect(getServices).not.toHaveBeenCalled();
+    });
+
+    it('rejects unauthenticated account service lookup', async () => {
+        await request(app.getHttpServer())
+            .get('/admin/users/9/services')
+            .expect(401);
+
+        expect(getServices).not.toHaveBeenCalled();
     });
 
     it('prevents user:read from creating, editing, or disabling accounts', async () => {

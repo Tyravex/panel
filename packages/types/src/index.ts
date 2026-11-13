@@ -42,3 +42,8 @@ export type {
   NodeStatus,
   NodeRecord,
 } from './nodes';
+export type {
+  AdminUser,
+  UsersResponse,
+  AdminUserFormValues,
+} from './admin';

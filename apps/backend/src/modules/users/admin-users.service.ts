@@ -69,6 +69,45 @@ export class AdminUsersService {
     return user;
   }
 
+  async getServices(id: number) {
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const services = await this.prisma.service.findMany({
+      where: {
+        OR: [
+          { userId: id },
+          { members: { some: { userId: id } } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        userId: true,
+      },
+      orderBy: [
+        { name: 'asc' },
+        { id: 'asc' },
+      ],
+    });
+
+    return services.map((service) => ({
+      id: service.id,
+      name: service.name,
+      access: service.userId === id ? 'Owner' : 'Member',
+    }));
+  }
+
   private validateIdentity(username: unknown, email: unknown) {
     if (typeof username !== 'string' || !usernamePattern.test(username.trim())) throw new BadRequestException('Username must contain 3-32 letters, digits, _ or -');
     if (typeof email !== 'string' || email.length > 254 || !emailPattern.test(email.trim())) throw new BadRequestException('Invalid email');
