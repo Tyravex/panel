@@ -6,6 +6,7 @@ import { AppModule } from './app.module';
 import { getCorsOrigins } from './cors-origins';
 import { validateJwtEnvironment } from './env-validation';
 import { getRuntimeConfig } from './runtime-config';
+import { getTrustedProxyAddresses } from './trusted-proxies';
 import { AgentWebSocketLifecycle } from './modules/nodes/transport/websocket/agent-websocket.lifecycle';
 import { AgentCommandRecoveryService } from './modules/nodes/transport/commands/agent-command-recovery.service';
 
@@ -18,7 +19,9 @@ async function bootstrap(): Promise<void> {
 
   const corsOrigins = getCorsOrigins();
 
+  const trustedProxies = getTrustedProxyAddresses();
   const app = await NestFactory.create(AppModule);
+  if (trustedProxies.length) app.getHttpAdapter().getInstance().set('trust proxy', trustedProxies);
 
   try {
     // Reject unknown request fields and transform validated DTOs.

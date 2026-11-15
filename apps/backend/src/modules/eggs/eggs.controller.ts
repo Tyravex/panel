@@ -31,11 +31,8 @@ class SetEggStatusDto {
     isEnabled!: boolean;
 }
 
-function assertEggAdministrator(user: UserDTO): void {
-    if (
-        !user.roles?.includes('Owner') ||
-        !user.permissions?.includes('service:manage:any')
-    ) {
+function assertEggPermission(user: UserDTO, permission: string): void {
+    if (!user.permissions?.includes(permission)) {
         throw new ForbiddenException('Administrative egg permission required');
     }
 }
@@ -47,7 +44,7 @@ export class EggsController {
 
     @Get()
     listRepositories(@Request() req: AuthenticatedRequest) {
-        assertEggAdministrator(req.user);
+        assertEggPermission(req.user, 'egg:read');
         return this.eggsService.listRepositories();
     }
 
@@ -56,7 +53,7 @@ export class EggsController {
         @Request() req: AuthenticatedRequest,
         @Body() dto: CreateEggRepositoryDto,
     ) {
-        assertEggAdministrator(req.user);
+        assertEggPermission(req.user, 'egg-repository:manage');
         return this.eggsService.createRepository(req.user.id, dto);
     }
 
@@ -65,7 +62,7 @@ export class EggsController {
         @Request() req: AuthenticatedRequest,
         @Param('id') repositoryId: string,
     ) {
-        assertEggAdministrator(req.user);
+        assertEggPermission(req.user, 'egg:read');
         return this.eggsService.listEggs(repositoryId);
     }
 
@@ -75,7 +72,7 @@ export class EggsController {
         @Param('id') repositoryId: string,
         @Body() manifest: unknown,
     ) {
-        assertEggAdministrator(req.user);
+        assertEggPermission(req.user, 'egg:import');
         return this.eggsService.importEgg(req.user.id, repositoryId, manifest);
     }
 
@@ -85,7 +82,7 @@ export class EggsController {
         @Param('id') repositoryId: string,
         @Body() dto: SetEggRepositoryStatusDto,
     ) {
-        assertEggAdministrator(req.user);
+        assertEggPermission(req.user, 'egg-repository:manage');
         return this.eggsService.setRepositoryStatus(req.user.id, repositoryId, dto.status);
     }
 }
@@ -114,7 +111,7 @@ export class EggStatusController {
         @Param('id') eggId: string,
         @Body() dto: SetEggStatusDto,
     ) {
-        assertEggAdministrator(req.user);
+        assertEggPermission(req.user, 'egg:manage');
         return this.eggsService.setEggStatus(req.user.id, eggId, dto.isEnabled);
     }
 
@@ -124,7 +121,7 @@ export class EggStatusController {
         @Param('id') eggId: string,
         @Body() dto: SetEggApprovalDto,
     ) {
-        assertEggAdministrator(req.user);
+        assertEggPermission(req.user, 'egg:approve');
         return this.eggsService.setEggApproval(req.user.id, eggId, dto.status);
     }
 }

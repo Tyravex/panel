@@ -67,6 +67,7 @@ export class AgentWebSocketMessageHandler {
             }
 
             session.ready = true;
+            session.capabilities = [...(message.payload.capabilities as string[])];
             clearTimeout(session.helloTimer);
 
             this.ownershipSessions.activate(session);

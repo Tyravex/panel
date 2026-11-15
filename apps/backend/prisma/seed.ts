@@ -2,6 +2,7 @@ import 'dotenv/config';
 
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { initializeRbacV2 } from '../src/rbac/rbac-v2.initializer';
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -14,23 +15,6 @@ const prisma = new PrismaClient({
     connectionString,
   }),
 });
-
-const permissionNames = [
-  'server:create',
-  'server:manage:any',
-  'server:suspend',
-  'server:unsuspend',
-  'service:create',
-  'service:manage:any',
-  'node:manage',
-  'user:read',
-  'user:manage',
-  'role:read',
-  'role:manage',
-  'billing:read',
-  'billing:manage',
-  'plugin:manage',
-] as const;
 
 const builtInLanguages = [
   {
@@ -73,49 +57,7 @@ const serviceCategories = [
 ] as const;
 
 async function main() {
-  for (const name of permissionNames) {
-    await prisma.permission.upsert({
-      where: {
-        name,
-      },
-      update: {},
-      create: {
-        name,
-      },
-    });
-  }
-
-  const owner = await prisma.role.upsert({
-    where: {
-      name: 'Owner',
-    },
-    update: {
-      permissions: {
-        connect: permissionNames.map((name) => ({
-          name,
-        })),
-      },
-    },
-    create: {
-      name: 'Owner',
-      permissions: {
-        connect: permissionNames.map((name) => ({
-          name,
-        })),
-      },
-    },
-  });
-
-  await prisma.role.upsert({
-    where: {
-      name: 'User',
-    },
-    update: {},
-    create: {
-      name: 'User',
-    },
-  });
-
+  const rbacResult = await initializeRbacV2(prisma);
   for (const category of serviceCategories) {
     await prisma.serviceCategory.upsert({
       where: {
@@ -156,7 +98,11 @@ async function main() {
   }
 
   console.log(
-    `RBAC seed completed. Owner role ID: ${owner.id}`,
+    `RBAC v2 seed completed. Default roles initialized: ${rbacResult.initialized}.`,
+  );
+
+  console.log(
+    `Created default roles: ${rbacResult.createdRoles.join(', ') || 'none'}.`,
   );
 
   console.log(

@@ -1,6 +1,7 @@
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { RbacController } from '../rbac.controller';
 import { RbacService } from '../rbac.service';
+import { DefaultRoleService } from '../default-role.service';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../guards/permissions.guard';
 
@@ -14,7 +15,11 @@ describe('RbacController', () => {
 
         controller = new RbacController({
             revokeRole,
-        } as unknown as RbacService);
+        } as unknown as RbacService, {
+            getDefaultRole: jest.fn(),
+            listEligibleDefaultRoles: jest.fn(),
+            setDefaultRole: jest.fn(),
+        } as unknown as DefaultRoleService);
     });
 
     it('requires JWT authentication and permissions guard', () => {

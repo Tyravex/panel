@@ -1,11 +1,45 @@
 {
   "adminServices": {
+    "eggProfile": "Egg profile",
+    "eggChangeClearsEnvironment": "Saving a different Egg removes stored environment values. Configure them again for the new definition.",
+    "eggDefault": "Egg default",
+    "runtimeVersion": "Runtime version",
+    "environment": "Environment variables",
+    "environmentNote": "Stored values are encrypted and are never returned to this form. Untouched empty fields retain existing values. Use the separate button to remove a value.",
+    "environmentSaved": "Environment variables saved.",
+    "valueConfigured": "Value configured",
+    "valueMissing": "No value configured",
+    "removeValue": "Remove stored value",
+    "valueWillBeRemoved": "The value will be removed when saved.",
+    "installationReadiness": "Installation readiness",
+    "availableEggUpdates": "Newer Egg versions available",
+    "manualEggUpdates": "The service keeps its pinned version. Updating requires an explicit decision; running services are never changed automatically.",
+    "installationBlockers": {
+      "PANEL_INSTALL_DISPATCH_UNAVAILABLE": "The service installation queue still requires Agent executor integration. Configuration and Egg imports are available independently.",
+      "EGG_REQUIRED": "Select an Egg.", "NODE_REQUIRED": "Assign a node.", "EGG_UNAVAILABLE": "The Egg must be approved and enabled in an enabled repository.",
+      "REQUIRED_VARIABLES_MISSING": "Configure the required environment variables.",
+      "AGENT_INSTALL_EXECUTION_UNAVAILABLE": "The current Agent does not execute service installations yet. Full contract, network allocation, and disk quota enforcement are required."
+    },
+    "jobHistory": "Recent installation jobs",
+    "backToList": "Back to services",
+    "details": "Details",
+    "installation": "Installation",
+    "configuration": "Service configuration",
+    "noEgg": "No Egg selected",
+    "applyEggDefaults": "Apply resource defaults from Egg",
+    "variable": "Variable declaration",
+    "secretVariable": "Secret variable declaration",
+    "editTitle": "Edit service",
+    "draftOnly": "Installation configuration can be edited only while the service is a draft.",
+    "install": "Request installation",
+    "confirmInstall": "Queue installation using the selected Egg version, node and resource limits?",
+    "allCategories": "All categories",
     "administration": "Administration",
     "allServices": "All services ({{count}})",
     "categories": {
       "discord_bot": "Discord bot",
       "other": "Other service",
-      "server": "Server",
+      "server": "Game server",
       "telegram_bot": "Telegram bot"
     },
     "category": "Category",
@@ -60,6 +94,7 @@
       "diskMb": "Disk: enter an integer from 1 to 10485760.",
       "memoryMb": "RAM: enter an integer from 1 to 1048576.",
       "name": "Name must be between 1 and 100 characters."
-    }
+    },
+    "installationCpuLimit": "Installation CPU must be between 1 and 100%."
   }
 }

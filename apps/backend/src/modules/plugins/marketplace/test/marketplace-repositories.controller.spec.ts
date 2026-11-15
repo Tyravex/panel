@@ -234,15 +234,40 @@ describe('MarketplaceRepositoriesController', () => {
         ).toBe('admin/plugins/marketplace/repositories');
     });
 
-    it('requires plugin:manage permission', () => {
+    it('requires marketplace:manage for repository mutations', () => {
         const permissions = Reflect.getMetadata(
             PERMISSIONS_KEY,
             MarketplaceRepositoriesController,
         ) as string[];
 
-        expect(permissions).toEqual(['plugin:manage']);
+        expect(permissions).toEqual(['marketplace:manage']);
     });
 
+    it.each([
+        'list',
+        'getById',
+        'listPlugins',
+    ] as const)('%s requires plugin:read', (methodName) => {
+        const handler =
+            MarketplaceRepositoriesController.prototype[methodName];
+
+        expect(
+            Reflect.getMetadata(PERMISSIONS_KEY, handler),
+        ).toEqual(['plugin:read']);
+    });
+
+    it.each([
+        'create',
+        'update',
+        'remove',
+    ] as const)('%s inherits marketplace:manage', (methodName) => {
+        const handler =
+            MarketplaceRepositoriesController.prototype[methodName];
+
+        expect(
+            Reflect.getMetadata(PERMISSIONS_KEY, handler),
+        ).toBeUndefined();
+    });
     it('uses HTTP 201 for repository creation', () => {
         const handler =
             MarketplaceRepositoriesController.prototype.create;

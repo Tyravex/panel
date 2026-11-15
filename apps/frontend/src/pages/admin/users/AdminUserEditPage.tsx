@@ -10,6 +10,7 @@ import {
 import { AdminUserForm } from '@/features/admin-users/components/AdminUserForm';
 import { AdminUsersBackLink } from '@/features/admin-users/components/AdminUsersBackLink';
 import type { AdminUserFormValues } from '@shared/types';
+import { useUnsavedChanges } from '@/shared/lib/useUnsavedChanges';
 
 export const AdminUserEditPage = () => {
   const { t } = useTranslation();
@@ -28,6 +29,8 @@ export const AdminUserEditPage = () => {
   const [loadError, setLoadError] = useState(false);
   const [actionError, setActionError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [initialForm, setInitialForm] = useState<AdminUserFormValues>(emptyAdminUserForm);
+  const unsaved = useUnsavedChanges(!loading && !loadError && JSON.stringify(form) !== JSON.stringify(initialForm));
 
   useEffect(() => {
     const controller = new AbortController();
@@ -45,13 +48,15 @@ export const AdminUserEditPage = () => {
     getAdminUser(userId, controller.signal)
       .then((user) => {
         if (!controller.signal.aborted) {
-          setForm({
+          const loaded = {
             username: user.username,
             email: user.email,
             firstName: user.firstName ?? '',
             lastName: user.lastName ?? '',
             password: '',
-          });
+          };
+          setForm(loaded);
+          setInitialForm(loaded);
         }
       })
       .catch(() => {
@@ -78,6 +83,7 @@ export const AdminUserEditPage = () => {
 
     try {
       await updateAdminUser(userId, form);
+      unsaved.markSaved();
       toast.success(t('adminUsers.updateSuccess'));
       navigate('/admin/users');
     } catch {

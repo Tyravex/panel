@@ -1,49 +1,9 @@
-import { useEffect, useState } from 'react';
-
-import { QueryProvider, ThemeProvider } from '@/app/providers';
+import { AppProviders } from '@/app/providers/AppProviders';
 import { AppRouter } from '@/app/router/RouterProvider';
-import { useUser } from '@/shared/store/user';
+import { useAppBootstrap } from '@/app/bootstrap/useAppBootstrap';
 
-function App() {
-  const [isLanguageReady, setIsLanguageReady] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const initializeLanguage = async () => {
-      try {
-        await useUser.getState().syncActiveLanguage();
-      } catch (error) {
-        console.error('Failed to initialize language:', error);
-      } finally {
-        if (!cancelled) {
-          setIsLanguageReady(true);
-        }
-      }
-    };
-
-    void initializeLanguage();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (!isLanguageReady) {
-    return (
-      <div role="status" aria-live="polite">
-        Loading...
-      </div>
-    );
-  }
-
-  return (
-    <ThemeProvider>
-      <QueryProvider>
-        <AppRouter />
-      </QueryProvider>
-    </ThemeProvider>
-  );
+export default function App() {
+  const ready = useAppBootstrap();
+  if (!ready) return <div role="status" aria-live="polite">Loading...</div>;
+  return <AppProviders><AppRouter /></AppProviders>;
 }
-
-export default App;

@@ -10,6 +10,8 @@ import type {
 import { locationsApi } from '@/features/locations/api/locationsApi';
 import { regionsApi } from '@/features/regions/api/regionsApi';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import { useAuthStore } from '@/app/store/auth.store';
+import { useUnsavedChanges } from '@/shared/lib/useUnsavedChanges';
 
 type LocationForm = {
   name: string;
@@ -74,6 +76,9 @@ const LocationFieldInfo = ({ text, title }: LocationFieldInfoProps) => (
 );
 export const AdminLocationsPage = () => {
   const { t } = useTranslation();
+  const canReadRegions = useAuthStore((state) =>
+    !!state.user?.permissions?.includes('region:manage'),
+  );
 
   const label = (key: string, fallback: string) =>
     t(`adminLocations.${key}`, { defaultValue: fallback });
@@ -90,6 +95,9 @@ export const AdminLocationsPage = () => {
   const [locationToDelete, setLocationToDelete] =
     useState<LocationRecord | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [initialForm, setInitialForm] = useState<LocationForm>(emptyForm);
+  const unsaved = useUnsavedChanges(showForm && JSON.stringify(form) !== JSON.stringify(initialForm));
+  const beginForm = (value: LocationForm) => { setForm(value); setInitialForm(value); };
 
   const refresh = useCallback(() => {
     setRefreshKey((value) => value + 1);
@@ -104,7 +112,7 @@ export const AdminLocationsPage = () => {
       try {
         const [locationResult, regionResult] = await Promise.all([
           locationsApi.list(controller.signal),
-          regionsApi.list(controller.signal),
+          canReadRegions ? regionsApi.list(controller.signal) : Promise.resolve([]),
         ]);
 
         if (!controller.signal.aborted) {
@@ -131,10 +139,10 @@ export const AdminLocationsPage = () => {
     return () => controller.abort();
     // Refresh is triggered explicitly after mutations.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshKey]);
+  }, [refreshKey, canReadRegions]);
 
   const startCreate = () => {
-    setForm({
+    beginForm({
       ...emptyForm,
       regionId: regions.length === 1 ? regions[0].id : '',
     });
@@ -145,7 +153,7 @@ export const AdminLocationsPage = () => {
   };
 
   const startEdit = (location: LocationRecord) => {
-    setForm({
+    beginForm({
       name: location.name,
       code: location.code,
       continent: location.continent,
@@ -212,7 +220,9 @@ export const AdminLocationsPage = () => {
       return;
     }
 
-    if (!regionId || !regions.some((region) => region.id === regionId)) {
+    if (!regionId || (canReadRegions
+      ? !regions.some((region) => region.id === regionId)
+      : regionId !== locations.find((location) => location.id === editingId)?.regionId)) {
       setError(label('invalidRegion', 'Wybierz istniejący region.'));
       return;
     }
@@ -341,10 +351,12 @@ export const AdminLocationsPage = () => {
 
           <button
             type="button"
-            onClick={startCreate}
+            onClick={() => unsaved.requestAction(startCreate)}
             disabled={loading || busy || regions.length === 0}
             title={
-              regions.length === 0
+              !canReadRegions
+                ? label('regionPermissionRequired', 'Wymagane uprawnienie do odczytu regionów.')
+                : regions.length === 0
                 ? label('noRegions', 'Najpierw utwórz region.')
                 : undefined
             }
@@ -376,7 +388,9 @@ export const AdminLocationsPage = () => {
 
       {!loading && regions.length === 0 && (
         <p className="rounded-xl border border-border-subtle bg-surface p-4 text-text-secondary">
-          {label('noRegions', 'Najpierw utwórz region.')}
+          {canReadRegions
+            ? label('noRegions', 'Najpierw utwórz region.')
+            : label('regionPermissionRequired', 'Wymagane uprawnienie do odczytu regionów.')}
         </p>
       )}
 
@@ -390,7 +404,7 @@ export const AdminLocationsPage = () => {
             </h2>
             <button
               type="button"
-              onClick={cancelForm}
+              onClick={() => unsaved.requestAction(cancelForm)}
               disabled={busy}
               aria-label={label('cancel', 'Anuluj')}
               className="rounded-lg p-2 hover:bg-white/5 disabled:opacity-50"
@@ -461,17 +475,17 @@ export const AdminLocationsPage = () => {
                   onChange={(regionId: string) =>
                     setForm((current) => ({ ...current, regionId }))
                   }
-                  disabled={busy}
+                  disabled={busy || !canReadRegions}
                 >
                   <div className="relative">
                     <ListboxButton
-                      aria-labelledby="location-region-label"
+                      aria-label={label('region', 'Region')}
                       className={`${inputClass} flex items-center justify-between gap-3 bg-surface text-left text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50`}
                     >
                       <span className="truncate">
                         {regions.find((region) => region.id === form.regionId)
                           ? `${regions.find((region) => region.id === form.regionId)!.name} (${regions.find((region) => region.id === form.regionId)!.code})`
-                          : label('selectRegion', 'Wybierz region')}
+                          : form.regionId || label('selectRegion', 'Wybierz region')}
                       </span>
                       <span aria-hidden="true" className="text-text-secondary">⌄</span>
                     </ListboxButton>
@@ -612,7 +626,7 @@ export const AdminLocationsPage = () => {
               </button>
               <button
                 type="button"
-                onClick={cancelForm}
+                onClick={() => unsaved.requestAction(cancelForm)}
                 disabled={busy}
                 className="rounded-xl border border-border-subtle px-5 py-3 disabled:opacity-50"
               >
@@ -674,7 +688,7 @@ export const AdminLocationsPage = () => {
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          onClick={() => startEdit(location)}
+                          onClick={() => unsaved.requestAction(() => startEdit(location))}
                           disabled={busy}
                           className="inline-flex items-center gap-2 rounded-lg border border-border-subtle px-3 py-2 hover:bg-white/5 disabled:opacity-50"
                         >

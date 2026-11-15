@@ -29,7 +29,7 @@ interface AuthenticatedRequest extends Request {
 
 @Controller('admin/plugins')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-@Permissions('plugin:manage')
+@Permissions('plugin:delete')
 export class PluginUninstallerController {
     constructor(
         private readonly uninstaller: PluginUninstallerService,

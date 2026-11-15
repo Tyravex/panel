@@ -8,6 +8,7 @@ import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
 import { RegistrationSettingsService } from '../registration-settings.service';
 import { RegistrationRateLimitGuard } from '../guards/registration-rate-limit.guard';
+import { withDefaultUserRole } from '@/rbac/test/helpers/default-role-prisma';
 
 describe('Registration unique conflict and HTTP sanitization', () => {
     const create = jest.fn();
@@ -26,7 +27,7 @@ describe('Registration unique conflict and HTTP sanitization', () => {
             controllers: [AuthController],
             providers: [
                 AuthService,
-                { provide: PrismaService, useValue: { user: { create } } },
+                { provide: PrismaService, useValue: withDefaultUserRole({ create }) },
                 { provide: JwtService, useValue: {} },
                 { provide: NotificationsGateway, useValue: {} },
                 { provide: RegistrationSettingsService, useValue: { isRegistrationEnabled } },

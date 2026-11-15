@@ -1,5 +1,9 @@
 {
   "navigation": {
+    "eggtags": "Egg Tags",
+    "egglibrary": "Egg Library",
+    "importeggs": "Import Eggs",
+    "eggrepositories": "Egg Repositories",
     "adminPanel": "Admin dashboard",
     "auditlogs": "Audit Logs",
     "jobs": "Jobs",

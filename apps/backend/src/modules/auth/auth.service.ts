@@ -6,6 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import { NotificationsGateway } from '@/modules/notifications/notifications.gateway';
 import { RegistrationSettingsService } from './registration-settings.service';
 import { validateRegistrationInput } from './registration-input.validator';
+import { createUserWithDefaultRole } from '@/rbac/create-user-with-default-role';
 
 @Injectable()
 export class AuthService {
@@ -176,15 +177,37 @@ export class AuthService {
 
     let user;
     try {
-      user = await this.prisma.user.create({
-        data: {
-          username: validated.username,
-          email: validated.email,
-          password: hashed,
-          ...(validated.firstName !== undefined ? { firstName: validated.firstName } : {}),
-          ...(validated.lastName !== undefined ? { lastName: validated.lastName } : {}),
-        },
-      });
+      user = await this.prisma.$transaction(async (tx) =>
+        createUserWithDefaultRole(
+          tx,
+          {
+            username: validated.username,
+            email: validated.email,
+            password: hashed,
+            ...(validated.firstName !== undefined ? { firstName: validated.firstName } : {}),
+            ...(validated.lastName !== undefined ? { lastName: validated.lastName } : {}),
+          },
+          {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
+            language: true,
+            isActive: true,
+            createdAt: true,
+            updatedAt: true,
+            roles: {
+              include: {
+                role: {
+                  include: { permissions: true },
+                },
+              },
+            },
+          },
+        ),
+      );
     } catch (error: unknown) {
       // Map only recognized unique fields to user-friendly messages.
       if (error !== null && typeof error === 'object' &&

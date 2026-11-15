@@ -14,7 +14,9 @@ export const AdminUserDetailsPage = () => {
   const me = useAuthStore((state) => state.user);
 
   const canManage = !!me?.permissions?.includes('user:manage');
-  const canManageRoles = !!me?.permissions?.includes('role:manage');
+  const canViewRoles =
+    !!me?.permissions?.includes('user:read') &&
+    !!me?.permissions?.includes('role:read');
 
   const userId =
     id && /^[1-9]\d*$/.test(id) && Number.isSafeInteger(Number(id))
@@ -96,7 +98,7 @@ export const AdminUserDetailsPage = () => {
 
           {user && (
             <div className="flex flex-wrap items-center gap-3">
-              {canManageRoles && (
+              {canViewRoles && (
                 <Link
                   to={`/admin/users/${user.id}/roles`}
                   className="rounded-xl border border-border-subtle px-5 py-2.5 text-sm font-semibold transition hover:bg-white/5"
@@ -235,7 +237,7 @@ export const AdminUserDetailsPage = () => {
             </SurfaceCard>
           </section>
 
-<AdminUserServices userId={user.id} />
+          <AdminUserServices userId={user.id} />
         </>
       )}
     </div>

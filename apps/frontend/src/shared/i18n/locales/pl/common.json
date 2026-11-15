@@ -1,5 +1,10 @@
 {
   "common": {
+    "unsaved": {
+      "title": "Porzucić niezapisane zmiany?",
+      "description": "Masz niezapisane zmiany. Kontynuowanie spowoduje utratę zmian w opuszczanym formularzu.",
+      "discard": "Porzuć i kontynuuj"
+    },
     "active": "Aktywne",
     "appName": "Tyravex",
     "back": "Wstecz",

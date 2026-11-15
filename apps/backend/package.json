@@ -111,7 +111,7 @@
       "\\.e2e\\.spec\\.ts$"
     ],
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.tsx?$": "ts-jest"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"

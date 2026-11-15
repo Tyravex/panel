@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '@/app/store/auth.store';
 import { toast } from 'sonner';
 import { api } from '@/shared/api/client';
 import { SurfaceCard } from '@/shared/ui/SurfaceCard';
@@ -72,6 +73,8 @@ export const RoleManagementPanel = ({
   onChanged,
 }: Props) => {
   const { t } = useTranslation();
+  const currentUser = useAuthStore((state) => state.user);
+  const canAssignRoles = !!currentUser?.permissions?.includes('role:assign');
 
   const [roles, setRoles] = useState<Role[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -124,7 +127,7 @@ export const RoleManagementPanel = ({
   }, [load]);
 
   const changeRole = async (role: Role, assigned: boolean) => {
-    if (busyRole) return;
+    if (!canAssignRoles || busyRole) return;
 
     setBusyRole(role.id);
     setError('');
@@ -165,7 +168,7 @@ export const RoleManagementPanel = ({
   };
 
   const requestRoleRemoval = (role: Role) => {
-    if (busyRole) return;
+    if (!canAssignRoles || busyRole) return;
 
     setError('');
     setPendingRoleRemoval(role);
@@ -254,28 +257,30 @@ export const RoleManagementPanel = ({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    if (assigned) {
-                      requestRoleRemoval(role);
-                    } else {
-                      void changeRole(role, false);
+                {canAssignRoles && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => {
+                      if (assigned) {
+                        requestRoleRemoval(role);
+                      } else {
+                        void changeRole(role, false);
+                      }
+                    }}
+                    className={
+                      assigned
+                        ? 'rounded-xl border border-red-500/30 px-4 py-2 text-sm text-red-300 transition hover:bg-red-500/10 disabled:opacity-40'
+                        : 'rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40'
                     }
-                  }}
-                  className={
-                    assigned
-                      ? 'rounded-xl border border-red-500/30 px-4 py-2 text-sm text-red-300 transition hover:bg-red-500/10 disabled:opacity-40'
-                      : 'rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40'
-                  }
-                >
-                  {busyRole === role.id
-                    ? t('adminUsers.saving')
-                    : assigned
-                      ? t('adminUsers.removeRole')
-                      : t('adminUsers.assignRole')}
-                </button>
+                  >
+                    {busyRole === role.id
+                      ? t('adminUsers.saving')
+                      : assigned
+                        ? t('adminUsers.removeRole')
+                        : t('adminUsers.assignRole')}
+                  </button>
+                )}
               </div>
             );
           })}
@@ -287,7 +292,7 @@ export const RoleManagementPanel = ({
       )}
 
       <ConfirmDialog
-        open={pendingRoleRemoval !== null}
+        open={canAssignRoles && pendingRoleRemoval !== null}
         destructive
         busy={busyRole !== null}
         title={t('adminUsers.removeRoleTitle')}
@@ -298,7 +303,7 @@ export const RoleManagementPanel = ({
         confirmLabel={t('adminUsers.removeRole')}
         onCancel={cancelRoleRemoval}
         onConfirm={() => {
-          if (pendingRoleRemoval) {
+          if (canAssignRoles && pendingRoleRemoval) {
             void changeRole(pendingRoleRemoval, true);
           }
         }}

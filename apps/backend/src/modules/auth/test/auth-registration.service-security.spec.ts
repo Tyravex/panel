@@ -5,6 +5,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { NotificationsGateway } from '@/modules/notifications/notifications.gateway';
 import { AuthService } from '../auth.service';
 import { RegistrationSettingsService } from '../registration-settings.service';
+import { withDefaultUserRole } from '@/rbac/test/helpers/default-role-prisma';
 
 describe('AuthService registration persistence security', () => {
     const create = jest.fn();
@@ -19,7 +20,7 @@ describe('AuthService registration persistence security', () => {
         isActive: true,
         language: 'en',
         avatar: null,
-        roles: [],
+        roles: [{ role: { name: 'User', permissions: [] } }],
         createdAt: new Date('2026-01-01T00:00:00Z'),
         updatedAt: new Date('2026-01-01T00:00:00Z'),
     });
@@ -29,7 +30,7 @@ describe('AuthService registration persistence security', () => {
         create.mockResolvedValue(storedUser());
         isRegistrationEnabled.mockResolvedValue(true);
         service = new AuthService(
-            { user: { create } } as unknown as PrismaService,
+            withDefaultUserRole({ create }) as unknown as PrismaService,
             {} as JwtService,
             {} as NotificationsGateway,
             { isRegistrationEnabled } as unknown as RegistrationSettingsService,
@@ -52,8 +53,9 @@ describe('AuthService registration persistence security', () => {
         await service.register('new-user', 'new-user@example.invalid', 'secret-password-123');
 
         expect(Object.keys(create.mock.calls[0][0].data).sort()).toEqual([
-            'email', 'password', 'username',
+            'email', 'password', 'roles', 'username',
         ]);
+        expect(create.mock.calls[0][0].data.roles).toEqual({ create: { role: { connect: { id: 'default-user-role' } } } });
     });
 
     it('returns a public profile without a password or credential hash', async () => {
@@ -64,7 +66,7 @@ describe('AuthService registration persistence security', () => {
             username: 'new-user',
             email: 'new-user@example.invalid',
             language: 'en',
-            roles: [],
+            roles: ['User'],
             permissions: [],
         });
         expect(result).not.toHaveProperty('password');
@@ -128,11 +130,13 @@ describe('AuthService registration persistence security', () => {
                 password: expect.any(String),
                 firstName: 'Anna',
                 lastName: 'Kowalska',
+                roles: { create: { role: { connect: { id: 'default-user-role' } } } },
             },
+            select: expect.objectContaining({ id: true, roles: expect.any(Object) }),
         });
 
         expect(create.mock.calls[0][0].data).not.toHaveProperty('isAdmin');
-        expect(create.mock.calls[0][0].data).not.toHaveProperty('roles');
+        expect(create.mock.calls[0][0].data.roles).toEqual({ create: { role: { connect: { id: 'default-user-role' } } } });
     });
 
 });

@@ -4,6 +4,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { NotificationsGateway } from '@/modules/notifications/notifications.gateway';
 import { AuthService } from '../auth.service';
 import { RegistrationSettingsService } from '../registration-settings.service';
+import { withDefaultUserRole } from '@/rbac/test/helpers/default-role-prisma';
 
 describe('AuthService registration setting enforcement', () => {
     const create = jest.fn();
@@ -12,7 +13,7 @@ describe('AuthService registration setting enforcement', () => {
         service.register('new-user', 'new-user@example.invalid', 'secret-password-123');
 
     const makeService = (settings?: RegistrationSettingsService) => new AuthService(
-        { user: { create } } as unknown as PrismaService,
+        withDefaultUserRole({ create }) as unknown as PrismaService,
         {} as JwtService,
         {} as NotificationsGateway,
         settings,

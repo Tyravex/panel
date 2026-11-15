@@ -96,7 +96,7 @@ describe('ServiceJobsService installation notifications', () => {
                         id: 'egg-id',
                         key: 'nodejs-discord-bot',
                         version: '1.0.0',
-                        isEnabled: true,
+                        isEnabled: true, approvalStatus: 'APPROVED',
                         manifest,
                         repository: {
                             status: 'ENABLED',

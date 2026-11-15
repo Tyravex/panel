@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { AdminUsersService } from '../admin-users.service';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { defaultRoleTransactionFields } from '@/rbac/test/helpers/default-role-prisma';
 
 describe('AdminUsersService optional names', () => {
     const findUnique = jest.fn();
@@ -30,6 +31,7 @@ describe('AdminUsersService optional names', () => {
         transaction.mockImplementation(
             async (callback: (tx: unknown) => Promise<unknown>) =>
                 callback({
+                    ...defaultRoleTransactionFields(),
                     user: { create, update },
                     adminAuditLog: { create: jest.fn() },
                 }),

@@ -20,6 +20,17 @@
       "system": "System",
       "users": "Użytkownicy"
     },
-    "title": "Ustawienia administratora"
+    "title": "Ustawienia administratora",
+    "defaultRoleNoEligible": "Brak dostępnych ról bez uprawnień globalnych.",
+    "defaultRoleDescription": "Każde nowe konto automatycznie otrzymuje tę rolę.",
+    "defaultRoleSave": "Zapisz domyślną rolę",
+    "defaultRoleSaveSuccess": "Domyślna rola została zapisana.",
+    "defaultRoleCurrent": "Aktualna domyślna rola:",
+    "defaultRoleUnavailable": "Rola niedostępna",
+    "defaultRoleTitle": "Domyślna rola nowych kont",
+    "defaultRoleSaveError": "Nie udało się zapisać domyślnej roli. Mogła zostać zmieniona lub przestała spełniać wymagania.",
+    "defaultRoleLoadError": "Nie udało się pobrać ustawień domyślnej roli.",
+    "defaultRoleSelect": "Rola przypisywana nowym kontom",
+    "defaultRoleHint": "Dostępne są tylko role bez uprawnień globalnych. Zmiany dotyczą wyłącznie przyszłych kont. Automatycznego przypisywania roli nie można wyłączyć."
   }
 }

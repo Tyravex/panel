@@ -186,6 +186,7 @@ describe('AgentWebSocketMessageHandler', () => {
         );
 
         expect(h.session.ready).toBe(true);
+        expect(h.session.capabilities).toEqual(['docker']);
         expect(h.activate).toHaveBeenCalledWith(h.session);
         expect(h.socket.send).toHaveBeenCalledTimes(1);
         expect(h.sendInitialOwnershipSnapshot)

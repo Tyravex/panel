@@ -53,7 +53,7 @@ describe('MarketplaceRepositoriesController HTTP', () => {
 
             if (authorization === 'Bearer admin-test') {
                 req.user = {
-                    permissions: ['plugin:manage'],
+                    permissions: ['plugin:read', 'marketplace:manage'],
                 };
                 return true;
             }
@@ -137,7 +137,7 @@ describe('MarketplaceRepositoriesController HTTP', () => {
         expect(repositoriesService.list).not.toHaveBeenCalled();
     });
 
-    it('rejects authenticated users without plugin:manage', async () => {
+    it('rejects authenticated users without plugin:read', async () => {
         await request(app.getHttpServer())
             .get('/admin/plugins/marketplace/repositories')
             .set('Authorization', 'Bearer user-test')

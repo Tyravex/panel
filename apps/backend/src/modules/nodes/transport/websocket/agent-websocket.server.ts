@@ -351,6 +351,14 @@ export class AgentWebSocketServer {
         );
     }
 
+    getNodeCapabilities(nodeId: string): readonly string[] {
+        return this.isNodeConnected(nodeId) ? [...(this.sessions.get(nodeId)?.capabilities ?? [])] : [];
+    }
+
+    isCurrentNodeSession(nodeId: string, sessionId: string): boolean {
+        return this.isNodeConnected(nodeId) && this.sessions.get(nodeId)?.sessionId === sessionId;
+    }
+
     disconnectNode(nodeId: string): void {
         const session = this.sessions.get(nodeId);
 

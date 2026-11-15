@@ -31,6 +31,7 @@ export class NodesController {
   ) { }
 
   @Get()
+  @Permissions('node:read')
   findAll() {
     return this.nodesService.findAll();
   }
@@ -42,6 +43,7 @@ export class NodesController {
   }
 
   @Get(':id')
+  @Permissions('node:read')
   findOne(@Param('id') id: string) {
     return this.nodesService.findById(id);
   }
@@ -55,6 +57,7 @@ export class NodesController {
     return this.nodesService.updateNode(id, body, req.user.id);
   }
   @Delete(':id')
+  @Permissions('node:delete')
   @Header('Cache-Control', 'no-store')
   async remove(
     @Param('id') id: string,

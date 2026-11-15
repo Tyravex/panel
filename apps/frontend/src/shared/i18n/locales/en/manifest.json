@@ -28,7 +28,8 @@
       "adminRegions.json",
       "adminLocations.json",
       "adminNodes.json",
-      "adminServices.json"
+      "adminServices.json",
+      "eggs.json"
     ]
   }
 }

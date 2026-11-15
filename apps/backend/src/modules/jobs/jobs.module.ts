@@ -7,6 +7,7 @@ import { JobsController } from './jobs.controller';
 import { JobsService } from './jobs.service';
 import { ServiceJobsController } from './service-jobs.controller';
 import { ServiceJobsService } from './service-jobs.service';
+import { AdminServiceJobsController } from './admin-service-jobs.controller';
 import { JobDispatcherService } from './dispatcher/job-dispatcher.service';
 import { JobExecutionService } from './worker/job-execution.service';
 import { JobWorkerService } from './worker/job-worker.service';
@@ -17,6 +18,7 @@ import { JobHandlerRegistry } from './worker/job-handler.registry';
   controllers: [
     JobsController,
     ServiceJobsController,
+    AdminServiceJobsController,
   ],
   providers: [
     JobsService,

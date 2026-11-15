@@ -13,7 +13,7 @@ import { MarketplaceRegistryService } from './marketplace-registry.service';
 
 @Controller('admin/plugins/marketplace')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-@Permissions('plugin:manage')
+@Permissions('plugin:read')
 export class MarketplaceController {
     constructor(
         private readonly registryService: MarketplaceRegistryService,

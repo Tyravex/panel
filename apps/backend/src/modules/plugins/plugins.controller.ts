@@ -31,6 +31,7 @@ export class PluginsController {
     ) { }
 
     @Get()
+    @Permissions('plugin:read')
     @Header('Cache-Control', 'no-store')
     list() {
         return this.pluginsService.listForAdmin();
@@ -64,6 +65,7 @@ export class PluginsController {
     }
 
     @Get(':id')
+    @Permissions('plugin:read')
     @Header('Cache-Control', 'no-store')
     getOne(@Param('id') id: string) {
         return this.pluginsService.getForAdmin(id);

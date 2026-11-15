@@ -36,12 +36,12 @@ describe('MarketplaceController', () => {
         expect(guards).toContain(PermissionsGuard);
     });
 
-    it('requires plugin:manage permission', () => {
+    it('requires plugin:read permission', () => {
         const permissions = Reflect.getMetadata(
             PERMISSIONS_KEY,
             MarketplaceController,
         ) as string[];
 
-        expect(permissions).toEqual(['plugin:manage']);
+        expect(permissions).toEqual(['plugin:read']);
     });
 });

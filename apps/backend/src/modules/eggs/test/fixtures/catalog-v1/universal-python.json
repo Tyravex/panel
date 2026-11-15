@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "tyravex.universal.python",
+  "name": "Universal Python",
+  "description": "Python runtime for a user-provided application.",
+  "version": "1.0.0",
+  "category": "applications",
+  "runtime": {
+    "type": "docker",
+    "image": "python:3.12-slim-bookworm",
+    "workingDirectory": "/app",
+    "defaultVersion": "3.12",
+    "versions": [
+      {
+        "version": "3.11",
+        "image": "python:3.11-slim-bookworm"
+      },
+      {
+        "version": "3.12",
+        "image": "python:3.12-slim-bookworm"
+      },
+      {
+        "version": "3.13",
+        "image": "python:3.13-slim-bookworm"
+      }
+    ]
+  },
+  "install": {
+    "mode": "python",
+    "packageManager": "pip"
+  },
+  "startup": {
+    "mode": "python-file",
+    "entrypoint": "main.py"
+  },
+  "defaultProfile": "main",
+  "profiles": [
+    {
+      "id": "main",
+      "name": "Main Python file",
+      "startup": {
+        "mode": "python-file",
+        "entrypoint": "main.py"
+      },
+      "runtimeVersion": "3.12"
+    },
+    {
+      "id": "app",
+      "name": "Python application",
+      "startup": {
+        "mode": "python-file",
+        "entrypoint": "app.py"
+      },
+      "runtimeVersion": "3.12"
+    },
+    {
+      "id": "worker",
+      "name": "Python worker",
+      "startup": {
+        "mode": "python-file",
+        "entrypoint": "worker.py"
+      },
+      "runtimeVersion": "3.12"
+    }
+  ],
+  "variables": []
+}

@@ -27,7 +27,7 @@ export const AdminUsersPage = () => {
           </p>
         </div>
 
-        {users.canManage && (
+        {users.canCreate && (
           <button
             type="button"
             onClick={() => navigate('/admin/users/new')}
@@ -58,6 +58,7 @@ export const AdminUsersPage = () => {
         error={users.error}
         busy={users.busy}
         canManage={users.canManage}
+        canViewRoles={users.canViewRoles}
         currentUserId={users.me?.id}
         onView={(user) => navigate(`/admin/users/${user.id}`)}
         onSelectRoles={(user) => navigate(`/admin/users/${user.id}/roles`)}

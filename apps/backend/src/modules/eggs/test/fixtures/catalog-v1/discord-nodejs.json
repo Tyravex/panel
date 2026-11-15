@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "id": "tyravex.discord.nodejs",
+  "name": "Discord Bot - Node.js",
+  "description": "Node.js runtime for a user-provided Discord bot project.",
+  "version": "1.1.0",
+  "category": "bots",
+  "runtime": {
+    "type": "docker",
+    "image": "node:22-bookworm-slim",
+    "workingDirectory": "/app",
+    "defaultVersion": "22",
+    "versions": [
+      {
+        "version": "20",
+        "image": "node:20-bookworm-slim"
+      },
+      {
+        "version": "22",
+        "image": "node:22-bookworm-slim"
+      },
+      {
+        "version": "24",
+        "image": "node:24-bookworm-slim"
+      }
+    ]
+  },
+  "install": {
+    "mode": "nodejs",
+    "packageManager": "npm"
+  },
+  "startup": {
+    "mode": "npm-start"
+  },
+  "defaultProfile": "discordjs",
+  "profiles": [
+    {
+      "id": "discordjs",
+      "name": "Discord.js",
+      "startup": {
+        "mode": "npm-start"
+      },
+      "runtimeVersion": "22"
+    },
+    {
+      "id": "dbm",
+      "name": "Discord Bot Maker",
+      "startup": {
+        "mode": "node-file",
+        "entrypoint": "bot.js"
+      },
+      "runtimeVersion": "22"
+    },
+    {
+      "id": "typescript",
+      "name": "TypeScript (compiled)",
+      "startup": {
+        "mode": "node-file",
+        "entrypoint": "dist/main.js"
+      },
+      "runtimeVersion": "22"
+    },
+    {
+      "id": "generic",
+      "name": "Generic Node.js",
+      "startup": {
+        "mode": "node-file",
+        "entrypoint": "index.js"
+      },
+      "runtimeVersion": "22"
+    }
+  ],
+  "variables": [
+    {
+      "name": "DISCORD_TOKEN",
+      "type": "secret",
+      "required": true
+    }
+  ]
+}

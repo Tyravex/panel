@@ -7,6 +7,7 @@ import {
 } from "react";
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { useTranslation } from "react-i18next";
+import { useUnsavedChanges } from '@/shared/lib/useUnsavedChanges';
 import {
   AlertCircle,
   ArrowLeft,
@@ -128,6 +129,7 @@ export const ServerFileEditor = ({
   );
 
   const isDirty = content !== savedContent;
+  const unsaved = useUnsavedChanges(isDirty);
 
   const lineCount = useMemo(
     () => Math.max(1, content.split("\n").length),
@@ -261,7 +263,7 @@ export const ServerFileEditor = ({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={handleReset}
+            onClick={() => unsaved.requestAction(handleReset)}
             disabled={!isDirty}
             className="inline-flex items-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
           >

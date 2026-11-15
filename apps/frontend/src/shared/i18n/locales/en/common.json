@@ -1,5 +1,10 @@
 {
   "common": {
+    "unsaved": {
+      "title": "Discard unsaved changes?",
+      "description": "You have unsaved changes. Continuing will discard changes in the form you leave.",
+      "discard": "Discard and continue"
+    },
     "active": "Active",
     "appName": "Tyravex",
     "back": "Back",

@@ -67,11 +67,17 @@ export class ServiceJobsService {
         }
     }
 
-    async getActive(userId: number, serviceId: string) {
+    async getHistory(serviceId: string) {
+        if (!await this.prisma.service.findUnique({ where: { id: serviceId }, select: { id: true } })) throw new NotFoundException('Service not found');
+        return this.prisma.job.findMany({ where: { serviceId, type: JobType.INSTALL }, take: 20, orderBy: { createdAt: 'desc' },
+            select: { id: true, type: true, status: true, progress: true, createdAt: true } });
+    }
+
+    async getActive(userId: number, serviceId: string, administrative = false) {
         const service = await this.prisma.service.findFirst({
             where: {
                 id: serviceId,
-                userId,
+                ...(administrative ? {} : { userId }),
             },
             select: {
                 id: true,
@@ -108,7 +114,7 @@ export class ServiceJobsService {
         });
     }
 
-    async create(userId: number, serviceId: string, type: JobType) {
+    async create(userId: number, serviceId: string, type: JobType, administrative = false) {
         if (type !== JobType.INSTALL) {
             throw new BadRequestException(
                 'Only INSTALL is currently supported for services',
@@ -123,7 +129,7 @@ export class ServiceJobsService {
                 SELECT "id"
                 FROM "Service"
                 WHERE "id" = ${serviceId}
-                  AND "userId" = ${userId}
+                  AND (${administrative} = true OR "userId" = ${userId})
                 FOR UPDATE
             `;
 
@@ -203,6 +209,7 @@ export class ServiceJobsService {
                     key: true,
                     version: true,
                     isEnabled: true,
+                    approvalStatus: true,
                     manifest: true,
                     repository: {
                         select: {
@@ -217,7 +224,7 @@ export class ServiceJobsService {
             }
 
             if (
-                !egg.isEnabled ||
+                !egg.isEnabled || egg.approvalStatus !== 'APPROVED' ||
                 egg.repository.status !== 'ENABLED'
             ) {
                 throw new ConflictException(
@@ -227,6 +234,9 @@ export class ServiceJobsService {
 
             // Revalidate the stored manifest before capturing it.
             const validated = validateEggManifest(egg.manifest);
+            if ((egg.manifest as Record<string, unknown>).catalog) {
+                throw new ConflictException('AGENT_INSTALL_EXECUTION_UNAVAILABLE: repository Eggs require installation contract v2, secure environment delivery, and enforceable disk quotas');
+            }
             const manifest =
                 validated.manifest as unknown as InstallManifest;
 

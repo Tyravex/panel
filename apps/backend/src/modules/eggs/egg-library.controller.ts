@@ -21,11 +21,8 @@ interface AuthenticatedRequest {
 export class EggLibraryController {
     constructor(private readonly eggsService: EggsService) { }
 
-    private assertAdmin(user: UserDTO): void {
-        if (
-            !user.roles?.includes('Owner') ||
-            !user.permissions?.includes('service:manage:any')
-        ) {
+    private assertPermission(user: UserDTO, permission: string): void {
+        if (!user.permissions?.includes(permission)) {
             throw new ForbiddenException(
                 'Administrative egg permission required',
             );
@@ -39,7 +36,7 @@ export class EggLibraryController {
         @Query('page') page?: string,
         @Query('pageSize') pageSize?: string,
     ) {
-        this.assertAdmin(req.user);
+        this.assertPermission(req.user, 'egg:read');
 
         return this.eggsService.listLibraryEggs({
             query,
@@ -50,7 +47,7 @@ export class EggLibraryController {
 
     @Get('stats')
     stats(@Request() req: AuthenticatedRequest) {
-        this.assertAdmin(req.user);
+        this.assertPermission(req.user, 'egg:read');
         return this.eggsService.getLibraryStats();
     }
 
@@ -59,7 +56,7 @@ export class EggLibraryController {
         @Request() req: AuthenticatedRequest,
         @Param('id') id: string,
     ) {
-        this.assertAdmin(req.user);
+        this.assertPermission(req.user, 'egg:read');
         return this.eggsService.getLibraryEgg(id);
     }
 }

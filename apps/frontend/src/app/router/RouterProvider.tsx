@@ -1,8 +1,9 @@
-import { BrowserRouter } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AppRoutes } from "./routes";
+import { UnsavedChangesProvider } from '@/app/providers/UnsavedChangesProvider';
+
+const router = createBrowserRouter([{ path: "*", element: <UnsavedChangesProvider><AppRoutes /></UnsavedChangesProvider> }]);
 
 export const AppRouter = () => (
-  <BrowserRouter>
-    <AppRoutes />
-  </BrowserRouter>
+  <RouterProvider router={router} />
 );

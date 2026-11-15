@@ -47,3 +47,19 @@ export type {
   UsersResponse,
   AdminUserFormValues,
 } from './admin';
+
+export {
+  RBAC_V2_PERMISSION_GROUPS,
+  RBAC_V2_PERMISSIONS,
+  isRbacV2Permission,
+} from './rbac';
+
+export type {
+  RbacV2Permission,
+  RbacV2PermissionGroup,
+} from './rbac';
+
+export type { EggManifest, AdminEgg, EggRepository, EggRepositoryPreview } from './eggs.types';
+export * from './egg-catalog.types';
+export * from './egg-management.types';
+export * from './service-install-contract.types';

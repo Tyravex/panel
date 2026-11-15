@@ -52,6 +52,7 @@ describe('AdminUsersTable navigation', () => {
     error: null,
     busy: false,
     canManage: true,
+    canViewRoles: true,
     currentUserId: 1,
     onView: vi.fn(),
     onSelectRoles: vi.fn(),

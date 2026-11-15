@@ -40,7 +40,8 @@ model User {
   jobs               Job[]
 
   // User-owned custom Eggs remain separate from administrative permissions.
-  ownedEggs Egg[] @relation("EggOwner")
+  ownedEggs Egg[]    @relation("EggOwner")
+  eggTags   EggTag[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -53,6 +54,14 @@ model Role {
 
   permissions Permission[]
   users       UserRole[]
+  defaultFor  RbacSettings[]
+}
+
+// Global RBAC configuration. The default role cannot be deleted.
+model RbacSettings {
+  id            Int    @id @default(1)
+  defaultRoleId String
+  defaultRole   Role   @relation(fields: [defaultRoleId], references: [id], onDelete: Restrict)
 }
 
 // Explicit many-to-many role assignment with an audit-friendly timestamp.
@@ -253,8 +262,9 @@ model Service {
   serverId Int?    @unique
   server   Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
 
-  members ServiceMember[]
-  jobs    Job[]
+  members          ServiceMember[]
+  jobs             Job[]
+  eggConfiguration ServiceEggConfiguration?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -271,6 +281,16 @@ model Service {
 // =============================================================================
 
 // Service-scoped access grants; independent of global role permissions.
+// Environment values are encrypted and excluded from ordinary Service queries.
+model ServiceEggConfiguration {
+  serviceId            String   @id
+  service              Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  profileId            String?
+  runtimeVersion       String?
+  environmentEncrypted String?  @db.Text
+  updatedAt            DateTime @updatedAt
+}
+
 model ServiceMember {
   id String @id @default(cuid())
 
@@ -326,8 +346,14 @@ model EggRepository {
   url  String @unique
 
   // Metadata only. This does not grant automatic trust.
-  isOfficial Boolean             @default(false)
-  status     EggRepositoryStatus @default(DISABLED)
+  isOfficial     Boolean             @default(false)
+  status         EggRepositoryStatus @default(DISABLED)
+  archivedAt     DateTime?
+  lastCheckedAt  DateTime?
+  lastSyncAt     DateTime?
+  lastSyncError  String?
+  syncClaimUntil DateTime?
+  latestVersions Json?
 
   eggs Egg[]
 
@@ -348,7 +374,8 @@ model Egg {
   version     String
 
   // The importer must validate this document before storing it.
-  manifest Json
+  manifest   Json
+  provenance Json?
 
   repositoryId String
   repository   EggRepository @relation(fields: [repositoryId], references: [id], onDelete: Restrict)
@@ -370,7 +397,8 @@ model Egg {
   // Administrator approval is required before an Egg can be selected.
   isEnabled Boolean @default(false)
 
-  services Service[]
+  services       Service[]
+  tagAssignments EggTagAssignment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -381,6 +409,33 @@ model Egg {
   // Support provenance filtering and review queues.
   @@index([sourceType, approvalStatus])
   @@index([ownerId, createdAt])
+}
+
+// Shared tags have scopeKey "shared"; personal tags use "user:<id>".
+model EggTag {
+  id          String             @id @default(cuid())
+  name        String
+  slug        String
+  color       String
+  scopeKey    String
+  ownerId     Int?
+  owner       User?              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  assignments EggTagAssignment[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([scopeKey, slug])
+  @@index([ownerId])
+}
+
+model EggTagAssignment {
+  eggId String
+  tagId String
+  egg   Egg    @relation(fields: [eggId], references: [id], onDelete: Cascade)
+  tag   EggTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([eggId, tagId])
+  @@index([tagId])
 }
 
 // =============================================================================

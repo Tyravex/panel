@@ -21,6 +21,7 @@ import { NodeTokenDialog } from '@/features/nodes/components/NodeTokenDialog';
 import { regionsApi } from '@/features/regions/api/regionsApi';
 import { locationsApi } from '@/features/locations/api/locationsApi';
 import type { RegionRecord, LocationRecord } from '@shared/types';
+import { useUnsavedChanges } from '@/shared/lib/useUnsavedChanges';
 
 const getError = (reason: unknown): string => {
     if (typeof reason === 'object' && reason !== null && 'response' in reason) {
@@ -52,6 +53,9 @@ export const AdminNodeCreatePage = () => {
 
     const [manualAllocation, setManualAllocation] = useState(true);
     const [automaticAllocation, setAutomaticAllocation] = useState(false);
+    const unsaved = useUnsavedChanges(!credentials && (
+        name !== '' || regionId !== '' || locationId !== '' || !manualAllocation || automaticAllocation
+    ));
 
     const availableLocations = useMemo(
         () => locations.filter((location) => location.regionId === regionId),
@@ -117,6 +121,7 @@ export const AdminNodeCreatePage = () => {
                 automaticAllocationEnabled: automaticAllocation,
             });
             setCredentials(result);
+            unsaved.markSaved();
         } catch (reason) {
             setError(getError(reason));
         } finally {

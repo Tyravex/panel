@@ -27,6 +27,30 @@ describe('NodesController authorization', () => {
         expect(permissions).toEqual(['node:manage']);
     });
 
+    it.each([
+        ['findAll', 'node:read'],
+        ['findOne', 'node:read'],
+        ['remove', 'node:delete'],
+    ])('requires %s permission %s', (method, permission) => {
+        const permissions = Reflect.getMetadata(
+            PERMISSIONS_KEY,
+            NodesController.prototype[method as 'findAll' | 'findOne' | 'remove'],
+        );
+
+        expect(permissions).toEqual([permission]);
+    });
+
+    it.each(['create', 'update', 'rotateToken'])(
+        'keeps node:manage as the class-level requirement for %s',
+        (method) => {
+            const permissions = Reflect.getMetadata(
+                PERMISSIONS_KEY,
+                NodesController.prototype[method as 'create' | 'update' | 'rotateToken'],
+            );
+
+            expect(permissions).toBeUndefined();
+        },
+    );
     it('does not expose token hashes through the controller', async () => {
         const controller = new NodesController(
             {

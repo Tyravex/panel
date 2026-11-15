@@ -42,6 +42,7 @@ import { AgentWebSocketLifecycle } from './transport/websocket/agent-websocket.l
     AgentWebSocketLifecycle,
   ],
   exports: [
+    AgentWebSocketLifecycle,
     NodesService,
     NodeTokenService,
   ],

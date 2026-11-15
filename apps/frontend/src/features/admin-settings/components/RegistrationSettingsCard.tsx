@@ -56,8 +56,8 @@ export const RegistrationSettingsCard = () => {
                     ) : (
                         <span
                             className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-medium ${registrationEnabled
-                                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
-                                    : 'border-white/10 bg-white/5 text-text-secondary'
+                                ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
+                                : 'border-white/10 bg-white/5 text-text-secondary'
                                 }`}
                         >
                             {registrationEnabled ? (
@@ -81,14 +81,14 @@ export const RegistrationSettingsCard = () => {
                         onClick={() => void toggleRegistration()}
                         disabled={loading || loadFailed || saving}
                         className={`relative h-8 w-14 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50 ${registrationEnabled
-                                ? 'bg-primary'
-                                : 'bg-gray-600'
+                            ? 'bg-primary'
+                            : 'bg-gray-600'
                             }`}
                     >
                         <span
                             className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-sm transition-all ${registrationEnabled
-                                    ? 'left-7'
-                                    : 'left-1'
+                                ? 'left-7'
+                                : 'left-1'
                                 }`}
                         />
                     </button>

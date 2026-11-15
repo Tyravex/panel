@@ -4,6 +4,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { NotificationsGateway } from '@/modules/notifications/notifications.gateway';
 import { AuthService } from '../auth.service';
 import { RegistrationSettingsService } from '../registration-settings.service';
+import { withDefaultUserRole } from '@/rbac/test/helpers/default-role-prisma';
 
 describe('AuthService registration input boundaries', () => {
     const create = jest.fn();
@@ -21,7 +22,7 @@ describe('AuthService registration input boundaries', () => {
             roles: [],
         });
         service = new AuthService(
-            { user: { create } } as unknown as PrismaService,
+            withDefaultUserRole({ create }) as unknown as PrismaService,
             {} as JwtService,
             {} as NotificationsGateway,
             { isRegistrationEnabled } as unknown as RegistrationSettingsService,
@@ -58,7 +59,9 @@ describe('AuthService registration input boundaries', () => {
                 username: 'new-user',
                 email: 'new-user@example.invalid',
                 password: expect.any(String),
+                roles: { create: { role: { connect: { id: 'default-user-role' } } } },
             },
+            select: expect.objectContaining({ id: true }),
         });
     });
 });

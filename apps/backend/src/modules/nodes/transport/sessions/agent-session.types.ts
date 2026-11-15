@@ -11,4 +11,5 @@ export type AgentSession = {
     awaitingPong: boolean;
     helloTimer: NodeJS.Timeout;
     ownershipRefreshPending: boolean;
+    capabilities?: readonly string[];
 };

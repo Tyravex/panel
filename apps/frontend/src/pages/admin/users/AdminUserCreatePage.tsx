@@ -10,29 +10,33 @@ import {
 import { AdminUserForm } from '@/features/admin-users/components/AdminUserForm';
 import { AdminUsersBackLink } from '@/features/admin-users/components/AdminUsersBackLink';
 import type { AdminUserFormValues } from '@shared/types';
+import { useUnsavedChanges } from '@/shared/lib/useUnsavedChanges';
 
 export const AdminUserCreatePage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const me = useAuthStore((state) => state.user);
-  const canManage = !!me?.permissions?.includes('user:manage');
+  const canCreate = !!me?.permissions?.includes('user:create');
 
   const [form, setForm] = useState<AdminUserFormValues>(
     emptyAdminUserForm,
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  const [initialForm] = useState<AdminUserFormValues>(emptyAdminUserForm);
+  const unsaved = useUnsavedChanges(canCreate && JSON.stringify(form) !== JSON.stringify(initialForm));
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!canManage || busy) return;
+    if (!canCreate || busy) return;
 
     setBusy(true);
     setError(false);
 
     try {
       await createAdminUser(form);
+      unsaved.markSaved();
       toast.success(t('adminUsers.createSuccess'));
       navigate('/admin/users');
     } catch {
@@ -57,7 +61,7 @@ export const AdminUserCreatePage = () => {
         </p>
       )}
 
-      {canManage && (
+      {canCreate && (
         <AdminUserForm
           creating
           form={form}

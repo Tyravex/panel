@@ -29,7 +29,7 @@ export const ServiceDetailsPage = () => {
             >
                 <ArrowLeft size={16} aria-hidden="true" />
 
-                {t("dashboard.servers.backToDashboard", {
+                {t("dashboard.services.backToDashboard", {
                     defaultValue: "Back to dashboard",
                 })}
             </Link>
@@ -52,7 +52,7 @@ export const ServiceDetailsPage = () => {
                 <ServiceFeedback
                     kind="error"
                     title={t("dashboard.services.errorTitle")}
-                    retryLabel={t("dashboard.servers.retry")}
+                    retryLabel={t("dashboard.services.retry")}
                     onRetry={() => void refetch()}
                     retrying={isFetching}
                 />

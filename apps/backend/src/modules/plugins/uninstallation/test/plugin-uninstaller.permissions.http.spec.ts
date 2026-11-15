@@ -31,7 +31,7 @@ describe('PluginUninstallerController (real PermissionsGuard HTTP)', () => {
     let authenticated = true;
     let user: TestUser = {
         id: 7,
-        permissions: ['plugin:manage'],
+        permissions: ['plugin:delete'],
     };
 
     const jwtGuard: CanActivate = {
@@ -89,7 +89,7 @@ describe('PluginUninstallerController (real PermissionsGuard HTTP)', () => {
 
         user = {
             id: 7,
-            permissions: ['plugin:manage'],
+            permissions: ['plugin:delete'],
         };
 
         uninstall.mockResolvedValue({
@@ -103,7 +103,7 @@ describe('PluginUninstallerController (real PermissionsGuard HTTP)', () => {
         await app?.close();
     });
 
-    it('allows an administrator with plugin:manage', async () => {
+    it('allows an administrator with plugin:delete', async () => {
         const response = await sendUninstall();
 
         expect(response.status).toBe(200);
@@ -121,10 +121,10 @@ describe('PluginUninstallerController (real PermissionsGuard HTTP)', () => {
         );
     });
 
-    it('allows plugin:manage among other permissions', async () => {
+    it('allows plugin:delete among other permissions', async () => {
         user.permissions = [
             'server:read',
-            'plugin:manage',
+            'plugin:delete',
             'user:read',
         ];
 
@@ -146,7 +146,24 @@ describe('PluginUninstallerController (real PermissionsGuard HTTP)', () => {
         expect(uninstall).not.toHaveBeenCalled();
     });
 
-    it('returns 403 when plugin:manage is missing', async () => {
+    it('returns 403 with only plugin:manage', async () => {
+        user.permissions = ['plugin:manage'];
+
+        const response = await sendUninstall();
+
+        expect(response.status).toBe(403);
+        expect(uninstall).not.toHaveBeenCalled();
+    });
+
+    it('returns 403 with only plugin:read', async () => {
+        user.permissions = ['plugin:read'];
+
+        const response = await sendUninstall();
+
+        expect(response.status).toBe(403);
+        expect(uninstall).not.toHaveBeenCalled();
+    });
+    it('returns 403 when plugin:delete is missing', async () => {
         user.permissions = [
             'plugin:read',
             'server:manage',
@@ -177,7 +194,7 @@ describe('PluginUninstallerController (real PermissionsGuard HTTP)', () => {
     });
 
     it('returns 403 when permissions are a string', async () => {
-        user.permissions = 'plugin:manage';
+        user.permissions = 'plugin:delete';
 
         const response = await sendUninstall();
 
@@ -187,7 +204,7 @@ describe('PluginUninstallerController (real PermissionsGuard HTTP)', () => {
 
     it('returns 403 when permissions are an object', async () => {
         user.permissions = {
-            'plugin:manage': true,
+            'plugin:delete': true,
         };
 
         const response = await sendUninstall();
@@ -198,7 +215,7 @@ describe('PluginUninstallerController (real PermissionsGuard HTTP)', () => {
 
     it('returns 403 for a similarly named permission', async () => {
         user.permissions = [
-            'plugin:management',
+            'plugin:deletion',
         ];
 
         const response = await sendUninstall();
@@ -209,7 +226,7 @@ describe('PluginUninstallerController (real PermissionsGuard HTTP)', () => {
 
     it('returns 403 when permission casing differs', async () => {
         user.permissions = [
-            'PLUGIN:MANAGE',
+            'PLUGIN:DELETE',
         ];
 
         const response = await sendUninstall();
@@ -250,7 +267,7 @@ describe('PluginUninstallerController (real PermissionsGuard HTTP)', () => {
     it('returns 401 when RBAC passes but administrator ID is invalid', async () => {
         user = {
             id: 'invalid',
-            permissions: ['plugin:manage'],
+            permissions: ['plugin:delete'],
         };
 
         const response = await sendUninstall();

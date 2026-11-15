@@ -10,6 +10,8 @@ import {
 import { regionsApi } from '@/features/regions/api/regionsApi';
 import { locationsApi } from '@/features/locations/api/locationsApi';
 import type { RegionRecord, LocationRecord } from '@shared/types';
+import { useAuthStore } from '@/app/store/auth.store';
+import { useUnsavedChanges } from '@/shared/lib/useUnsavedChanges';
 
 type NodeTab = 'overview' | 'settings' | 'agent' | 'network' | 'services' | 'tags';
 type Language = 'pl' | 'en';
@@ -102,6 +104,11 @@ const getError = (reason: unknown): string => {
 };
 
 export const AdminNodeDetailsPage = () => {
+    const permissions = useAuthStore((state) => state.user?.permissions);
+    const canManage = !!permissions?.includes('node:manage');
+    const canReadRegions = !!permissions?.includes('region:manage');
+    const canReadLocations = !!permissions?.includes('location:manage');
+    const canAssignLocation = canReadRegions && canReadLocations;
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -126,6 +133,10 @@ export const AdminNodeDetailsPage = () => {
     const [locationId, setLocationId] = useState('');
     const [manualAllocation, setManualAllocation] = useState(true);
     const [automaticAllocation, setAutomaticAllocation] = useState(false);
+    const unsaved = useUnsavedChanges(canManage && !loading && !!node && (
+        name !== node.name || regionId !== (node.regionId ?? '') || locationId !== (node.locationId ?? '') ||
+        manualAllocation !== node.manualAllocationEnabled || automaticAllocation !== node.automaticAllocationEnabled
+    ));
 
     const applyNode = useCallback((record: NodeRecord) => {
         setNode(record);
@@ -159,8 +170,8 @@ export const AdminNodeDetailsPage = () => {
             try {
                 const [nodeRecord, regionRecords, locationRecords] = await Promise.all([
                     nodesApi.getById(id, controller.signal),
-                    regionsApi.list(controller.signal),
-                    locationsApi.list(controller.signal),
+                    canReadRegions ? regionsApi.list(controller.signal) : Promise.resolve([]),
+                    canReadLocations ? locationsApi.list(controller.signal) : Promise.resolve([]),
                 ]);
 
                 if (controller.signal.aborted) return;
@@ -181,12 +192,12 @@ export const AdminNodeDetailsPage = () => {
         void load();
 
         return () => controller.abort();
-    }, [id, refreshKey, applyNode]);
+    }, [id, refreshKey, applyNode, canReadRegions, canReadLocations]);
 
     const save = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        if (!id || !node || busy) return;
+        if (!canManage || !id || !node || busy) return;
 
         const normalizedName = name.trim();
 
@@ -203,8 +214,10 @@ export const AdminNodeDetailsPage = () => {
         }
 
         if (
-            !regions.some((region) => region.id === regionId) ||
-            !availableLocations.some((location) => location.id === locationId)
+            canAssignLocation && (
+                !regions.some((region) => region.id === regionId) ||
+                !availableLocations.some((location) => location.id === locationId)
+            )
         ) {
             setError(m.invalidAssignment);
             setSuccess('');
@@ -213,8 +226,7 @@ export const AdminNodeDetailsPage = () => {
 
         const payload: UpdateNodeRequest = {
             name: normalizedName,
-            regionId,
-            locationId,
+            ...(canAssignLocation ? { regionId, locationId } : {}),
             manualAllocationEnabled: manualAllocation,
             automaticAllocationEnabled: automaticAllocation,
         };
@@ -265,7 +277,7 @@ export const AdminNodeDetailsPage = () => {
 
                     <button
                         type="button"
-                        onClick={() => setRefreshKey((value) => value + 1)}
+                        onClick={() => unsaved.requestAction(() => setRefreshKey((value) => value + 1))}
                         disabled={loading || busy}
                         className="inline-flex items-center gap-2 rounded-xl border border-border-subtle bg-surface px-4 py-2.5 text-sm font-medium disabled:opacity-50"
                     >
@@ -343,14 +355,14 @@ export const AdminNodeDetailsPage = () => {
                                     <dt className="text-sm text-text-secondary">{m.region}</dt>
                                     <dd className="mt-1 font-medium">
                                         {regions.find((region) => region.id === node.regionId)?.name ??
-                                            m.unassigned}
+                                            node.regionId ?? m.unassigned}
                                     </dd>
                                 </div>
                                 <div>
                                     <dt className="text-sm text-text-secondary">{m.location}</dt>
                                     <dd className="mt-1 font-medium">
                                         {locations.find((location) => location.id === node.locationId)?.name ??
-                                            m.unassigned}
+                                            node.locationId ?? m.unassigned}
                                     </dd>
                                 </div>
                                 <div>
@@ -369,6 +381,7 @@ export const AdminNodeDetailsPage = () => {
                         </section>
                     ) : tab === 'settings' ? (
                         <form onSubmit={(event) => void save(event)} className="space-y-6">
+                            <fieldset disabled={!canManage} className="space-y-6">
                             <section className="rounded-2xl border border-border-subtle bg-surface p-6">
                                 <h2 className="mb-5 text-xl font-semibold">
                                     {labels.settings[language]}
@@ -401,11 +414,12 @@ export const AdminNodeDetailsPage = () => {
                                                 setRegionId(event.target.value);
                                                 setLocationId('');
                                             }}
-                                            disabled={busy}
+                                            disabled={busy || !canAssignLocation}
                                             required
                                             className={fieldClass}
                                         >
                                             <option value="" disabled>{m.selectRegion}</option>
+                                            {!canReadRegions && regionId && <option value={regionId}>{regionId}</option>}
                                             {regions.map((region) => (
                                                 <option key={region.id} value={region.id}>
                                                     {region.name} ({region.code})
@@ -422,11 +436,12 @@ export const AdminNodeDetailsPage = () => {
                                             id="node-settings-location"
                                             value={locationId}
                                             onChange={(event) => setLocationId(event.target.value)}
-                                            disabled={busy || !regionId}
+                                            disabled={busy || !regionId || !canAssignLocation}
                                             required
                                             className={fieldClass}
                                         >
                                             <option value="" disabled>{m.selectLocation}</option>
+                                            {!canAssignLocation && locationId && <option value={locationId}>{locationId}</option>}
                                             {availableLocations.map((location) => (
                                                 <option key={location.id} value={location.id}>
                                                     {location.name} ({location.code})
@@ -484,13 +499,14 @@ export const AdminNodeDetailsPage = () => {
                             <div className="flex justify-end">
                                 <button
                                     type="submit"
-                                    disabled={busy || !name.trim() || !regionId || !locationId}
+                                    disabled={busy || !name.trim() || (canAssignLocation && (!regionId || !locationId))}
                                     className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-white disabled:opacity-50"
                                 >
                                     <Save size={18} aria-hidden="true" />
                                     {busy ? m.saving : m.save}
                                 </button>
                             </div>
+                            </fieldset>
                         </form>
                     ) : (
                         <section className="rounded-2xl border border-border-subtle bg-surface p-6">

@@ -4,6 +4,7 @@ import request from 'supertest';
 
 import { RbacController } from '../rbac.controller';
 import { RbacService } from '../rbac.service';
+import { DefaultRoleService } from '../default-role.service';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -24,6 +25,10 @@ describe('RbacController HTTP security', () => {
         const moduleRef = await Test.createTestingModule({
             controllers: [RbacController],
             providers: [
+                {
+                    provide: DefaultRoleService,
+                    useValue: {},
+                },
                 {
                     provide: RbacService,
                     useValue: { revokeRole },
@@ -69,7 +74,7 @@ describe('RbacController HTTP security', () => {
 
         expect(revokeRole).not.toHaveBeenCalled();
     });
-    it('returns 403 for a valid JWT without role:manage', async () => {
+    it('returns 403 for a valid JWT without role:assign', async () => {
         findUnique.mockResolvedValue({
             id: 2,
             username: 'regular-user',
@@ -129,7 +134,7 @@ describe('RbacController HTTP security', () => {
 
         expect(revokeRole).not.toHaveBeenCalled();
     });
-    it('allows role revocation with role:manage permission', async () => {
+    it('allows role revocation with role:assign permission', async () => {
         findUnique.mockResolvedValue({
             id: 3,
             username: 'staff-user',
@@ -144,7 +149,7 @@ describe('RbacController HTTP security', () => {
                     role: {
                         name: 'Support',
                         permissions: [
-                            { name: 'role:manage' },
+                            { name: 'role:assign' },
                         ],
                     },
                 },

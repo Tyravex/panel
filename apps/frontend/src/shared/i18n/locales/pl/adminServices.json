@@ -1,11 +1,45 @@
 {
   "adminServices": {
+    "eggProfile": "Profil Egg",
+    "eggChangeClearsEnvironment": "Zmiana Egg po zapisaniu usunie dotychczasowe wartości zmiennych. Uzupełnij je ponownie dla nowej definicji.",
+    "eggDefault": "Domyślny wybór z Egg",
+    "runtimeVersion": "Wersja środowiska",
+    "environment": "Zmienne środowiskowe",
+    "environmentNote": "Zapisane wartości są szyfrowane i nie są zwracane do formularza. Puste, niezmienione pola zachowują wartości. Usunięcie wymaga osobnego przycisku.",
+    "environmentSaved": "Zapisano zmienne środowiskowe.",
+    "valueConfigured": "Wartość zapisana",
+    "valueMissing": "Brak wartości",
+    "removeValue": "Usuń zapisaną wartość",
+    "valueWillBeRemoved": "Wartość zostanie usunięta po zapisaniu.",
+    "installationReadiness": "Gotowość do instalacji",
+    "availableEggUpdates": "Dostępne nowsze wersje Egg",
+    "manualEggUpdates": "Usługa zachowuje przypiętą wersję. Aktualizacja wymaga osobnej decyzji; działające usługi nie są automatycznie zmieniane.",
+    "installationBlockers": {
+      "PANEL_INSTALL_DISPATCH_UNAVAILABLE": "Kolejka instalacji usług wymaga jeszcze integracji z wykonawcą agenta. Zapis konfiguracji i import Eggs są dostępne niezależnie.",
+      "EGG_REQUIRED": "Wybierz Egg.", "NODE_REQUIRED": "Przypisz węzeł.", "EGG_UNAVAILABLE": "Egg musi być zatwierdzony i włączony wraz z repozytorium.",
+      "REQUIRED_VARIABLES_MISSING": "Uzupełnij wymagane zmienne środowiskowe.",
+      "AGENT_INSTALL_EXECUTION_UNAVAILABLE": "Obecny agent nie wykonuje jeszcze instalacji usług. Wymagana jest pełna obsługa kontraktu, przydziału sieci i egzekwowania limitów dysku."
+    },
+    "jobHistory": "Ostatnie zadania instalacji",
+    "backToList": "Wróć do usług",
+    "details": "Szczegóły",
+    "installation": "Instalacja",
+    "configuration": "Konfiguracja usługi",
+    "noEgg": "Nie wybrano Egg",
+    "applyEggDefaults": "Zastosuj domyślne zasoby z Egg",
+    "variable": "Deklaracja zmiennej",
+    "secretVariable": "Deklaracja zmiennej tajnej",
+    "editTitle": "Edytuj usługę",
+    "draftOnly": "Konfigurację instalacji można edytować tylko dla szkicu usługi.",
+    "install": "Zleć instalację",
+    "confirmInstall": "Zlecić instalację z wybraną wersją Egg, węzłem i limitami zasobów?",
+    "allCategories": "Wszystkie kategorie",
     "administration": "Administracja",
     "allServices": "Wszystkie usługi ({{count}})",
     "categories": {
       "discord_bot": "Bot Discord",
       "other": "Inna usługa",
-      "server": "Serwer",
+      "server": "Serwer gry",
       "telegram_bot": "Bot Telegram"
     },
     "category": "Kategoria",
@@ -60,6 +94,7 @@
       "diskMb": "Dysk: wpisz liczbę całkowitą od 1 do 10485760.",
       "memoryMb": "RAM: wpisz liczbę całkowitą od 1 do 1048576.",
       "name": "Nazwa musi mieć od 1 do 100 znaków."
-    }
+    },
+    "installationCpuLimit": "CPU instalacji musi wynosić od 1 do 100%."
   }
 }

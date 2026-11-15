@@ -263,14 +263,14 @@ export class ServicesService {
     });
   }
 
-  async prepareInstall(serviceId: string, userId: number) {
+  async prepareInstall(serviceId: string, userId: number, administrative = false) {
     return this.prisma.$transaction(async (tx) => {
       // Prevent concurrent changes to the same service.
       const locked = await tx.$queryRaw<Array<{ id: string }>>`
         SELECT "id"
         FROM "Service"
         WHERE "id" = ${serviceId}
-          AND "userId" = ${userId}
+          AND (${administrative} = true OR "userId" = ${userId})
         FOR UPDATE
       `;
 
@@ -393,6 +393,9 @@ export class ServicesService {
         );
       }
 
+      if ((egg.manifest as Record<string, unknown>).catalog) {
+        throw new ConflictException('AGENT_INSTALL_EXECUTION_UNAVAILABLE: repository Eggs require installation contract v2');
+      }
       const image = manifest.runtime.image.trim();
 
       const existingJob = await tx.job.findFirst({
@@ -565,6 +568,18 @@ export class ServicesService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      // Serialize owner transfers with membership mutations.
+      const locked = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "Service"
+        WHERE "id" = ${serviceId}
+        FOR UPDATE
+      `;
+
+      if (locked.length === 0) {
+        throw new NotFoundException('Service not found');
+      }
+
       const existing = await tx.service.findUnique({
         where: { id: serviceId },
         select: { id: true, userId: true },
@@ -632,22 +647,53 @@ export class ServicesService {
     }
   }
 
-  async getMembers(serviceId: string, ownerId: number) {
-    await this.assertOwner(serviceId, ownerId);
+  private async lockOwnedService(
+    tx: {
+      $queryRaw: <T = unknown>(
+        strings: TemplateStringsArray,
+        ...values: unknown[]
+      ) => Promise<T>;
+    },
+    serviceId: string,
+    ownerId: number,
+  ): Promise<void> {
+    const locked = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT "id"
+      FROM "Service"
+      WHERE "id" = ${serviceId}
+        AND "userId" = ${ownerId}
+      FOR UPDATE
+    `;
 
-    return this.prisma.serviceMember.findMany({
-      where: { serviceId },
+    if (locked.length === 0) {
+      throw new NotFoundException('Service not found');
+    }
+  }
+
+  async getMembers(serviceId: string, ownerId: number) {
+    const service = await this.prisma.service.findFirst({
+      where: { id: serviceId, userId: ownerId },
       select: {
-        userId: true,
-        permissions: true,
-        createdAt: true,
-        updatedAt: true,
-        user: {
-          select: { id: true, username: true },
+        members: {
+          select: {
+            userId: true,
+            permissions: true,
+            createdAt: true,
+            updatedAt: true,
+            user: {
+              select: { id: true, username: true },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
         },
       },
-      orderBy: { createdAt: 'asc' },
     });
+
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+
+    return service.members;
   }
 
   async addMember(
@@ -655,52 +701,54 @@ export class ServicesService {
     ownerId: number,
     dto: SetServiceMemberDto,
   ) {
-    await this.assertOwner(serviceId, ownerId);
-
-    if (dto.userId === ownerId) {
-      throw new BadRequestException(
-        'The service owner cannot be added as a member',
-      );
-    }
-
-    const user = await this.prisma.user.findFirst({
-      where: { id: dto.userId, isActive: true },
-      select: { id: true },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    const existing = await this.prisma.serviceMember.findUnique({
-      where: {
-        serviceId_userId: {
-          serviceId,
-          userId: dto.userId,
-        },
-      },
-      select: { id: true },
-    });
-
-    if (existing) {
-      throw new ConflictException(
-        'User is already a service member',
-      );
-    }
-
     try {
-      return await this.prisma.serviceMember.create({
-        data: {
-          serviceId,
-          userId: dto.userId,
-          permissions: dto.permissions,
-        },
-        select: {
-          userId: true,
-          permissions: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+      return await this.prisma.$transaction(async (tx) => {
+        await this.lockOwnedService(tx, serviceId, ownerId);
+
+        if (dto.userId === ownerId) {
+          throw new BadRequestException(
+            'The service owner cannot be added as a member',
+          );
+        }
+
+        const user = await tx.user.findFirst({
+          where: { id: dto.userId, isActive: true },
+          select: { id: true },
+        });
+
+        if (!user) {
+          throw new NotFoundException('User not found');
+        }
+
+        const existing = await tx.serviceMember.findUnique({
+          where: {
+            serviceId_userId: {
+              serviceId,
+              userId: dto.userId,
+            },
+          },
+          select: { id: true },
+        });
+
+        if (existing) {
+          throw new ConflictException(
+            'User is already a service member',
+          );
+        }
+
+        return tx.serviceMember.create({
+          data: {
+            serviceId,
+            userId: dto.userId,
+            permissions: dto.permissions,
+          },
+          select: {
+            userId: true,
+            permissions: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
       });
     } catch (error: unknown) {
       if (
@@ -724,33 +772,35 @@ export class ServicesService {
     memberUserId: number,
     dto: UpdateServiceMemberDto,
   ) {
-    await this.assertOwner(serviceId, ownerId);
+    return this.prisma.$transaction(async (tx) => {
+      await this.lockOwnedService(tx, serviceId, ownerId);
 
-    const member = await this.prisma.serviceMember.findUnique({
-      where: {
-        serviceId_userId: {
-          serviceId,
-          userId: memberUserId,
+      const member = await tx.serviceMember.findUnique({
+        where: {
+          serviceId_userId: {
+            serviceId,
+            userId: memberUserId,
+          },
         },
-      },
-      select: { id: true },
-    });
+        select: { id: true },
+      });
 
-    if (!member) {
-      throw new NotFoundException(
-        'Service member not found',
-      );
-    }
+      if (!member) {
+        throw new NotFoundException(
+          'Service member not found',
+        );
+      }
 
-    return this.prisma.serviceMember.update({
-      where: { id: member.id },
-      data: { permissions: dto.permissions },
-      select: {
-        userId: true,
-        permissions: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      return tx.serviceMember.update({
+        where: { id: member.id },
+        data: { permissions: dto.permissions },
+        select: {
+          userId: true,
+          permissions: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
     });
   }
 
@@ -759,18 +809,20 @@ export class ServicesService {
     ownerId: number,
     memberUserId: number,
   ) {
-    await this.assertOwner(serviceId, ownerId);
+    return this.prisma.$transaction(async (tx) => {
+      await this.lockOwnedService(tx, serviceId, ownerId);
 
-    const result = await this.prisma.serviceMember.deleteMany({
-      where: { serviceId, userId: memberUserId },
+      const result = await tx.serviceMember.deleteMany({
+        where: { serviceId, userId: memberUserId },
+      });
+
+      if (result.count === 0) {
+        throw new NotFoundException(
+          'Service member not found',
+        );
+      }
+
+      return { removed: true };
     });
-
-    if (result.count === 0) {
-      throw new NotFoundException(
-        'Service member not found',
-      );
-    }
-
-    return { removed: true };
   }
 }

@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import { validateCatalogOptions } from './catalog/egg-catalog-options';
 
 const CATEGORIES = new Set([
     'server',
@@ -19,6 +20,7 @@ const KEYS = new Set([
     'runtime',
     'resources',
     'variables',
+    'catalog',
 ]);
 
 type RecordValue = Record<string, unknown>;
@@ -74,7 +76,7 @@ export function validateEggManifest(
 
     if (
         !isNonEmptyString(value.id, 100) ||
-        !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.id)
+        !/^[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(value.id)
     ) {
         throw new BadRequestException('Invalid egg identifier');
     }
@@ -128,6 +130,7 @@ export function validateEggManifest(
         ) ||
         !isPositiveInteger(value.resources.memoryMb) ||
         !isPositiveInteger(value.resources.cpuPercent) ||
+        value.resources.cpuPercent > 100 ||
         !isPositiveInteger(value.resources.diskMb)
     ) {
         throw new BadRequestException('Invalid egg resources');
@@ -136,7 +139,7 @@ export function validateEggManifest(
     if (
         value.variables !== undefined &&
         (!Array.isArray(value.variables) ||
-            value.variables.length > 100 ||
+            value.variables.length > 64 ||
             !value.variables.every(
                 (variable: unknown) =>
                     isRecord(variable) &&
@@ -162,6 +165,8 @@ export function validateEggManifest(
     ) {
         throw new BadRequestException('Duplicate egg variable name');
     }
+
+    if (value.catalog !== undefined) validateCatalogOptions(value.catalog);
 
     return {
         key: value.id,

@@ -9,6 +9,8 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { CreateEggRepositoryDto } from './dto/create-egg-repository.dto';
 import { assertEggApproved } from './egg-approval.policy';
 import { validateEggManifest } from './egg-manifest.validator';
+import { adaptRepositoryEgg } from './catalog/egg-repository.adapter';
+import { normalizeEggRepositoryUrl } from './catalog/egg-source';
 
 type RepositoryStatus = 'ENABLED' | 'DISABLED';
 type EggApprovalDecision = 'APPROVED' | 'REJECTED';
@@ -17,8 +19,37 @@ type EggApprovalDecision = 'APPROVED' | 'REJECTED';
 export class EggsService {
     constructor(private readonly prisma: PrismaService) { }
 
+    validateManifest(manifest: unknown) { const normalized = adaptRepositoryEgg(manifest); const parsed = validateEggManifest(normalized); return { key: parsed.key, version: parsed.version, name: parsed.name, manifest: normalized }; }
+
+    async getManifest(id: string) {
+        const egg = await this.prisma.egg.findUnique({ where: { id }, include: { _count: { select: { services: true } } } });
+        if (!egg) throw new NotFoundException('Egg not found');
+        return egg;
+    }
+
+    async createVersion(actorId: number, id: string, manifest: unknown) {
+        const original = await this.getManifest(id);
+        const parsed = validateEggManifest(manifest);
+        if (parsed.key !== original.key || parsed.version === original.version) throw new BadRequestException('Keep the Egg key and choose a new version');
+        // Existing manifests are immutable, including definitions used by services.
+        return this.importEgg(actorId, original.repositoryId, manifest,
+            original.sourceType === 'CUSTOM' && original.ownerId !== null ? { sourceType: 'CUSTOM', ownerId: original.ownerId } : undefined);
+    }
+
+    async renameRepository(actorId: number, id: string, name: string) {
+        if (!name?.trim() || name.trim().length > 100) throw new BadRequestException('Invalid repository name');
+        return this.prisma.$transaction(async (tx) => {
+            const repository = await tx.eggRepository.findUnique({ where: { id } });
+            if (!repository) throw new NotFoundException('Repository not found');
+            const updated = await tx.eggRepository.update({ where: { id }, data: { name: name.trim() } });
+            await tx.adminAuditLog.create({ data: { actorId, action: 'EGG_REPOSITORY_UPDATED', targetType: 'EGG_REPOSITORY', targetId: id, metadata: { name: name.trim() } } });
+            return updated;
+        });
+    }
+
     async listRepositories() {
         return this.prisma.eggRepository.findMany({
+            where: { archivedAt: null },
             select: {
                 id: true, name: true, url: true, isOfficial: true, status: true,
                 createdAt: true, updatedAt: true,
@@ -48,7 +79,7 @@ export class EggsService {
         try {
             return await this.prisma.$transaction(async (tx) => {
                 const repository = await tx.eggRepository.create({
-                    data: { name: dto.name, url: dto.url, isOfficial: false, status: 'DISABLED' },
+                    data: { name: dto.name, url: normalizeEggRepositoryUrl(dto.url), isOfficial: false, status: 'DISABLED' },
                 });
                 await tx.adminAuditLog.create({
                     data: {
@@ -67,14 +98,15 @@ export class EggsService {
         }
     }
 
-    async importEgg(actorId: number, repositoryId: string, rawManifest: unknown) {
-        const parsed = validateEggManifest(rawManifest);
+    async importEgg(actorId: number, repositoryId: string, rawManifest: unknown, origin?: { sourceType: 'CUSTOM'; ownerId: number }) {
+        const parsed = validateEggManifest(adaptRepositoryEgg(rawManifest));
         try {
             return await this.prisma.$transaction(async (tx) => {
                 const repository = await tx.eggRepository.findUnique({
-                    where: { id: repositoryId }, select: { id: true },
+                    where: { id: repositoryId }, select: { id: true, url: true },
                 });
                 if (!repository) throw new NotFoundException('Egg repository not found');
+                if (repository.url?.startsWith('tyravex-custom:') && !origin) throw new BadRequestException('Use a catalog repository for administrative imports');
 
                 // Administrative imports are community definitions until reviewed.
                 // Repository metadata cannot independently grant official provenance.
@@ -82,9 +114,9 @@ export class EggsService {
                     data: {
                         repositoryId, key: parsed.key, name: parsed.name,
                         description: parsed.description, version: parsed.version,
-                        manifest: parsed.manifest, sourceType: 'COMMUNITY',
+                        manifest: parsed.manifest, sourceType: origin?.sourceType ?? 'COMMUNITY',
                         approvalStatus: 'PENDING', approvedAt: null,
-                        ownerId: null, isEnabled: false,
+                        ownerId: origin?.ownerId ?? null, isEnabled: false,
                     },
                     select: {
                         id: true, key: true, name: true, version: true,
@@ -228,9 +260,10 @@ export class EggsService {
             if (locked.length === 0) throw new NotFoundException('Egg repository not found');
             const repository = await tx.eggRepository.findUnique({
                 where: { id: repositoryId },
-                select: { id: true, name: true, status: true, updatedAt: true },
+                select: { id: true, name: true, status: true, updatedAt: true, archivedAt: true },
             });
             if (!repository) throw new NotFoundException('Egg repository not found');
+            if (repository.archivedAt) throw new ConflictException('Archived repositories cannot be enabled');
             if (repository.status === status) return repository;
             const updated = await tx.eggRepository.update({
                 where: { id: repositoryId }, data: { status },

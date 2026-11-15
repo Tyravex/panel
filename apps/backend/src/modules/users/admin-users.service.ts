@@ -2,6 +2,7 @@ import * as bcrypt from 'bcryptjs';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { createUserWithDefaultRole } from '../../rbac/create-user-with-default-role';
 
 const safeUserSelect = {
   id: true, username: true, email: true,
@@ -148,10 +149,11 @@ export class AdminUsersService {
       names.lastName = validateOptionalName(input.lastName, 'lastName');
     }
     return this.unique(() => this.prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: { ...identity, ...names, password },
-        select: safeUserSelect,
-      });
+      const user = await createUserWithDefaultRole(
+        tx,
+        { ...identity, ...names, password },
+        safeUserSelect,
+      );
       if (actorId !== undefined) {
         await tx.adminAuditLog.create({
           data: {

@@ -3,6 +3,9 @@
     "accountOverview": "Przegląd konta",
     "accountOverviewDescription": "Podstawowe informacje o Twoim koncie Tyravex.",
     "categories": {
+      "games": "Serwery gier",
+      "bots": "Boty",
+      "voice": "Usługi głosowe",
       "discordBots": "Boty Discord",
       "other": "Inne usługi",
       "servers": "Serwery",
@@ -77,10 +80,14 @@
       "users": "Użytkownicy"
     },
     "services": {
+      "all": "Wszystkie usługi",
+      "backToDashboard": "Powrót do pulpitu",
+      "refresh": "Odśwież",
+      "retry": "Spróbuj ponownie",
       "apiPending": "Ta kategoria jest już dostępna w katalogu usług. Zarządzanie usługami będzie możliwe po podłączeniu API.",
       "categoryLabel": "Kategorie usług",
       "count": "Liczba usług",
-      "description": "Zarządzaj serwerami, botami i usługami hostingowymi w jednym miejscu.",
+      "description": "Zarządzaj serwerami gier, botami i usługami hostingowymi w jednym miejscu.",
       "detailsUnavailable": "Szczegóły będą dostępne po instalacji.",
       "draft": "Szkic",
       "emptyDescription": "Do Twojego konta nie przypisano jeszcze usług w tej kategorii.",
@@ -89,12 +96,42 @@
       "linkedServer": "Powiązany serwer",
       "loading": "Ładowanie usług...",
       "pendingInstallation": "Oczekuje na instalację",
-      "previewNote": "To przykładowe serwery. Nie są zapisane w bazie danych.",
+      "previewNote": "To przykładowe usługi. Nie są zapisane w bazie danych.",
       "previewOff": "Podgląd: WYŁ.",
       "previewOn": "Podgląd: WŁ.",
       "serviceId": "ID usługi",
       "subtitle": "Wybierz kategorię, aby wyświetlić swoje usługi.",
       "title": "Twoje usługi"
+    },
+    "serviceDetails": {
+      "statusOnline": "Online",
+      "statusOffline": "Offline",
+      "statusMaintenance": "Konserwacja",
+      "statusUnknown": "Nieznany",
+      "noData": "Brak danych"
+    },
+    "workspace": {
+      "navigation": "Moduły usługi",
+      "installation": "Instalacja",
+      "resources": "Zasoby CPU / RAM",
+      "noTelemetry": "Telemetria niedostępna",
+      "type": "Typ usługi",
+      "pendingTitle": "Moduł nie jest jeszcze podłączony",
+      "pendingDescription": "Ten moduł nie jest jeszcze dostępny. Obecna konfiguracja usługi pozostaje zachowana.",
+      "extensionsDescription": "Pluginy i mody będą dostępne dla zgodnych gier, silników i wersji.",
+      "voiceDescription": "Zarządzanie usługą głosową będzie dostępne po podłączeniu integracji.",
+      "kinds": {
+        "game": { "label": "Serwer gry", "description": "Zarządzaj serwerem gry, graczami i rozszerzeniami." },
+        "bot": { "label": "Bot", "description": "Zarządzaj botem, środowiskiem, logami i modułami." },
+        "voice": { "label": "Usługa głosowa", "description": "Zarządzaj usługą głosową, kanałami i uprawnieniami." },
+        "other": { "label": "Usługa", "description": "Zarządzaj usługami hostingowymi." }
+      },
+      "tabs": {
+        "overview": "Przegląd", "console": "Konsola", "files": "Pliki",
+        "extensions": "Pluginy / mody", "players": "Gracze", "channels": "Kanały",
+        "permissions": "Uprawnienia", "environment": "Zmienne środowiskowe", "logs": "Logi",
+        "modules": "Moduły", "backups": "Kopie zapasowe", "schedules": "Harmonogramy", "settings": "Ustawienia"
+      }
     },
     "username": "Nazwa użytkownika",
     "welcome": "Witaj, {{username}}!"

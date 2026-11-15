@@ -15,6 +15,7 @@ type Props = {
   error: string | null;
   busy: boolean;
   canManage: boolean;
+  canViewRoles?: boolean;
   currentUserId?: number;
   onView: (user: AdminUser) => void;
   onSelectRoles: (user: AdminUser) => void;
@@ -36,6 +37,7 @@ export const AdminUsersTable = ({
   error,
   busy,
   canManage,
+  canViewRoles = false,
   currentUserId,
   onView,
   onSelectRoles,
@@ -193,13 +195,15 @@ export const AdminUsersTable = ({
 
                     <td className="px-5 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onSelectRoles(user)}
-                          className="rounded-lg border border-border-subtle px-3 py-2 text-xs font-medium transition hover:bg-white/5"
-                        >
-                          {t('adminUsers.roles')}
-                        </button>
+                        {canViewRoles && (
+                          <button
+                            type="button"
+                            onClick={() => onSelectRoles(user)}
+                            className="rounded-lg border border-border-subtle px-3 py-2 text-xs font-medium transition hover:bg-white/5"
+                          >
+                            {t('adminUsers.roles')}
+                          </button>
+                        )}
 
                         {canManage && canEditDetails && (
                           <button

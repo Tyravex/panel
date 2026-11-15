@@ -1,8 +1,9 @@
-import { Bell, Settings, Shield, Users } from 'lucide-react';
+import { Bell, Settings, Shield, Users, Package } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export type AdminSettingsTab =
     | 'users'
+    | 'eggs'
     | 'security'
     | 'system'
     | 'notifications';
@@ -13,6 +14,7 @@ type AdminSettingsTabsProps = {
 };
 
 const tabs = [
+    { id: 'eggs', labelKey: 'eggs.settingsTab', icon: Package },
     { id: 'users', labelKey: 'adminSettings.tabs.users', icon: Users },
     { id: 'security', labelKey: 'adminSettings.tabs.security', icon: Shield },
     { id: 'system', labelKey: 'adminSettings.tabs.system', icon: Settings },
@@ -44,8 +46,8 @@ export const AdminSettingsTabs = ({
                         aria-current={selected ? 'page' : undefined}
                         onClick={() => onTabChange(id)}
                         className={`flex shrink-0 items-center gap-2 border-b-2 px-5 py-4 text-sm font-medium transition-colors ${selected
-                                ? 'border-primary text-primary'
-                                : 'border-transparent text-text-secondary hover:text-white'
+                            ? 'border-primary text-primary'
+                            : 'border-transparent text-text-secondary hover:text-white'
                             }`}
                     >
                         <Icon size={18} aria-hidden="true" />

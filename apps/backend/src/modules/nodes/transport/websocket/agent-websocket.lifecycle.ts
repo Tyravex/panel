@@ -76,6 +76,14 @@ export class AgentWebSocketLifecycle
         return this.transport?.isNodeConnected(nodeId) ?? false;
     }
 
+    getNodeCapabilities(nodeId: string): readonly string[] {
+        return this.transport?.getNodeCapabilities(nodeId) ?? [];
+    }
+
+    isCurrentNodeSession(nodeId: string, sessionId: string): boolean {
+        return this.transport?.isCurrentNodeSession(nodeId, sessionId) ?? false;
+    }
+
     disconnectNode(nodeId: string): void {
         this.transport?.disconnectNode(nodeId);
     }

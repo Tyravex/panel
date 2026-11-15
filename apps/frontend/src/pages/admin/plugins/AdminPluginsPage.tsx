@@ -13,9 +13,16 @@ import { PluginUninstallModal } from '@/features/plugins/components/PluginUninst
 import { PluginsTable } from '@/features/plugins/components/PluginsTable';
 import { usePlugins } from '@/features/plugins/hooks/usePlugins';
 import { useUser } from '@/shared/store/user';
+import { useAuthStore } from '@/app/store/auth.store';
 
 export const AdminPluginsPage = () => {
     const { t } = useTranslation();
+    const canManage = useAuthStore((state) =>
+        !!state.user?.permissions?.includes('plugin:manage'),
+    );
+    const canDelete = useAuthStore((state) =>
+        !!state.user?.permissions?.includes('plugin:delete'),
+    );
 
     const syncActiveLanguage = useUser(
         (state) => state.syncActiveLanguage,
@@ -144,14 +151,14 @@ export const AdminPluginsPage = () => {
                         {t('adminPlugins.refresh')}
                     </button>
 
-                    <button
+                    {canManage && <button
                         type="button"
                         onClick={() => setInstallOpen(true)}
                         className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white"
                     >
                         <Plus size={17} aria-hidden="true" />
                         {t('adminPlugins.install.open')}
-                    </button>
+                    </button>}
                 </div>
             </header>
 
@@ -207,26 +214,26 @@ export const AdminPluginsPage = () => {
                 )}
             </section>
 
-            <PluginInstallModal
+            {canManage && <PluginInstallModal
                 open={installOpen}
                 onClose={() => setInstallOpen(false)}
                 onInstalled={() => {
                     setCategory('ALL');
                     handlePluginChanged();
                 }}
-            />
+            />}
 
-            <PluginToggleModal
+            {canManage && <PluginToggleModal
                 plugin={togglePlugin}
                 onClose={() => setTogglePlugin(null)}
                 onChanged={handlePluginChanged}
-            />
+            />}
 
-            <PluginUninstallModal
+            {canDelete && <PluginUninstallModal
                 plugin={uninstallPlugin}
                 onClose={() => setUninstallPlugin(null)}
                 onChanged={handlePluginChanged}
-            />
+            />}
         </div>
     );
 };

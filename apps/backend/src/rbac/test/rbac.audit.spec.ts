@@ -5,6 +5,7 @@ describe('RbacService transactional audit', () => {
     const tx = {
         $queryRaw: jest.fn(),
         permission: { findMany: jest.fn() },
+        rbacSettings: { findUnique: jest.fn() },
         role: { findUnique: jest.fn(), update: jest.fn(), delete: jest.fn() },
         user: { findUnique: jest.fn() },
         userRole: {
@@ -27,6 +28,7 @@ describe('RbacService transactional audit', () => {
         );
         tx.$queryRaw.mockResolvedValue([]);
         tx.permission.findMany.mockResolvedValue([{ id: 'p1' }]);
+        tx.rbacSettings.findUnique.mockResolvedValue(null);
         tx.role.findUnique.mockResolvedValue({ id: 'r1', name: 'Support' });
         tx.role.update.mockResolvedValue({ id: 'r1', name: 'Operators', permissions: [] });
         tx.role.delete.mockResolvedValue({ id: 'r1' });

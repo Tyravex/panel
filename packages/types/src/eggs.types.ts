@@ -41,3 +41,30 @@ export interface EggLibraryItem {
 export interface SetEggApprovalRequest {
     status: 'APPROVED' | 'REJECTED';
 }
+
+export interface EggManifest {
+    format: 'tyravex-egg'; formatVersion: 1; id: string; name: string; version: string;
+    category: string; description?: string;
+    runtime: { image: string; startup: string };
+    resources: { memoryMb: number; cpuPercent: number; diskMb: number };
+    variables?: { name: string; required: boolean; secret: boolean }[];
+    catalog?: import('./egg-catalog.types').EggCatalogOptions;
+}
+
+export interface AdminEgg extends EggLibraryItem {
+    manifest: EggManifest;
+    _count?: { services: number };
+    provenance?: import('./egg-catalog.types').EggProvenance | null;
+}
+
+export interface EggRepository {
+    id: string; name: string; url: string; isOfficial: boolean; status: 'ENABLED' | 'DISABLED';
+    _count?: { eggs: number };
+}
+
+export interface EggRepositoryPreview {
+    repositoryId: string;
+    digest: string;
+    commit: string | null;
+    entries: { path: string; key: string; version: string; manifest: EggManifest | null; state: 'NEW' | 'EXISTS' | 'CONFLICT' | 'INVALID'; error?: string; sha256?: string; sourceUrl?: string }[];
+}

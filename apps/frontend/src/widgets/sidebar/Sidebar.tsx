@@ -29,7 +29,8 @@ export function Sidebar({ mobile = false, onNavigate }: SidebarProps) {
 
   const visible = (item: SidebarItem) =>
     (!item.ownerOnly || !!user?.roles?.includes("Owner")) &&
-    (!item.permission || !!user?.permissions?.includes(item.permission));
+    (!item.permission || (typeof item.permission === "string" ? [item.permission] : item.permission)
+      .every((permission) => !!user?.permissions?.includes(permission)));
 
   const filtered: Section[] = sections
     .map((section) => ({

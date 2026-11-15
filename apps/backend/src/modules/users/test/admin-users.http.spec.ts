@@ -146,8 +146,8 @@ describe('AdminUsersController HTTP permissions', () => {
         expect(setActive).not.toHaveBeenCalled();
     });
 
-    it('allows user:manage to mutate accounts', async () => {
-        const token = tokenFor(['user:manage']);
+    it('allows user:create and user:manage to mutate accounts', async () => {
+        const token = tokenFor(['user:create', 'user:manage']);
         await request(app.getHttpServer()).post('/admin/users')
             .set('Authorization', `Bearer ${token}`)
             .send({ username: 'new-user', email: 'new@example.invalid', password: 'a-long-password' })

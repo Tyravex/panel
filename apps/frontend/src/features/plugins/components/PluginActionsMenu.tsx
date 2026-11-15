@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '@/app/store/auth.store';
 
 import type { PluginRecord } from '../api/pluginsApi';
 
@@ -40,6 +41,9 @@ export const PluginActionsMenu = ({
     onUninstall,
 }: PluginActionsMenuProps) => {
     const { t } = useTranslation();
+    const permissions = useAuthStore((state) => state.user?.permissions);
+    const canManage = !!permissions?.includes('plugin:manage');
+    const canDelete = !!permissions?.includes('plugin:delete');
 
     const [open, setOpen] = useState(false);
     const [position, setPosition] = useState<MenuPosition>({
@@ -241,7 +245,7 @@ export const PluginActionsMenu = ({
                             className="my-1 h-px bg-white/10"
                         />
 
-                        <button
+                        {canManage && <button
                             type="button"
                             role="menuitem"
                             disabled={!canToggle || disabled}
@@ -279,14 +283,14 @@ export const PluginActionsMenu = ({
                                     ? 'adminPlugins.actions.disable'
                                     : 'adminPlugins.actions.enable',
                             )}
-                        </button>
+                        </button>}
 
                         <div
                             role="separator"
                             className="my-1 h-px bg-white/10"
                         />
 
-                        <button
+                        {canDelete && <button
                             type="button"
                             role="menuitem"
                             disabled={!canUninstall || disabled}
@@ -309,7 +313,7 @@ export const PluginActionsMenu = ({
                                 aria-hidden="true"
                             />
                             {t('adminPlugins.actions.uninstall')}
-                        </button>
+                        </button>}
                     </div>,
                     document.body,
                 )}

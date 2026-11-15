@@ -4,6 +4,7 @@ import { Globe2, Pencil, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import type { RegionRecord } from '@shared/types';
 import { regionsApi } from '@/features/regions/api/regionsApi';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
+import { useUnsavedChanges } from '@/shared/lib/useUnsavedChanges';
 
 type RegionForm = {
   name: string;
@@ -52,6 +53,9 @@ export const AdminRegionsPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [regionToDelete, setRegionToDelete] = useState<RegionRecord | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [initialForm, setInitialForm] = useState<RegionForm>(emptyForm);
+  const unsaved = useUnsavedChanges(showForm && JSON.stringify(form) !== JSON.stringify(initialForm));
+  const beginForm = (value: RegionForm) => { setForm(value); setInitialForm(value); };
 
   const refresh = useCallback(() => {
     setRefreshKey((value) => value + 1);
@@ -92,7 +96,7 @@ export const AdminRegionsPage = () => {
   }, [refreshKey]);
 
   const startCreate = () => {
-    setForm(emptyForm);
+    beginForm(emptyForm);
     setEditingId(null);
     setError('');
     setNotice('');
@@ -100,7 +104,7 @@ export const AdminRegionsPage = () => {
   };
 
   const startEdit = (region: RegionRecord) => {
-    setForm({
+    beginForm({
       name: region.name,
       code: region.code,
       description: region.description ?? '',
@@ -266,7 +270,7 @@ export const AdminRegionsPage = () => {
 
           <button
             type="button"
-            onClick={startCreate}
+            onClick={() => unsaved.requestAction(startCreate)}
             disabled={busy}
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 font-semibold text-white disabled:opacity-50"
           >
@@ -305,7 +309,7 @@ export const AdminRegionsPage = () => {
 
             <button
               type="button"
-              onClick={cancelForm}
+              onClick={() => unsaved.requestAction(cancelForm)}
               disabled={busy}
               aria-label={label('cancel', 'Anuluj')}
               className="rounded-lg p-2 hover:bg-white/5 disabled:opacity-50"
@@ -385,7 +389,7 @@ export const AdminRegionsPage = () => {
 
               <button
                 type="button"
-                onClick={cancelForm}
+                onClick={() => unsaved.requestAction(cancelForm)}
                 disabled={busy}
                 className="rounded-xl border border-border-subtle px-5 py-3 disabled:opacity-50"
               >
@@ -454,7 +458,7 @@ export const AdminRegionsPage = () => {
                         <div className="flex flex-wrap gap-2">
                           <button
                             type="button"
-                            onClick={() => startEdit(region)}
+                            onClick={() => unsaved.requestAction(() => startEdit(region))}
                             disabled={busy}
                             className="inline-flex items-center gap-2 rounded-lg border border-border-subtle px-3 py-2 hover:bg-white/5 disabled:opacity-50"
                           >

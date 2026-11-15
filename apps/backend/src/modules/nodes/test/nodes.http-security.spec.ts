@@ -13,6 +13,9 @@ describe('Nodes HTTP security', () => {
     const findById = jest.fn();
     const createNode = jest.fn();
     const rotateToken = jest.fn();
+    const deleteNode = jest.fn();
+    const findAll = jest.fn();
+    const updateNode = jest.fn();
     const disconnectNode = jest.fn();
     let app: INestApplication;
 
@@ -22,7 +25,7 @@ describe('Nodes HTTP security', () => {
             providers: [
                 Reflector,
                 PermissionsGuard,
-                { provide: NodesService, useValue: { findById, createNode, rotateToken } },
+                { provide: NodesService, useValue: { findById, createNode, rotateToken, deleteNode, findAll, updateNode } },
                 { provide: JwtAuthGuard, useValue: { canActivate: () => true } },
                 { provide: AgentWebSocketLifecycle, useValue: { disconnectNode } },
             ],
@@ -34,7 +37,13 @@ describe('Nodes HTTP security', () => {
                     if (req.headers['x-test-auth'] !== 'valid') return false;
                     req.user = {
                         id: 7,
-                        permissions: req.headers['x-test-permission'] === 'manage' ? ['node:manage'] : [],
+                        permissions: (() => {
+                            const permission = req.headers['x-test-permission'];
+                            if (permission === 'read') return ['node:read'];
+                            if (permission === 'manage') return ['node:manage'];
+                            if (permission === 'delete') return ['node:delete'];
+                            return [];
+                        })(),
                     };
                     return true;
                 },
@@ -51,6 +60,9 @@ describe('Nodes HTTP security', () => {
         findById.mockResolvedValue({ id: 'node-1', name: 'Node', status: 'OFFLINE' });
         createNode.mockResolvedValue({ id: 'node-1', name: 'Node', token: 'new-token' });
         rotateToken.mockResolvedValue({ id: 'node-1', name: 'Node', token: 'rotated-token' });
+        deleteNode.mockResolvedValue({ success: true });
+        findAll.mockResolvedValue([]);
+        updateNode.mockResolvedValue({ id: 'node-1', name: 'Updated Node' });
     });
 
     afterAll(async () => {
@@ -61,23 +73,98 @@ describe('Nodes HTTP security', () => {
         .set('x-test-auth', 'valid')
         .set('x-test-permission', 'manage');
 
+    const withPermission = (req: request.Test, permission: string) => req
+        .set('x-test-auth', 'valid')
+        .set('x-test-permission', permission);
+
     it('blocks unauthenticated node reads', async () => {
         await request(app.getHttpServer()).get('/nodes/node-1').expect(403);
         expect(findById).not.toHaveBeenCalled();
     });
 
-    it('blocks node reads without node:manage', async () => {
+    it('blocks node reads without node:read', async () => {
         await request(app.getHttpServer()).get('/nodes/node-1')
             .set('x-test-auth', 'valid').expect(403);
         expect(findById).not.toHaveBeenCalled();
     });
 
     it('allows permitted node metadata reads', async () => {
-        const response = await authorized(request(app.getHttpServer()).get('/nodes/node-1')).expect(200);
+        const response = await withPermission(
+            request(app.getHttpServer()).get('/nodes/node-1'),
+            'read',
+        ).expect(200);
         expect(response.body).toEqual({ id: 'node-1', name: 'Node', status: 'OFFLINE' });
         expect(findById).toHaveBeenCalledWith('node-1');
     });
 
+    it('allows node list reads with node:read', async () => {
+        await withPermission(
+            request(app.getHttpServer()).get('/nodes'),
+            'read',
+        ).expect(200);
+
+        expect(findAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('blocks node list reads with only node:manage', async () => {
+        await withPermission(
+            request(app.getHttpServer()).get('/nodes'),
+            'manage',
+        ).expect(403);
+
+        expect(findAll).not.toHaveBeenCalled();
+    });
+
+    it('blocks node creation with only node:read', async () => {
+        await withPermission(
+            request(app.getHttpServer()).post('/nodes'),
+            'read',
+        ).send({ name: 'Node' }).expect(403);
+
+        expect(createNode).not.toHaveBeenCalled();
+    });
+
+    it('blocks node updates with only node:read', async () => {
+        await withPermission(
+            request(app.getHttpServer()).patch('/nodes/node-1'),
+            'read',
+        ).send({ name: 'Updated Node' }).expect(403);
+
+        expect(updateNode).not.toHaveBeenCalled();
+    });
+
+    it('allows node updates with node:manage', async () => {
+        await withPermission(
+            request(app.getHttpServer()).patch('/nodes/node-1'),
+            'manage',
+        ).send({ name: 'Updated Node' }).expect(200);
+
+        expect(updateNode).toHaveBeenCalledWith(
+            'node-1',
+            { name: 'Updated Node' },
+            7,
+        );
+    });
+
+    it('blocks token rotation with only node:read', async () => {
+        await withPermission(
+            request(app.getHttpServer()).post('/nodes/node-1/rotate-token'),
+            'read',
+        ).expect(403);
+
+        expect(rotateToken).not.toHaveBeenCalled();
+        expect(disconnectNode).not.toHaveBeenCalled();
+    });
+
+    it('blocks node deletion without permissions', async () => {
+        await request(app.getHttpServer())
+            .delete('/nodes/node-1')
+            .set('x-test-auth', 'valid')
+            .expect(403);
+
+        expect(deleteNode).not.toHaveBeenCalled();
+        expect(disconnectNode).not.toHaveBeenCalled();
+    });
     it('blocks node creation without permission', async () => {
         await request(app.getHttpServer()).post('/nodes')
             .set('x-test-auth', 'valid').send({ name: 'Node' }).expect(403);
@@ -102,6 +189,44 @@ describe('Nodes HTTP security', () => {
         expect(createNode).toHaveBeenCalledWith({ name: 'Node' });
     });
 
+    it('blocks node reads with only node:manage', async () => {
+        await withPermission(
+            request(app.getHttpServer()).get('/nodes/node-1'),
+            'manage',
+        ).expect(403);
+
+        expect(findById).not.toHaveBeenCalled();
+    });
+
+    it('blocks node deletion with only node:manage', async () => {
+        await withPermission(
+            request(app.getHttpServer()).delete('/nodes/node-1'),
+            'manage',
+        ).expect(403);
+
+        expect(deleteNode).not.toHaveBeenCalled();
+        expect(disconnectNode).not.toHaveBeenCalled();
+    });
+
+    it('blocks node deletion with only node:read', async () => {
+        await withPermission(
+            request(app.getHttpServer()).delete('/nodes/node-1'),
+            'read',
+        ).expect(403);
+
+        expect(deleteNode).not.toHaveBeenCalled();
+        expect(disconnectNode).not.toHaveBeenCalled();
+    });
+
+    it('allows node deletion with node:delete', async () => {
+        await withPermission(
+            request(app.getHttpServer()).delete('/nodes/node-1'),
+            'delete',
+        ).expect(200);
+
+        expect(deleteNode).toHaveBeenCalledWith('node-1', 7);
+        expect(disconnectNode).toHaveBeenCalledWith('node-1');
+    });
     it('blocks token rotation without permission', async () => {
         await request(app.getHttpServer()).post('/nodes/node-1/rotate-token')
             .set('x-test-auth', 'valid').expect(403);

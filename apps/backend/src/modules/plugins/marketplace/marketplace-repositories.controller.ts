@@ -24,7 +24,7 @@ import { MarketplaceRegistryService } from './marketplace-registry.service';
 
 @Controller('admin/plugins/marketplace/repositories')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-@Permissions('plugin:manage')
+@Permissions('marketplace:manage')
 export class MarketplaceRepositoriesController {
     constructor(
         private readonly repositoriesService: MarketplaceRepositoriesService,
@@ -33,18 +33,21 @@ export class MarketplaceRepositoriesController {
     ) { }
 
     @Get()
+    @Permissions('plugin:read')
     @Header('Cache-Control', 'no-store')
     list() {
         return this.repositoriesService.list();
     }
 
     @Get(':id')
+    @Permissions('plugin:read')
     @Header('Cache-Control', 'no-store')
     getById(@Param('id') id: string) {
         return this.repositoriesService.getById(id);
     }
 
     @Get(':id/plugins')
+    @Permissions('plugin:read')
     @Header('Cache-Control', 'no-store')
     async listPlugins(@Param('id') id: string) {
         const repository = await this.repositoriesService.getById(id);

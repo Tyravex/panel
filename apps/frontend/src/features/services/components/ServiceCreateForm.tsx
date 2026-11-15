@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { NodeRecord } from '@/features/nodes/api/nodesApi';
 import type { CreateAdminService } from '@/features/services/api/adminServicesApi';
@@ -13,12 +13,19 @@ interface Props {
     onCreate: (payload: CreateAdminService) => Promise<boolean>;
     onCancel: () => void;
     onCreated: () => void;
+    onDirtyChange?: (dirty: boolean) => void;
+    onDiscardRequest?: (action: () => void) => void;
 }
 
-export const ServiceCreateForm = ({ nodes, nodesLoading, nodesError, busy, onCreate, onCancel, onCreated }: Props) => {
+export const ServiceCreateForm = ({ nodes, nodesLoading, nodesError, busy, onCreate, onCancel, onCreated, onDirtyChange, onDiscardRequest }: Props) => {
     const { t } = useTranslation();
     const [form, setForm] = useState(emptyServiceForm);
     const [validationError, setValidationError] = useState('');
+    const dirty = JSON.stringify(form) !== JSON.stringify(emptyServiceForm());
+    useEffect(() => {
+        onDirtyChange?.(dirty);
+        return () => onDirtyChange?.(false);
+    }, [dirty, onDirtyChange]);
     const setField = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => setForm((current) => ({ ...current, [key]: value }));
     const submit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -46,7 +53,7 @@ export const ServiceCreateForm = ({ nodes, nodesLoading, nodesError, busy, onCre
                 {(['memoryMb', 'cpuPercent', 'diskMb'] as const).map((key) => <label key={key} className="space-y-2"><span className="block text-sm">{t(`adminServices.resources.${key}`)}</span><input type="number" min={1} max={key === 'memoryMb' ? 1048576 : key === 'cpuPercent' ? 100000 : 10485760} step={1} value={form[key]} onChange={(event) => setField(key, event.target.value)} className={serviceFieldClass} /></label>)}
             </div>
             {nodesError && <p role="alert" className="text-sm text-amber-400">{t('adminServices.nodesUnavailable', { message: nodesError })}</p>}
-            <div className="flex gap-3"><button type="submit" disabled={busy} className="rounded-xl bg-primary px-5 py-3 font-semibold text-white disabled:opacity-50">{busy ? t('common.saving') : t('adminServices.createDraft')}</button><button type="button" disabled={busy} onClick={onCancel} className="rounded-xl border border-border-subtle px-5 py-3">{t('common.cancel')}</button></div>
+            <div className="flex gap-3"><button type="submit" disabled={busy} className="rounded-xl bg-primary px-5 py-3 font-semibold text-white disabled:opacity-50">{busy ? t('common.saving') : t('adminServices.createDraft')}</button><button type="button" disabled={busy} onClick={() => onDiscardRequest ? onDiscardRequest(onCancel) : onCancel()} className="rounded-xl border border-border-subtle px-5 py-3">{t('common.cancel')}</button></div>
         </form>
     );
 };

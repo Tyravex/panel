@@ -73,18 +73,18 @@ export const updateAdminUserStatus = async (
     await api.patch(`/admin/users/${id}/status`, { isActive });
 };
 export type AdminUserService = {
-  id: string;
-  name: string;
-  access: 'Owner' | 'Member';
+    id: string;
+    name: string;
+    access: 'Owner' | 'Member';
 };
 
 export const getAdminUserServices = async (
-  id: number,
-  signal?: AbortSignal,
+    id: number,
+    signal?: AbortSignal,
 ): Promise<AdminUserService[]> => {
-  const { data } = await api.get<AdminUserService[]>(
-    `/admin/users/${id}/services`,
-    { signal },
-  );
-  return data;
+    const { data } = await api.get<AdminUserService[]>(
+        `/admin/users/${id}/services`,
+        { signal },
+    );
+    return data;
 };

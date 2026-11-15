@@ -98,22 +98,40 @@ describe('Egg custom and approval HTTP security', () => {
     expect(eggsService.setEggApproval).not.toHaveBeenCalled();
   });
 
-  it('requires both the Owner role and the administrative permission', async () => {
+  it('requires the management permission independently of role name', async () => {
     authenticatedUser = { id: 42, roles: ['Owner'], permissions: [] };
     await request(app.getHttpServer())
       .patch('/eggs/egg-1/approval')
       .send({ status: 'APPROVED' })
       .expect(403);
-    authenticatedUser = { id: 42, roles: ['User'], permissions: ['service:manage:any'] };
+
+    expect(eggsService.setEggApproval).not.toHaveBeenCalled();
+
+    authenticatedUser = {
+      id: 42,
+      roles: ['Administrator'],
+      permissions: ['egg:approve'],
+    };
+    eggsService.setEggApproval.mockResolvedValue({
+      id: 'egg-1',
+      approvalStatus: 'APPROVED',
+    });
+
     await request(app.getHttpServer())
       .patch('/eggs/egg-1/approval')
       .send({ status: 'APPROVED' })
-      .expect(403);
-    expect(eggsService.setEggApproval).not.toHaveBeenCalled();
+      .expect(200);
+
+    expect(eggsService.setEggApproval).toHaveBeenCalledTimes(1);
+    expect(eggsService.setEggApproval).toHaveBeenCalledWith(
+      42,
+      'egg-1',
+      'APPROVED',
+    );
   });
 
   it('allows an administrator to submit a valid approval decision', async () => {
-    authenticatedUser = { id: 7, roles: ['Owner'], permissions: ['service:manage:any'] };
+    authenticatedUser = { id: 7, roles: ['Owner'], permissions: ['egg:approve'] };
     eggsService.setEggApproval.mockResolvedValue({ id: 'egg-1', approvalStatus: 'APPROVED' });
     await request(app.getHttpServer())
       .patch('/eggs/egg-1/approval')
@@ -123,7 +141,7 @@ describe('Egg custom and approval HTTP security', () => {
   });
 
   it('rejects an invalid approval status before calling the service', async () => {
-    authenticatedUser = { id: 7, roles: ['Owner'], permissions: ['service:manage:any'] };
+    authenticatedUser = { id: 7, roles: ['Owner'], permissions: ['egg:approve'] };
     await request(app.getHttpServer())
       .patch('/eggs/egg-1/approval')
       .send({ status: 'PENDING' })

@@ -1,5 +1,9 @@
 {
   "navigation": {
+    "eggtags": "Tagi Eggs",
+    "egglibrary": "Biblioteka Eggs",
+    "importeggs": "Import Eggs",
+    "eggrepositories": "Repozytoria Eggs",
     "adminPanel": "Panel administracyjny",
     "auditlogs": "Dziennik audytu",
     "jobs": "Zadania",

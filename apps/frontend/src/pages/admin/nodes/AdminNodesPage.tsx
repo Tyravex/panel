@@ -26,6 +26,7 @@ import { NodeTokenDialog } from '@/features/nodes/components/NodeTokenDialog';
 import { regionsApi } from '@/features/regions/api/regionsApi';
 import { locationsApi } from '@/features/locations/api/locationsApi';
 import type { RegionRecord, LocationRecord } from '@shared/types';
+import { useAuthStore } from '@/app/store/auth.store';
 
 type ViewMode = 'grouped' | 'table';
 type Language = 'pl' | 'en';
@@ -157,6 +158,11 @@ const formatDate = (value: string | null, locale: string, never: string): string
 };
 
 export const AdminNodesPage = () => {
+    const permissions = useAuthStore((state) => state.user?.permissions);
+    const canManage = !!permissions?.includes('node:manage');
+    const canDelete = !!permissions?.includes('node:delete');
+    const canReadRegions = !!permissions?.includes('region:manage');
+    const canReadLocations = !!permissions?.includes('location:manage');
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const language: Language = i18n.resolvedLanguage === 'pl' ? 'pl' : 'en';
@@ -182,7 +188,9 @@ export const AdminNodesPage = () => {
     const [refreshKey, setRefreshKey] = useState(0);
     const [query, setQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
-    const [viewMode, setViewMode] = useState<ViewMode>('grouped');
+    const [viewMode, setViewMode] = useState<ViewMode>(
+        canReadRegions && canReadLocations ? 'grouped' : 'table',
+    );
     const [expanded, setExpanded] = useState<Set<string>>(
         () => new Set<string>(),
     );
@@ -225,8 +233,8 @@ export const AdminNodesPage = () => {
                 const [nodeRecords, regionRecords, locationRecords] =
                     await Promise.all([
                         nodesApi.list(controller.signal),
-                        regionsApi.list(controller.signal),
-                        locationsApi.list(controller.signal),
+                        canReadRegions ? regionsApi.list(controller.signal) : Promise.resolve([]),
+                        canReadLocations ? locationsApi.list(controller.signal) : Promise.resolve([]),
                     ]);
 
                 if (!active || controller.signal.aborted) return;
@@ -269,7 +277,7 @@ export const AdminNodesPage = () => {
             window.clearInterval(interval);
             document.removeEventListener('visibilitychange', onVisibilityChange);
         };
-    }, [refreshKey]);
+    }, [refreshKey, canReadRegions, canReadLocations]);
 
     const regionById = useMemo(
         () => new Map(regions.map((region) => [region.id, region])),
@@ -420,6 +428,7 @@ export const AdminNodesPage = () => {
     };
 
     const rotateToken = async (node: NodeRecord) => {
+        if (!canManage) return;
         if (!window.confirm(t('adminNodes.confirmRotate', { name: node.name }))) {
             return;
         }
@@ -442,7 +451,7 @@ export const AdminNodesPage = () => {
         node: NodeRecord,
         trigger: HTMLButtonElement,
     ) => {
-        if (busyId !== null || deleteBusyRef.current) return;
+        if (!canDelete || busyId !== null || deleteBusyRef.current) return;
 
         deleteTriggerRef.current = trigger;
         deleteSucceededRef.current = false;
@@ -511,6 +520,7 @@ export const AdminNodesPage = () => {
         const node = deleteTarget;
 
         if (
+            !canDelete ||
             !node ||
             busyId !== null ||
             deleteBusyRef.current ||
@@ -632,6 +642,7 @@ export const AdminNodesPage = () => {
                                         onClick={() => navigate(
                                             `/admin/nodes/${encodeURIComponent(node.id)}?tab=settings`,
                                         )}
+                                        disabled={!canManage}
                                         className="inline-flex items-center gap-2 rounded-lg border border-primary/40 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/10"
                                     >
                                         <Pencil size={15} aria-hidden="true" />
@@ -641,7 +652,7 @@ export const AdminNodesPage = () => {
                                     <button
                                         type="button"
                                         onClick={() => void rotateToken(node)}
-                                        disabled={busyId !== null}
+                                        disabled={!canManage || busyId !== null}
                                         className="inline-flex items-center gap-2 rounded-lg border border-border-subtle px-3 py-2 text-xs font-medium hover:bg-white/5 disabled:opacity-50"
                                     >
                                         <KeyRound size={15} aria-hidden="true" />
@@ -653,7 +664,7 @@ export const AdminNodesPage = () => {
                                     <button
                                         type="button"
                                         onClick={(event) => openDeleteDialog(node, event.currentTarget)}
-                                        disabled={busyId !== null}
+                                        disabled={!canDelete || busyId !== null}
                                         className="inline-flex items-center gap-2 rounded-lg border border-red-500/30 px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
                                         <Trash2 size={15} aria-hidden="true" />
@@ -700,6 +711,7 @@ export const AdminNodesPage = () => {
                     <button
                         type="button"
                         onClick={() => navigate('/admin/nodes/new')}
+                        disabled={!canManage || !canReadRegions || !canReadLocations}
                         className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white"
                     >
                         <Plus size={18} aria-hidden="true" />
@@ -780,8 +792,8 @@ export const AdminNodesPage = () => {
                             onClick={() => setViewMode('grouped')}
                             aria-pressed={viewMode === 'grouped'}
                             className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${viewMode === 'grouped'
-                                    ? 'border-primary bg-primary text-white'
-                                    : 'border-border-subtle'
+                                ? 'border-primary bg-primary text-white'
+                                : 'border-border-subtle'
                                 }`}
                         >
                             <LayoutList size={16} />
@@ -792,8 +804,8 @@ export const AdminNodesPage = () => {
                             onClick={() => setViewMode('table')}
                             aria-pressed={viewMode === 'table'}
                             className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${viewMode === 'table'
-                                    ? 'border-primary bg-primary text-white'
-                                    : 'border-border-subtle'
+                                ? 'border-primary bg-primary text-white'
+                                : 'border-border-subtle'
                                 }`}
                         >
                             <Table2 size={16} />

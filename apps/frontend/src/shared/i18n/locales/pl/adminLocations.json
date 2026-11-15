@@ -1,5 +1,6 @@
 {
   "adminLocations": {
+    "regionPermissionRequired": "Dostęp do regionów jest potrzebny do wyboru regionu przy tworzeniu lokalizacji. Istniejące lokalizacje można edytować bez zmiany regionu.",
     "administration": "Administracja / Infrastruktura",
     "title": "Lokalizacje",
     "description": "Zarządzaj lokalizacjami infrastruktury i ich regionami.",

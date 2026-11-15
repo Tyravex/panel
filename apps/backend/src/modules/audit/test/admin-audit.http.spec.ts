@@ -69,15 +69,15 @@ describe('AdminAuditController HTTP permissions', () => {
         expect(list).not.toHaveBeenCalled();
     });
 
-    it('returns 403 without role:manage', async () => {
+    it('returns 403 without audit:read', async () => {
         const token = tokenFor(['user:read']);
         await request(app.getHttpServer()).get('/admin/audit')
             .set('Authorization', `Bearer ${token}`).expect(403);
         expect(list).not.toHaveBeenCalled();
     });
 
-    it('returns 200 for role:manage and forwards query filters', async () => {
-        const token = tokenFor(['role:manage']);
+    it('returns 200 for audit:read and forwards query filters', async () => {
+        const token = tokenFor(['audit:read']);
         const response = await request(app.getHttpServer())
             .get('/admin/audit?page=2&action=ROLE_UPDATED&actorId=7')
             .set('Authorization', `Bearer ${token}`).expect(200);
@@ -86,7 +86,7 @@ describe('AdminAuditController HTTP permissions', () => {
     });
 
     it('returns 401 for a disabled account', async () => {
-        const token = tokenFor(['role:manage'], false);
+        const token = tokenFor(['audit:read'], false);
         await request(app.getHttpServer()).get('/admin/audit')
             .set('Authorization', `Bearer ${token}`).expect(401);
         expect(list).not.toHaveBeenCalled();

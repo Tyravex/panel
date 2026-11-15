@@ -3,6 +3,9 @@
     "accountOverview": "Account overview",
     "accountOverviewDescription": "Essential information about your Tyravex account.",
     "categories": {
+      "games": "Game servers",
+      "bots": "Bots",
+      "voice": "Voice services",
       "discordBots": "Discord Bots",
       "other": "Other Services",
       "servers": "Servers",
@@ -77,10 +80,14 @@
       "users": "Users"
     },
     "services": {
+      "all": "All services",
+      "backToDashboard": "Back to dashboard",
+      "refresh": "Refresh",
+      "retry": "Try again",
       "apiPending": "This category is ready in the service catalog. Service management will be available after the API is connected.",
       "categoryLabel": "Service categories",
       "count": "Service count",
-      "description": "Manage your servers, bots, and hosted services in one place.",
+      "description": "Manage your game servers, bots, and hosted services in one place.",
       "detailsUnavailable": "Details will be available after installation.",
       "draft": "Draft",
       "emptyDescription": "No services are assigned to your account in this category.",
@@ -89,12 +96,42 @@
       "linkedServer": "Linked server",
       "loading": "Loading services...",
       "pendingInstallation": "Awaiting installation",
-      "previewNote": "These are sample servers and are not stored in the database.",
+      "previewNote": "These are sample services and are not stored in the database.",
       "previewOff": "Preview: OFF",
       "previewOn": "Preview: ON",
       "serviceId": "Service ID",
       "subtitle": "Choose a category to view your services.",
       "title": "Your services"
+    },
+    "serviceDetails": {
+      "statusOnline": "Online",
+      "statusOffline": "Offline",
+      "statusMaintenance": "Maintenance",
+      "statusUnknown": "Unknown",
+      "noData": "No data"
+    },
+    "workspace": {
+      "navigation": "Service modules",
+      "installation": "Installation",
+      "resources": "CPU / RAM resources",
+      "noTelemetry": "Telemetry unavailable",
+      "type": "Service type",
+      "pendingTitle": "Module not connected yet",
+      "pendingDescription": "This module is not available yet. Your existing service configuration is preserved.",
+      "extensionsDescription": "Plugins and mods will be available for compatible games, engines, and versions.",
+      "voiceDescription": "Voice management will be available after the service integration is connected.",
+      "kinds": {
+        "game": { "label": "Game server", "description": "Manage your game server, players, and extensions." },
+        "bot": { "label": "Bot", "description": "Manage your bot, environment, logs, and modules." },
+        "voice": { "label": "Voice service", "description": "Manage your voice service, channels, and permissions." },
+        "other": { "label": "Service", "description": "Manage your hosted services." }
+      },
+      "tabs": {
+        "overview": "Overview", "console": "Console", "files": "Files",
+        "extensions": "Plugins / mods", "players": "Players", "channels": "Channels",
+        "permissions": "Permissions", "environment": "Environment variables", "logs": "Logs",
+        "modules": "Modules", "backups": "Backups", "schedules": "Schedules", "settings": "Settings"
+      }
     },
     "username": "Username",
     "welcome": "Welcome, {{username}}!"

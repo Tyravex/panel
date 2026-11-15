@@ -6,6 +6,7 @@
     "comingLater": "Coming in a later development stage",
     "mainNavigation": "Main navigation",
     "sections": {
+      "eggs": "Eggs System",
       "account": "Account",
       "infrastructure": "Infrastructure",
       "management": "Management",

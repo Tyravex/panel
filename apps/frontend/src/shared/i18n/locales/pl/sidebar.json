@@ -6,6 +6,7 @@
     "comingLater": "Funkcja dostępna na późniejszym etapie rozwoju",
     "mainNavigation": "Nawigacja główna",
     "sections": {
+      "eggs": "System Eggs",
       "account": "Konto",
       "infrastructure": "Infrastruktura",
       "management": "Zarządzanie",

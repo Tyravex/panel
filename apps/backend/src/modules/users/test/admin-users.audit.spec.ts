@@ -1,7 +1,9 @@
 import { AdminUsersService } from '../admin-users.service';
+import { defaultRoleTransactionFields } from '@/rbac/test/helpers/default-role-prisma';
 
 describe('AdminUsersService transactional audit', () => {
   const tx = {
+    ...defaultRoleTransactionFields(),
     user: {
       create: jest.fn(),
       update: jest.fn(),

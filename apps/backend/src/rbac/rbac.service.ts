@@ -66,6 +66,14 @@ export class RbacService {
             if (role.name.toLowerCase() === 'owner') throw new BadRequestException('Cannot edit Owner role');
             const available = await tx.permission.findMany({ where: { id: { in: ids } }, select: { id: true } });
             if (available.length !== ids.length) throw new BadRequestException('Unknown permission ID');
+            const defaultSettings = await tx.rbacSettings.findUnique({
+                where: { id: 1 },
+                select: { defaultRoleId: true },
+            });
+            if (defaultSettings?.defaultRoleId === roleId && ids.length > 0) {
+                throw new ConflictException('Cannot grant global permissions to the default role');
+            }
+
             const updated = await tx.role.update({
                 where: { id: roleId },
                 data: { name, permissions: { set: ids.map((id) => ({ id })) } },
@@ -90,6 +98,14 @@ export class RbacService {
             const role = await tx.role.findUnique({ where: { id: roleId }, select: { name: true } });
             if (!role) throw new NotFoundException('Role not found');
             if (role.name.toLowerCase() === 'owner') throw new BadRequestException('Cannot delete Owner role');
+            const defaultSettings = await tx.rbacSettings.findUnique({
+                where: { id: 1 },
+                select: { defaultRoleId: true },
+            });
+            if (defaultSettings?.defaultRoleId === roleId) {
+                throw new ConflictException('Cannot delete the default role. Select another default role first');
+            }
+
             const assignments = await tx.userRole.count({ where: { roleId } });
             if (assignments > 0) throw new ConflictException('Unassign this role from all users before deleting it');
             await tx.role.delete({ where: { id: roleId } });
@@ -109,6 +125,16 @@ export class RbacService {
             orderBy: { name: 'asc' },
             select: { id: true, name: true, permissions: { select: { id: true, name: true } }, _count: { select: { users: true } } },
         });
+    }
+
+    async getRole(roleId: string) {
+        if (!roleId?.trim()) throw new BadRequestException('Invalid role ID');
+        const role = await this.prisma.role.findUnique({
+            where: { id: roleId },
+            select: { id: true, name: true, permissions: { select: { id: true, name: true } }, _count: { select: { users: true } } },
+        });
+        if (!role) throw new NotFoundException('Role not found');
+        return role;
     }
 
     async listUserRoles(userId: number) {

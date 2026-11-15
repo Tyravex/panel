@@ -6,9 +6,9 @@ import { AdminAuditService } from './admin-audit.service';
 
 @Controller('admin/audit')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-@Permissions('role:manage')
+@Permissions('audit:read')
 export class AdminAuditController {
-  constructor(private readonly audit: AdminAuditService) {}
+  constructor(private readonly audit: AdminAuditService) { }
 
   @Get()
   list(

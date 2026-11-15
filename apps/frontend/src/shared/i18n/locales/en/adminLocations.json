@@ -1,5 +1,6 @@
 {
   "adminLocations": {
+    "regionPermissionRequired": "Region access is required to select a region when creating a location. Existing locations can still be edited without changing their region.",
     "administration": "Administration / Infrastructure",
     "title": "Locations",
     "description": "Manage infrastructure locations and their regions.",

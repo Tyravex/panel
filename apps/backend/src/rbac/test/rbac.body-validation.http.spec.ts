@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { RbacController } from '../rbac.controller';
 import { RbacService } from '../rbac.service';
+import { DefaultRoleService } from '../default-role.service';
 
 const allowAdmin = {
     canActivate: (context: ExecutionContext) => {
@@ -22,7 +23,13 @@ describe('RBAC HTTP body validation characterization', () => {
     beforeAll(async () => {
         const moduleRef = await Test.createTestingModule({
             controllers: [RbacController],
-            providers: [{ provide: RbacService, useValue: { createRole, updateRole } }],
+            providers: [
+                { provide: RbacService, useValue: { createRole, updateRole } },
+                {
+                    provide: DefaultRoleService,
+                    useValue: {},
+                },
+            ],
         })
             .overrideGuard(JwtAuthGuard).useValue(allowAdmin)
             .overrideGuard(PermissionsGuard).useValue(allowAdmin)

@@ -26,7 +26,7 @@ export class AdminUsersController {
   get(@Param('id', ParseIntPipe) id: number) { return this.users.get(id); }
 
   @Post()
-  @Permissions('user:manage')
+  @Permissions('user:create')
   create(
     @Body() body: {
       username?: string;

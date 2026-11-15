@@ -5,6 +5,7 @@ import request from 'supertest';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 import { RbacController } from '../rbac.controller';
 import { RbacService } from '../rbac.service';
+import { DefaultRoleService } from '../default-role.service';
 import { PermissionsGuard } from '../guards/permissions.guard';
 
 describe('RBAC HTTP parameter validation', () => {
@@ -17,6 +18,10 @@ describe('RBAC HTTP parameter validation', () => {
         const moduleRef = await Test.createTestingModule({
             controllers: [RbacController],
             providers: [
+                {
+                    provide: DefaultRoleService,
+                    useValue: {},
+                },
                 {
                     provide: RbacService,
                     useValue: { listUserRoles, assignRole, revokeRole },

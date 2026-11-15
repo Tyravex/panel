@@ -8,7 +8,7 @@ import { LocationsService } from './locations.service';
 
 @Controller('locations')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-@Permissions('node:manage')
+@Permissions('location:manage')
 export class LocationsController {
   constructor(private readonly locationsService: LocationsService) { }
 

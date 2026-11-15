@@ -32,10 +32,10 @@ export const ServiceStatus = ({ kind, status }: ServiceStatusProps) => {
                 : status || "—";
         }
         switch (normalized) {
-            case "online": return t("dashboard.serverDetails.statusOnline");
-            case "offline": return t("dashboard.serverDetails.statusOffline");
-            case "maintenance": return t("dashboard.serverDetails.statusMaintenance");
-            default: return status || t("dashboard.serverDetails.statusUnknown");
+            case "online": return t("dashboard.serviceDetails.statusOnline");
+            case "offline": return t("dashboard.serviceDetails.statusOffline");
+            case "maintenance": return t("dashboard.serviceDetails.statusMaintenance");
+            default: return status || t("dashboard.serviceDetails.statusUnknown");
         }
     })();
 

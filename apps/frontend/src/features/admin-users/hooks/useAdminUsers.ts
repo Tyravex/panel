@@ -13,6 +13,9 @@ export const useAdminUsers = () => {
     const { t } = useTranslation();
     const me = useAuthStore((state) => state.user);
     const canManage = !!me?.permissions?.includes('user:manage');
+    const canCreate = !!me?.permissions?.includes('user:create');
+    const canViewRoles = !!me?.permissions?.includes('user:read') &&
+        !!me?.permissions?.includes('role:read');
 
     const [search, setSearch] = useState('');
     const [query, setQuery] = useState('');
@@ -125,6 +128,8 @@ export const useAdminUsers = () => {
     return {
         me,
         canManage,
+        canCreate,
+        canViewRoles,
         search,
         setSearch,
         status,

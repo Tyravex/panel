@@ -23,7 +23,7 @@ describe('EggLibraryController', () => {
         }) as any;
 
     const admin = () =>
-        actor(['Owner'], ['service:manage:any']);
+        actor(['Administrator'], ['egg:read']);
 
     beforeEach(() => {
         jest.resetAllMocks();
@@ -45,10 +45,18 @@ describe('EggLibraryController', () => {
         expect(listLibraryEggs).not.toHaveBeenCalled();
     });
 
-    it('rejects non-Owner users with management permission', () => {
+    it('allows non-Owner users with read permission', () => {
+        controller.stats(
+            actor(['Support'], ['egg:read']),
+        );
+
+        expect(getLibraryStats).toHaveBeenCalledTimes(1);
+    });
+
+    it('rejects management permission without read permission', () => {
         expect(() =>
             controller.stats(
-                actor(['User'], ['service:manage:any']),
+                actor(['Administrator'], ['service:manage:any']),
             ),
         ).toThrow(ForbiddenException);
 

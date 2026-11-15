@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuthStore } from '@/app/store/auth.store';
 import {
     CheckCircle2,
     CircleMinus,
@@ -51,6 +52,9 @@ function RepositoryStatusBadge({
 }
 
 export function MarketplaceRepositories() {
+    const canManage = useAuthStore((state) =>
+        !!state.user?.permissions?.includes('marketplace:manage'),
+    );
     const {
         repositories,
         loading,
@@ -78,7 +82,7 @@ export function MarketplaceRepositories() {
     async function handleCreate(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (isBusy || !name.trim() || !url.trim()) {
+        if (!canManage || isBusy || !name.trim() || !url.trim()) {
             return;
         }
 
@@ -98,7 +102,7 @@ export function MarketplaceRepositories() {
     }
 
     async function handleToggle(repository: MarketplaceRepository) {
-        if (isBusy || repository.isOfficial) {
+        if (!canManage || isBusy || repository.isOfficial) {
             return;
         }
 
@@ -120,7 +124,7 @@ export function MarketplaceRepositories() {
     }
 
     function startEditing(repository: MarketplaceRepository) {
-        if (isBusy || repository.isOfficial) {
+        if (!canManage || isBusy || repository.isOfficial) {
             return;
         }
 
@@ -133,6 +137,7 @@ export function MarketplaceRepositories() {
         const trimmedName = editingName.trim();
 
         if (
+            !canManage ||
             isBusy ||
             repository.isOfficial ||
             trimmedName.length < 2
@@ -158,7 +163,7 @@ export function MarketplaceRepositories() {
     }
 
     async function handleDelete() {
-        if (!deletingRepository || isBusy) {
+        if (!canManage || !deletingRepository || isBusy) {
             return;
         }
 
@@ -186,7 +191,7 @@ export function MarketplaceRepositories() {
 
     return (
         <div className="space-y-6">
-            <section className="rounded-xl border border-border-subtle p-5">
+            {canManage && <section className="rounded-xl border border-border-subtle p-5">
                 <div className="mb-5">
                     <h2 className="text-lg font-semibold">
                         Add repository
@@ -273,7 +278,7 @@ export function MarketplaceRepositories() {
                         </button>
                     </div>
                 </form>
-            </section>
+            </section>}
 
             <section className="rounded-xl border border-border-subtle p-5">
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -433,7 +438,7 @@ export function MarketplaceRepositories() {
                                             </div>
                                         </div>
 
-                                        {!repository.isOfficial && (
+                                        {canManage && !repository.isOfficial && (
                                             <div className="flex flex-wrap items-center gap-2">
                                                 <button
                                                     type="button"

@@ -8,7 +8,7 @@ import { RegionsService } from './regions.service';
 
 @Controller('regions')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
-@Permissions('node:manage')
+@Permissions('region:manage')
 export class RegionsController {
   constructor(private readonly regionsService: RegionsService) { }
 

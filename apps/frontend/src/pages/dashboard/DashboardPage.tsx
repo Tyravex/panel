@@ -6,8 +6,8 @@ import {
   Boxes,
   Layers,
   RefreshCw,
-  Send,
-  Server,
+  Gamepad2,
+  Headphones,
   Settings2,
   ShieldCheck,
   UserRound,
@@ -19,14 +19,15 @@ import { ServiceFeedback } from '@/features/services/components/ServiceFeedback'
 import { ServiceStatus } from '@/features/services/components/ServiceStatus';
 import { useServiceDashboardData } from '@/features/services/hooks/useServiceDashboardData';
 import { useUser } from '@/shared/store/user';
+import { getServiceKind, type ServiceKind } from '@/features/services/lib/serviceKind';
 
-type Category = 'all' | 'server' | 'discord_bot' | 'telegram_bot' | 'other';
+type Category = 'all' | ServiceKind;
 
 const categoryIcon = (key: string | undefined) => {
-  switch (key) {
-    case 'server': return Server;
-    case 'discord_bot': return Bot;
-    case 'telegram_bot': return Send;
+  switch (getServiceKind(key)) {
+    case 'game': return Gamepad2;
+    case 'bot': return Bot;
+    case 'voice': return Headphones;
     default: return Boxes;
   }
 };
@@ -39,9 +40,9 @@ export const DashboardPage = () => {
 
   const categories = [
     { id: 'all' as const, label: t('dashboard.services.all', { defaultValue: 'All' }), icon: Layers, count: services.length },
-    { id: 'server' as const, label: t('dashboard.categories.servers'), icon: Server, count: categoryCounts.server },
-    { id: 'discord_bot' as const, label: t('dashboard.categories.discordBots'), icon: Bot, count: categoryCounts.discord_bot },
-    { id: 'telegram_bot' as const, label: t('dashboard.categories.telegramBots'), icon: Send, count: categoryCounts.telegram_bot },
+    { id: 'game' as const, label: t('dashboard.categories.games'), icon: Gamepad2, count: categoryCounts.game },
+    { id: 'bot' as const, label: t('dashboard.categories.bots'), icon: Bot, count: categoryCounts.bot },
+    { id: 'voice' as const, label: t('dashboard.categories.voice'), icon: Headphones, count: categoryCounts.voice },
     { id: 'other' as const, label: t('dashboard.categories.other'), icon: Boxes, count: categoryCounts.other },
   ];
 
@@ -52,9 +53,7 @@ export const DashboardPage = () => {
 
   const visibleServices = services.filter((service) =>
     activeCategory === 'all' ||
-    (activeCategory === 'other'
-      ? !['server', 'discord_bot', 'telegram_bot'].includes(service.category?.key ?? '')
-      : service.category?.key === activeCategory),
+    getServiceKind(service.category?.key) === activeCategory,
   );
 
   const refresh = () => { void servicesQuery.refetch(); };
@@ -149,10 +148,8 @@ export const DashboardPage = () => {
         <div id="service-category-panel" role="tabpanel" aria-labelledby={`service-tab-${activeCategory}`} className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="font-semibold text-text-primary">{activeCategory === 'server' ? t('dashboard.servers.title') : active.label}</h3>
-              {activeCategory === 'server' && (
-                <p className="mt-1 text-sm text-text-secondary">{t('dashboard.servers.description')}</p>
-              )}
+              <h3 className="font-semibold text-text-primary">{active.label}</h3>
+              <p className="mt-1 text-sm text-text-secondary">{t(`dashboard.workspace.kinds.${activeCategory === 'all' ? 'other' : activeCategory}.description`)}</p>
             </div>
             <button
               type="button"
@@ -161,16 +158,16 @@ export const DashboardPage = () => {
               className="inline-flex items-center gap-2 rounded-xl border border-border-subtle px-3 py-2 text-sm disabled:opacity-50"
             >
               <RefreshCw size={16} aria-hidden="true" className={fetching ? 'animate-spin' : ''} />
-              {t('dashboard.servers.refresh')}
+              {t('dashboard.services.refresh')}
             </button>
           </div>
 
           {pending ? (
             <ServiceFeedback kind="loading" loadingLabel={t('dashboard.services.loading')} />
           ) : error ? (
-            <ServiceFeedback kind="error" title={t('dashboard.services.errorTitle')} retryLabel={t('dashboard.servers.retry')} onRetry={refresh} retrying={fetching} />
+            <ServiceFeedback kind="error" title={t('dashboard.services.errorTitle')} retryLabel={t('dashboard.services.retry')} onRetry={refresh} retrying={fetching} />
           ) : visibleServices.length === 0 ? (
-            <ServiceFeedback kind="empty" description={activeCategory === 'server' ? t('dashboard.servers.emptyDescription') : t('dashboard.services.emptyDescription')} />
+            <ServiceFeedback kind="empty" description={t('dashboard.services.emptyDescription')} />
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {visibleServices.map(renderService)}

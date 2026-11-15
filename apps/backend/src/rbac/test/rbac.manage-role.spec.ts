@@ -6,12 +6,16 @@ describe('RbacService role management', () => {
         $queryRaw: jest.fn().mockResolvedValue([]),
         role: { findUnique: jest.fn(), update: jest.fn(), delete: jest.fn() },
         permission: { findMany: jest.fn() },
+        rbacSettings: { findUnique: jest.fn() },
         userRole: { count: jest.fn() },
     };
     const prisma = { $transaction: jest.fn((callback: (client: typeof tx) => Promise<unknown>) => callback(tx)) };
     const service = new RbacService(prisma as never);
 
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => {
+        jest.clearAllMocks();
+        tx.rbacSettings.findUnique.mockResolvedValue(null);
+    });
 
     it('prevents editing Owner', async () => {
         tx.role.findUnique.mockResolvedValue({ name: 'Owner' });

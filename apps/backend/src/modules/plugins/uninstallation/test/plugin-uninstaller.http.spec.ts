@@ -101,13 +101,13 @@ describe('PluginUninstallerController (HTTP)', () => {
         await app?.close();
     });
 
-    it('requires the plugin:manage permission metadata', () => {
+    it('requires the plugin:delete permission metadata', () => {
         const permissions = Reflect.getMetadata(
             PERMISSIONS_KEY,
             PluginUninstallerController,
         );
 
-        expect(permissions).toContain('plugin:manage');
+        expect(permissions).toEqual(['plugin:delete']);
     });
 
     it('returns 200 for an authorized administrator', async () => {

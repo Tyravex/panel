@@ -40,7 +40,7 @@ export class ServicesController {
 
   @Get('admin/all')
   getAllServices(@Request() req: AuthenticatedRequest) {
-    this.assertAdmin(req.user, 'service:manage:any');
+    this.assertPermission(req.user, 'service:read:any');
     return this.servicesService.getAllServices();
   }
 
@@ -66,7 +66,7 @@ export class ServicesController {
     @Request() req: AuthenticatedRequest,
     @Body() dto: CreateServiceDto,
   ) {
-    this.assertAdmin(req.user, 'service:create');
+    this.assertPermission(req.user, 'service:create');
     return this.servicesService.createService(req.user.id, dto);
   }
 
@@ -98,7 +98,7 @@ export class ServicesController {
     @Param('id') serviceId: string,
     @Body() dto: SetServiceOwnerDto,
   ) {
-    this.assertAdmin(req.user, 'service:manage:any');
+    this.assertPermission(req.user, 'service:transfer:any');
     return this.servicesService.setOwner(
       serviceId,
       req.user.id,
@@ -158,15 +158,12 @@ export class ServicesController {
     );
   }
 
-  private assertAdmin(
+  private assertPermission(
     user: UserDTO,
     permission: string,
   ): void {
-    // Administrative operations require both role and permission.
-    if (
-      !user.roles?.includes('Owner') ||
-      !user.permissions?.includes(permission)
-    ) {
+    // Global RBAC permissions are authoritative, regardless of role name.
+    if (!user.permissions?.includes(permission)) {
       throw new ForbiddenException(
         'Administrative service permission required',
       );
