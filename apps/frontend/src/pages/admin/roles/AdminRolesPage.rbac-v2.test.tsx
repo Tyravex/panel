@@ -119,10 +119,12 @@ describe('RBAC v2 role definition management', () => {
 
   it('combines module filtering with searches by name, code and translated permission label', async () => {
     mocks.permissions = ['role:read'];
-    mocks.get.mockResolvedValue({ data: [moderator, {
-      id: 'game-operator', name: 'Game Operator',
-      permissions: [{ id: 'service-read', name: 'service:read:any' }], _count: { users: 0 },
-    }] });
+    mocks.get.mockResolvedValue({
+      data: [moderator, {
+        id: 'game-operator', name: 'Game Operator',
+        permissions: [{ id: 'service-read', name: 'service:read:any' }], _count: { users: 0 },
+      }]
+    });
     renderPage();
     await screen.findByText('Moderator');
     const search = screen.getByRole('searchbox');

@@ -20,8 +20,10 @@ vi.mock('@/features/admin-users/api/admin-users.api', () => ({
   updateAdminUser: mocks.update,
 }));
 vi.mock('@/features/admin-users/components/AdminUserForm', () => ({
-  AdminUserForm: ({ form, setForm, onSubmit }: { form: AdminUserFormValues;
-    setForm: Dispatch<SetStateAction<AdminUserFormValues>>; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) =>
+  AdminUserForm: ({ form, setForm, onSubmit }: {
+    form: AdminUserFormValues;
+    setForm: Dispatch<SetStateAction<AdminUserFormValues>>; onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  }) =>
     <form onSubmit={onSubmit}><input aria-label="Username" value={form.username}
       onChange={(event) => setForm((previous) => ({ ...previous, username: event.target.value }))} />
       <button>Save</button></form>,

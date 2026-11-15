@@ -7,9 +7,11 @@ import { AdminRegionsPage } from './AdminRegionsPage';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string, options?: { defaultValue?: string }) => options?.defaultValue ?? key }),
 }));
-vi.mock('@/features/regions/api/regionsApi', () => ({ regionsApi: {
-  list: () => Promise.resolve([{ id: 'eu', name: 'Europe', code: 'eu', description: '', _count: { locations: 0, nodes: 0 } }]),
-} }));
+vi.mock('@/features/regions/api/regionsApi', () => ({
+  regionsApi: {
+    list: () => Promise.resolve([{ id: 'eu', name: 'Europe', code: 'eu', description: '', _count: { locations: 0, nodes: 0 } }]),
+  }
+}));
 afterEach(cleanup);
 
 describe('Region form drafts', () => {

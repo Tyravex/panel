@@ -382,130 +382,130 @@ export const AdminNodeDetailsPage = () => {
                     ) : tab === 'settings' ? (
                         <form onSubmit={(event) => void save(event)} className="space-y-6">
                             <fieldset disabled={!canManage} className="space-y-6">
-                            <section className="rounded-2xl border border-border-subtle bg-surface p-6">
-                                <h2 className="mb-5 text-xl font-semibold">
-                                    {labels.settings[language]}
-                                </h2>
+                                <section className="rounded-2xl border border-border-subtle bg-surface p-6">
+                                    <h2 className="mb-5 text-xl font-semibold">
+                                        {labels.settings[language]}
+                                    </h2>
 
-                                <div className="grid gap-5 md:grid-cols-2">
-                                    <div className="md:col-span-2">
-                                        <label htmlFor="node-settings-name" className="mb-2 block text-sm font-medium">
-                                            {m.name}
-                                        </label>
-                                        <input
-                                            id="node-settings-name"
-                                            value={name}
-                                            onChange={(event) => setName(event.target.value)}
-                                            maxLength={100}
-                                            required
-                                            disabled={busy}
-                                            className={fieldClass}
-                                        />
+                                    <div className="grid gap-5 md:grid-cols-2">
+                                        <div className="md:col-span-2">
+                                            <label htmlFor="node-settings-name" className="mb-2 block text-sm font-medium">
+                                                {m.name}
+                                            </label>
+                                            <input
+                                                id="node-settings-name"
+                                                value={name}
+                                                onChange={(event) => setName(event.target.value)}
+                                                maxLength={100}
+                                                required
+                                                disabled={busy}
+                                                className={fieldClass}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="node-settings-region" className="mb-2 block text-sm font-medium">
+                                                {m.region}
+                                            </label>
+                                            <select
+                                                id="node-settings-region"
+                                                value={regionId}
+                                                onChange={(event) => {
+                                                    setRegionId(event.target.value);
+                                                    setLocationId('');
+                                                }}
+                                                disabled={busy || !canAssignLocation}
+                                                required
+                                                className={fieldClass}
+                                            >
+                                                <option value="" disabled>{m.selectRegion}</option>
+                                                {!canReadRegions && regionId && <option value={regionId}>{regionId}</option>}
+                                                {regions.map((region) => (
+                                                    <option key={region.id} value={region.id}>
+                                                        {region.name} ({region.code})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="node-settings-location" className="mb-2 block text-sm font-medium">
+                                                {m.location}
+                                            </label>
+                                            <select
+                                                id="node-settings-location"
+                                                value={locationId}
+                                                onChange={(event) => setLocationId(event.target.value)}
+                                                disabled={busy || !regionId || !canAssignLocation}
+                                                required
+                                                className={fieldClass}
+                                            >
+                                                <option value="" disabled>{m.selectLocation}</option>
+                                                {!canAssignLocation && locationId && <option value={locationId}>{locationId}</option>}
+                                                {availableLocations.map((location) => (
+                                                    <option key={location.id} value={location.id}>
+                                                        {location.name} ({location.code})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
                                     </div>
+                                </section>
 
-                                    <div>
-                                        <label htmlFor="node-settings-region" className="mb-2 block text-sm font-medium">
-                                            {m.region}
-                                        </label>
-                                        <select
-                                            id="node-settings-region"
-                                            value={regionId}
-                                            onChange={(event) => {
-                                                setRegionId(event.target.value);
-                                                setLocationId('');
-                                            }}
-                                            disabled={busy || !canAssignLocation}
-                                            required
-                                            className={fieldClass}
-                                        >
-                                            <option value="" disabled>{m.selectRegion}</option>
-                                            {!canReadRegions && regionId && <option value={regionId}>{regionId}</option>}
-                                            {regions.map((region) => (
-                                                <option key={region.id} value={region.id}>
-                                                    {region.name} ({region.code})
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                                <section className="rounded-2xl border border-border-subtle bg-surface p-6">
+                                    <h2 className="text-xl font-semibold">{m.allocation}</h2>
 
-                                    <div>
-                                        <label htmlFor="node-settings-location" className="mb-2 block text-sm font-medium">
-                                            {m.location}
-                                        </label>
-                                        <select
-                                            id="node-settings-location"
-                                            value={locationId}
-                                            onChange={(event) => setLocationId(event.target.value)}
-                                            disabled={busy || !regionId || !canAssignLocation}
-                                            required
-                                            className={fieldClass}
-                                        >
-                                            <option value="" disabled>{m.selectLocation}</option>
-                                            {!canAssignLocation && locationId && <option value={locationId}>{locationId}</option>}
-                                            {availableLocations.map((location) => (
-                                                <option key={location.id} value={location.id}>
-                                                    {location.name} ({location.code})
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section className="rounded-2xl border border-border-subtle bg-surface p-6">
-                                <h2 className="text-xl font-semibold">{m.allocation}</h2>
-
-                                <div className="mt-5 space-y-4">
-                                    <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border-subtle p-4">
-                                        <span>
-                                            <span className="block font-medium">{m.manual}</span>
-                                            <span className="mt-1 block text-sm text-text-secondary">
-                                                {m.manualDescription}
+                                    <div className="mt-5 space-y-4">
+                                        <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border-subtle p-4">
+                                            <span>
+                                                <span className="block font-medium">{m.manual}</span>
+                                                <span className="mt-1 block text-sm text-text-secondary">
+                                                    {m.manualDescription}
+                                                </span>
                                             </span>
-                                        </span>
-                                        <input
-                                            type="checkbox"
-                                            checked={manualAllocation}
-                                            disabled={busy}
-                                            onChange={(event) => {
-                                                if (!event.target.checked && !automaticAllocation) return;
-                                                setManualAllocation(event.target.checked);
-                                            }}
-                                            className="h-5 w-5 accent-primary"
-                                        />
-                                    </label>
+                                            <input
+                                                type="checkbox"
+                                                checked={manualAllocation}
+                                                disabled={busy}
+                                                onChange={(event) => {
+                                                    if (!event.target.checked && !automaticAllocation) return;
+                                                    setManualAllocation(event.target.checked);
+                                                }}
+                                                className="h-5 w-5 accent-primary"
+                                            />
+                                        </label>
 
-                                    <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border-subtle p-4">
-                                        <span>
-                                            <span className="block font-medium">{m.automatic}</span>
-                                            <span className="mt-1 block text-sm text-text-secondary">
-                                                {m.automaticDescription}
+                                        <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border-subtle p-4">
+                                            <span>
+                                                <span className="block font-medium">{m.automatic}</span>
+                                                <span className="mt-1 block text-sm text-text-secondary">
+                                                    {m.automaticDescription}
+                                                </span>
                                             </span>
-                                        </span>
-                                        <input
-                                            type="checkbox"
-                                            checked={automaticAllocation}
-                                            disabled={busy}
-                                            onChange={(event) => {
-                                                if (!event.target.checked && !manualAllocation) return;
-                                                setAutomaticAllocation(event.target.checked);
-                                            }}
-                                            className="h-5 w-5 accent-primary"
-                                        />
-                                    </label>
-                                </div>
-                            </section>
+                                            <input
+                                                type="checkbox"
+                                                checked={automaticAllocation}
+                                                disabled={busy}
+                                                onChange={(event) => {
+                                                    if (!event.target.checked && !manualAllocation) return;
+                                                    setAutomaticAllocation(event.target.checked);
+                                                }}
+                                                className="h-5 w-5 accent-primary"
+                                            />
+                                        </label>
+                                    </div>
+                                </section>
 
-                            <div className="flex justify-end">
-                                <button
-                                    type="submit"
-                                    disabled={busy || !name.trim() || (canAssignLocation && (!regionId || !locationId))}
-                                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-white disabled:opacity-50"
-                                >
-                                    <Save size={18} aria-hidden="true" />
-                                    {busy ? m.saving : m.save}
-                                </button>
-                            </div>
+                                <div className="flex justify-end">
+                                    <button
+                                        type="submit"
+                                        disabled={busy || !name.trim() || (canAssignLocation && (!regionId || !locationId))}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-white disabled:opacity-50"
+                                    >
+                                        <Save size={18} aria-hidden="true" />
+                                        {busy ? m.saving : m.save}
+                                    </button>
+                                </div>
                             </fieldset>
                         </form>
                     ) : (

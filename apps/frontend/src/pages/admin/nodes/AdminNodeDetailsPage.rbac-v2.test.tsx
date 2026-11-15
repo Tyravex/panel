@@ -12,7 +12,7 @@ vi.mock('@/app/store/auth.store', () => ({
 }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key, i18n: { resolvedLanguage: 'en' } }) }));
 vi.mock('react-router-dom', async (importOriginal) => ({
-  ...await importOriginal<typeof import('react-router-dom')>(),
+    ...await importOriginal<typeof import('react-router-dom')>(),
     useNavigate: () => vi.fn(), useParams: () => ({ id: 'node-1' }),
     useSearchParams: () => [new URLSearchParams('tab=settings')],
 }));

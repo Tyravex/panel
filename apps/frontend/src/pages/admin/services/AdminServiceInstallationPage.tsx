@@ -20,13 +20,17 @@ export const AdminServiceInstallationPage = () => {
   useEffect(() => {
     if (!id) return; const controller = new AbortController();
     let inFlight = false;
-    const load = async () => { if (inFlight) return; inFlight = true;
-      await Promise.all([adminServicesApi.activeJob(id, controller.signal), adminServicesApi.jobs(id, controller.signal)]).then(([value, jobs]) => { if (!controller.signal.aborted) {
-        if (hadActive.current && !value) refresh(); hadActive.current = !!value;
-        setJob(value); setHistory(jobs); setError('');
-      } })
-      .catch((reason: unknown) => { if (!controller.signal.aborted) setError(getServiceErrorMessage(reason, t('adminServices.unexpectedError'))); })
-      .finally(() => { inFlight = false; if (!controller.signal.aborted) setChecking(false); }); };
+    const load = async () => {
+      if (inFlight) return; inFlight = true;
+      await Promise.all([adminServicesApi.activeJob(id, controller.signal), adminServicesApi.jobs(id, controller.signal)]).then(([value, jobs]) => {
+        if (!controller.signal.aborted) {
+          if (hadActive.current && !value) refresh(); hadActive.current = !!value;
+          setJob(value); setHistory(jobs); setError('');
+        }
+      })
+        .catch((reason: unknown) => { if (!controller.signal.aborted) setError(getServiceErrorMessage(reason, t('adminServices.unexpectedError'))); })
+        .finally(() => { inFlight = false; if (!controller.signal.aborted) setChecking(false); });
+    };
     void load(); const interval = window.setInterval(() => void load(), 5000);
     return () => { controller.abort(); window.clearInterval(interval); };
   }, [id, t, refresh]);

@@ -19,10 +19,10 @@ export const AdminServiceDetailsPage = () => {
       </div>
       <dl className="grid gap-5 rounded-2xl border border-border-subtle bg-surface p-6 sm:grid-cols-2">
         {[[t('adminServices.category'), t(`adminServices.categories.${service.category.key}`)],
-          [t('adminServices.columns.status'), <ServiceStatus key="status" kind="installation" status={service.installStatus} />], [t('adminServices.columns.owner'), service.user?.username ?? t('adminServices.unassigned')],
-          [t('adminServices.columns.node'), service.nodeId ?? t('adminServices.unassigned')], ['Egg', service.egg ? `${service.egg.name} — ${service.egg.version}` : t('adminServices.noEgg')],
-          [t('adminServices.resources.memoryMb'), service.memoryMb], [t('adminServices.resources.cpuPercent'), service.cpuPercent], [t('adminServices.resources.diskMb'), service.diskMb],
-          [t('adminServices.eggProfile'), service.eggConfiguration?.profileId ?? '—'], [t('adminServices.runtimeVersion'), service.eggConfiguration?.runtimeVersion ?? '—'],
+        [t('adminServices.columns.status'), <ServiceStatus key="status" kind="installation" status={service.installStatus} />], [t('adminServices.columns.owner'), service.user?.username ?? t('adminServices.unassigned')],
+        [t('adminServices.columns.node'), service.nodeId ?? t('adminServices.unassigned')], ['Egg', service.egg ? `${service.egg.name} — ${service.egg.version}` : t('adminServices.noEgg')],
+        [t('adminServices.resources.memoryMb'), service.memoryMb], [t('adminServices.resources.cpuPercent'), service.cpuPercent], [t('adminServices.resources.diskMb'), service.diskMb],
+        [t('adminServices.eggProfile'), service.eggConfiguration?.profileId ?? '—'], [t('adminServices.runtimeVersion'), service.eggConfiguration?.runtimeVersion ?? '—'],
         ].map(([label, value]) => <div key={String(label)}><dt className="text-sm text-text-secondary">{label}</dt><dd className="mt-1 break-all font-medium">{value ?? '—'}</dd></div>)}
       </dl>
     </>}

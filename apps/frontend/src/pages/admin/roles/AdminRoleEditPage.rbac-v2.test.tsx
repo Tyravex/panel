@@ -69,8 +69,9 @@ describe('Role editing RBAC v2', () => {
   });
 
   it('does not allow editing Owner through a direct URL', async () => {
-    mocks.get.mockImplementation((path: string) => Promise.resolve({ data:
-      path === '/admin/rbac/roles/role-support' ? { ...support, name: 'Owner' } : [],
+    mocks.get.mockImplementation((path: string) => Promise.resolve({
+      data:
+        path === '/admin/rbac/roles/role-support' ? { ...support, name: 'Owner' } : [],
     }));
     renderPage();
     expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'adminRoles.ownerProtected');

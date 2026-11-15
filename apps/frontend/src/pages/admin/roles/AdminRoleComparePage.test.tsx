@@ -15,8 +15,10 @@ afterEach(cleanup);
 beforeEach(() => {
   vi.resetAllMocks();
   mocks.permissions = ['role:read'];
-  mocks.get.mockImplementation((path: string) => Promise.resolve({ data: path === '/admin/rbac/roles'
-    ? [{ id: 'r1', name: 'Reader', permissions: [], _count: { users: 0 } }] : [] }));
+  mocks.get.mockImplementation((path: string) => Promise.resolve({
+    data: path === '/admin/rbac/roles'
+      ? [{ id: 'r1', name: 'Reader', permissions: [], _count: { users: 0 } }] : []
+  }));
 });
 
 describe('Comparison page access', () => {

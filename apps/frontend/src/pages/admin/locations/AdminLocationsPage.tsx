@@ -357,8 +357,8 @@ export const AdminLocationsPage = () => {
               !canReadRegions
                 ? label('regionPermissionRequired', 'Wymagane uprawnienie do odczytu regionów.')
                 : regions.length === 0
-                ? label('noRegions', 'Najpierw utwórz region.')
-                : undefined
+                  ? label('noRegions', 'Najpierw utwórz region.')
+                  : undefined
             }
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 font-semibold text-white disabled:opacity-50"
           >
